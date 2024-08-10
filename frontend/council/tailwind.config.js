@@ -10,6 +10,9 @@ module.exports = withMT({
   ],
   theme: {
     extend: {},
+    fontFamily: {
+      sans: ["Open Sans", "sans-serif" , "fira-sans-regular"],
+    },
   },
   plugins: [],
 });
