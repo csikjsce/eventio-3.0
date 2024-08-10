@@ -5,13 +5,13 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
   previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 enum EVENT_TYPE {
@@ -109,12 +109,13 @@ enum ROLE {
 model User {
   id                 Int                @id @default(autoincrement())
   email              String             @unique
+  google_id          String             @unique
   degree             String
   brach              BRANCH
   gender             GENDER
   interests          String[]
   name               String
-  phone_number       Int
+  phone_number       Int?
   photo_url          String
   roll_number        Int
   year               Int
@@ -125,6 +126,7 @@ model User {
   council_type       String?
   created_at         DateTime           @default(now())
   updated_at         DateTime           @updatedAt
+  refresh_token      String?            @unique
   Events             Events[]
   Participant        Participant[]
   participant_users  Participant_user[]
