@@ -3,56 +3,88 @@ const express = require("express");
 const app = express();
 const cors = require("cors");
 const httpLogger = require("./utils/logger_middleware");
-const { Pool } = require("pg");
-const { PrismaPg } = require("@prisma/adapter-pg");
-const { PrismaClient } = require("@prisma/client");
 const logger = require("./utils/logger");
+const passport = require("passport");
+const GoogleStrategy = require("passport-google-oauth20").Strategy;
+const prisma = require("./utils/prisma_client");
 
-const connectionString = `${process.env.DATABASE_URL}`;
+const userRoute = require("./routes/user.route");
+const authRoute = require("./routes/auth.route");
+const eventRoute = require("./routes/event.route");
+const councilRoute = require("./routes/council.route");
 
-const pool = new Pool({ url: connectionString });
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
+// passport setup
+passport.use(
+    new GoogleStrategy(
+        {
+            clientID: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+            callbackURL: "http://localhost:8000/api/v1/auth/google/callback",
+        },
+        async (accessToken, refreshToken, profile, done) => {
+            try {
+                let user = await prisma.user.findUnique({
+                    where: { googleId: profile.id },
+                });
+
+                if (!user) {
+                    user = await prisma.user.create({
+                        data: {
+                            googleId: profile.id,
+                            email: profile.emails[0].value,
+                            name: profile.displayName,
+                            photo_url: profile.picture
+                        },
+                    });
+                }
+
+                return done(null, profile);
+            } catch (error) {
+                return done(error, null);
+            }
+        }
+    )
+);
+passport.serializeUser((user, done) => {
+    done(null, user);
+});
+passport.deserializeUser(async (user, done) => {
+    try {
+        const user = await prisma.user.findUnique({
+            where: { id },
+        });
+        done(null, user);
+    } catch (error) {
+        done(error, null);
+    }
+});
 
 //middlewares
+app.use(passport.initialize());
 app.use(httpLogger);
 app.use(express.json());
 app.use(
-  cors({
-    origin: "*",
-    credentials: true,
-    optionsSuccessStatus: 200,
-  })
+    cors({
+        origin: "*",
+        credentials: true,
+        optionsSuccessStatus: 200,
+    })
 );
 
+// version
+const version = "v1";
+
 // routes
-app.get("/gg", async (req, res) => {
-  try {
-    const user = await prisma.user.create({
-      data: {
-        name: "aryan",
-        about: "gg",
-        brach: "Computer_Engineering",
-        college: "gg",
-        degree: "gg",
-        email: "ary.dev0114@gmail.com",
-        gender: "MALE",
-        is_somaiya_student: true,
-        phone_number: 9512388235,
-        photo_url: "fef",
-        roll_number: 16010121137,
-        year: 2025,
-        interests: ["fe"],
-        council_type: "fe",
-      },
+app.get("/api/" + version + "/health", async (req, res) => {
+    res.json({
+        status: "up and running",
     });
-    logger.info(user);
-  } catch (er) {
-    console.log(er)
-  }
-  res.send("hiee");
 });
-// app.use("/api/orders", orderRoutes);
+
+app.use("/api/" + version + "/user", userRoute);
+app.use("/api/" + version + "/auth", authRoute);
+app.use("/api/" + version + "/event", eventRoute);
+app.use("/api/" + version + "/council", councilRoute);
 
 const port = process.env.PORT || 8000;
-app.listen(port, () => console.log(`Server started on port ${port}`));
+app.listen(port, () => logger.debug(`Server started on port ${port}`));
