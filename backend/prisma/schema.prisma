@@ -1,0 +1,170 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+}
+
+enum EVENT_TYPE {
+  COMPETETION
+  WORKSHOP
+  SPEAKER_SESSION
+  ONLINE
+  FEST
+}
+
+enum STATE {
+  DRAFT
+  APPLIED_FOR_APPROVAL
+  UNLISTED
+  UPCOMING
+  REGISTRATION_OPEN
+  REGISTRATION_CLOSED
+  TICKET_OPEN
+  TICKET_CLOSED
+  ONGOING
+  COMPLETED
+  PRIVATE
+}
+
+enum ATTENDANCE_TYPE {
+  TICKET
+  BLE
+}
+
+enum REGISTRATION_TYPE {
+  EXTERNAL
+  ONPLATFORM
+}
+
+model Events {
+  id                         Int               @id @default(autoincrement())
+  name                       String
+  description                String
+  long_description           String
+  tag_line                   String
+  created_at                 DateTime          @default(now())
+  fee                        Float             @default(0.0)
+  event_type                 EVENT_TYPE
+  dates                      DateTime[]
+  venue                      String
+  organizer                  User              @relation(fields: [organizer_id], references: [id])
+  organizer_id               Int
+  ma_ppt                     Int
+  min_ppt                    Int
+  tags                       String[]
+  state                      STATE             @default(DRAFT)
+  state_history              STATE[]
+  updated_at                 DateTime          @updatedAt
+  banner_url                 String
+  logo_image__url            String
+  event_page_image_url       String
+  parent                     Events?           @relation("EventToEvent", fields: [parentId], references: [id])
+  parentId                   Int?
+  children                   Events[]          @relation("EventToEvent")
+  is_feedback_enabled        Boolean           @default(false)
+  is_only_somaiya            Boolean           @default(true)
+  attendance_type            ATTENDANCE_TYPE?
+  registration_type          REGISTRATION_TYPE @default(ONPLATFORM)
+  external_registration_link String
+  is_ticket_feature_enabled  Boolean
+
+  Participant Participant[]
+}
+
+enum BRANCH {
+  Artificial_Intelligence_And_Data_Science
+  Computer_Engineering
+  Computer_And_Communication_Engineering
+  Computer_Science_And_Business_Systems
+  Electronics_And_Computer_Engineering
+  Electronics_And_Telecommunication_Engineering
+  Electronics_Engineering
+  Information_Technology
+  Mechanical_Engineering
+  Robotics_And_Artificial_Intelligence
+}
+
+enum GENDER {
+  MALE
+  FEMALE
+}
+
+enum ROLE {
+  ADMIN
+  USER
+  COUNCIL
+  FACULTY
+}
+
+model User {
+  id                 Int                @id @default(autoincrement())
+  email              String             @unique
+  degree             String
+  brach              BRANCH
+  gender             GENDER
+  interests          String[]
+  name               String
+  phone_number       Int
+  photo_url          String
+  roll_number        Int
+  year               Int
+  role               ROLE               @default(USER)
+  about              String
+  college            String
+  is_somaiya_student Boolean
+  council_type       String?
+  created_at         DateTime           @default(now())
+  updated_at         DateTime           @updatedAt
+  Events             Events[]
+  Participant        Participant[]
+  participant_users  Participant_user[]
+}
+
+enum PAYMENT_STATUS {
+  PENDING
+  SUCCESS
+  FAILED
+  MANUAL
+}
+
+model Participant {
+  id               Int            @id @default(autoincrement())
+  user             User?          @relation(fields: [user_id], references: [id])
+  user_id          Int?
+  team             Team?          @relation(fields: [team_id], references: [id])
+  team_id          Int?
+  event            Events         @relation(fields: [event_id], references: [id])
+  event_id         Int
+  attended         Boolean        @default(false)
+  paid_on          DateTime       @default(now())
+  registered_on    DateTime       @default(now())
+  payment_status   PAYMENT_STATUS
+  amount           Float          @default(0.0)
+  ticket_collected Boolean?       @default(false)
+}
+
+model Team {
+  id                Int                @id @default(autoincrement())
+  name              String
+  participant_users Participant_user[]
+  Participant       Participant[]
+}
+
+model Participant_user {
+  participant_id Int
+  user_id        Int
+  participant    Team @relation(fields: [participant_id], references: [id])
+  user           User @relation(fields: [user_id], references: [id])
+
+  @@id([participant_id, user_id])
+}
