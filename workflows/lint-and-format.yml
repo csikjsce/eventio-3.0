@@ -1,6 +1,14 @@
 name: Lint and Format
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - main
+      - release/*
+  pull_request:
+    branches:
+      - main
+      - release/*
 
 jobs:
   lint-and-format:
@@ -13,13 +21,13 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '20' 
+          node-version: '20'
 
       - name: Install dependencies
         run: npm install
 
       - name: Run ESLint
-        run: npm run lint
+        run: npm run lint || exit 1
 
       - name: Run Prettier
-        run: npm run format -- --check
+        run: npm run format -- --check || exit 1
