@@ -1,0 +1,73 @@
+const express = require("express");
+const jwt = require("jsonwebtoken");
+const router = express.Router();
+const passport = require("passport");
+
+router.post("/google", (req, res, next) => {
+    passport.authenticate("google", {
+        scope: ["profile", "email"],
+        session: false,
+    })(req, res, next);
+});
+
+router.get(
+    "/google/callback",
+    passport.authenticate("google", {
+        failureRedirect: "/login",
+        session: false,
+    }),
+    async (req, res) => {
+        const profile = req.user;
+        console.log(profile);
+        const user = req.user;
+
+        const accessToken = jwt.sign(
+            { userId: user.id },
+            process.env.JWT_SECRET,
+            { expiresIn: "5m" }
+        );
+        const refreshToken = jwt.sign(
+            { userId: user.id },
+            process.env.JWT_SECRET,
+            { expiresIn: "7d" }
+        );
+
+        await prisma.user.update({
+            where: { id: user.id },
+            data: { refreshToken },
+        });
+
+        res.json({ accessToken, refreshToken });
+    }
+);
+
+router.post("/refresh-token", async (req, res) => {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+        return res.status(400).json({ message: "Refresh token is required" });
+    }
+
+    try {
+        const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET);
+        const user = await prisma.user.findUnique({
+            where: { id: decoded.userId },
+        });
+
+        if (!user || user.refreshToken !== refreshToken) {
+            return res.status(401).json({ message: "Invalid refresh token" });
+        }
+
+        const accessToken = jwt.sign(
+            { userId: user.id },
+            process.env.JWT_SECRET,
+            { expiresIn: "5m" }
+        );
+        res.json({ accessToken });
+    } catch (error) {
+        console.error(error);
+        res.status(401).json({ message: "Invalid refresh token" });
+    }
+});
+
+module.exports = router;
