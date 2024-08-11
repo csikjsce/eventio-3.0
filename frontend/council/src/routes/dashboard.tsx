@@ -1,8 +1,8 @@
 import React from 'react';
 import Namaste from '../components/Namaste.tsx';
 import StatsBox from '../components/StatsBox.tsx';
-import Sidebar from '../components/Sidebar.tsx';
 import Search from '../components/Search.tsx';
+import CreateEvent from '../components/CreateEvent.tsx'
 
 export default function Dashboard() {
   return (
@@ -15,8 +15,9 @@ export default function Dashboard() {
           <StatsBox />
         </div>
 
-        <div className="flex-none flex flex-col">
+        <div className="flex flex-col w-full">
           <Search />
+          <CreateEvent />
         </div>
       </div>
     </div>
