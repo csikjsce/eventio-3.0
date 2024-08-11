@@ -49,7 +49,7 @@ export default function Sidebar() {
   ];
 
   return (
-    <div className="fixed top-0 left-0 h-full w-[250px] bg-[#f3f3f3] rounded-3xl px-[35px] py-[55px]">
+    <div className="h-[96vh] w-64 bg-[#f3f3f3] rounded-3xl px-9 py-14 my-auto">
       <nav className="flex h-full flex-col justify-between">
         <div>
           <header className="flex justify-between gap-3.5 whitespace-nowrap">
@@ -78,7 +78,7 @@ export default function Sidebar() {
             ))}
           </div>
         </div>
-        <footer className="flex items-center gap-4 text-gray-600 pb-[45px]">
+        <footer className="flex items-center gap-4 text-gray-600 pb-12">
           <Logout size="26" variant="Bold" />
           <div className="font-poppins">Logout</div>
         </footer>

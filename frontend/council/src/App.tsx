@@ -1,6 +1,6 @@
 import React from 'react';
-import './App.css';
-import Sidebar from './components/sidebar.tsx';
+
+import Sidebar from './components/Sidebar.tsx';
 import Dashboard from './routes/dashboard.tsx';
 import Events from './routes/events.tsx';
 import Calendar from './routes/calendar.tsx';
@@ -12,13 +12,17 @@ export default function App() {
 
   return (
     <Router>
-      <Sidebar />
-      <Routes>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/events" element={<Events />} />
-        <Route path="/calendar" element={<Calendar />} />
-        <Route path="/stats" element={<Statistics />} />
-      </Routes>
+      <div className='w-screen p-4 flex flex-row gap-4'>
+        <Sidebar />
+        <div className=''>
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/events" element={<Events />} />
+            <Route path="/calendar" element={<Calendar />} />
+            <Route path="/stats" element={<Statistics />} />
+          </Routes>
+        </div>
+      </div>
     </Router>
   );
 }
