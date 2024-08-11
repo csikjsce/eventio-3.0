@@ -5,13 +5,13 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
   previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 enum EVENT_TYPE {
@@ -55,12 +55,13 @@ model Events {
   created_at                 DateTime          @default(now())
   fee                        Float             @default(0.0)
   event_type                 EVENT_TYPE
+  online_event_link          String?
   dates                      DateTime[]
   venue                      String
   organizer                  User              @relation(fields: [organizer_id], references: [id])
   organizer_id               Int
-  ma_ppt                     Int
-  min_ppt                    Int
+  ma_ppt                     Int               @default(1)
+  min_ppt                    Int               @default(1)
   tags                       String[]
   state                      STATE             @default(DRAFT)
   state_history              STATE[]
@@ -75,8 +76,8 @@ model Events {
   is_only_somaiya            Boolean           @default(true)
   attendance_type            ATTENDANCE_TYPE?
   registration_type          REGISTRATION_TYPE @default(ONPLATFORM)
-  external_registration_link String
-  is_ticket_feature_enabled  Boolean
+  external_registration_link String?
+  is_ticket_feature_enabled  Boolean           @default(true)
 
   Participant Participant[]
 }
@@ -109,22 +110,24 @@ enum ROLE {
 model User {
   id                 Int                @id @default(autoincrement())
   email              String             @unique
-  degree             String
-  brach              BRANCH
-  gender             GENDER
+  google_id          String             @unique
+  degree             String?
+  brach              BRANCH?
+  gender             GENDER?
   interests          String[]
   name               String
-  phone_number       Int
+  phone_number       Int?
   photo_url          String
-  roll_number        Int
-  year               Int
+  roll_number        Int?
+  year               Int?
   role               ROLE               @default(USER)
-  about              String
-  college            String
+  about              String?
+  college            String?
   is_somaiya_student Boolean
   council_type       String?
   created_at         DateTime           @default(now())
   updated_at         DateTime           @updatedAt
+  refresh_token      String?            @unique
   Events             Events[]
   Participant        Participant[]
   participant_users  Participant_user[]
