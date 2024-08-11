@@ -1,8 +1,9 @@
 import { NavLink } from "react-router-dom";
-import { Grid3, Gift, Calendar, Chart, Logout, Icon as IconType} from "iconsax-react";
+import { Grid3, Gift, Calendar, Logout, Icon as IconType } from "iconsax-react";
 import Eventio from "../assets/Eventio.svg";
+import PopoverCustomAnimation from '../components/PopoverButton.tsx';
 
-const MenuItem = ({ Icon, href, children } :
+const MenuItem = ({ Icon, href, children }:
   { Icon: IconType, href: string, children: string }
 ) => (
   <NavLink to={href} className="hover:cursor-pointer hover:drop-shadow-xl">
@@ -40,11 +41,6 @@ export default function Sidebar() {
       text: "Calendar",
       href: "/calendar",
     },
-    {
-      icon: Chart,
-      text: "Statistics",
-      href: "/stats",
-    },
   ];
 
   return (
@@ -75,6 +71,9 @@ export default function Sidebar() {
                 {item.text}
               </MenuItem>
             ))}
+            <div className="font-poppins flex items-center gap-4 whitespace-nowrap text-gray-600">
+              <PopoverCustomAnimation />
+            </div>
           </div>
         </div>
         <footer className="flex items-center gap-4 text-gray-600 pb-12">
