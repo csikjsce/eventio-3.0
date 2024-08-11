@@ -55,12 +55,13 @@ model Events {
   created_at                 DateTime          @default(now())
   fee                        Float             @default(0.0)
   event_type                 EVENT_TYPE
+  online_event_link          String?
   dates                      DateTime[]
   venue                      String
   organizer                  User              @relation(fields: [organizer_id], references: [id])
   organizer_id               Int
-  ma_ppt                     Int
-  min_ppt                    Int
+  ma_ppt                     Int               @default(1)
+  min_ppt                    Int               @default(1)
   tags                       String[]
   state                      STATE             @default(DRAFT)
   state_history              STATE[]
@@ -75,8 +76,8 @@ model Events {
   is_only_somaiya            Boolean           @default(true)
   attendance_type            ATTENDANCE_TYPE?
   registration_type          REGISTRATION_TYPE @default(ONPLATFORM)
-  external_registration_link String
-  is_ticket_feature_enabled  Boolean
+  external_registration_link String?
+  is_ticket_feature_enabled  Boolean           @default(true)
 
   Participant Participant[]
 }

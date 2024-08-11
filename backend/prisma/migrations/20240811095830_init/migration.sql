@@ -32,11 +32,12 @@ CREATE TABLE "Events" (
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "fee" DOUBLE PRECISION NOT NULL DEFAULT 0.0,
     "event_type" "EVENT_TYPE" NOT NULL,
+    "online_event_link" TEXT,
     "dates" TIMESTAMP(3)[],
     "venue" TEXT NOT NULL,
     "organizer_id" INTEGER NOT NULL,
-    "ma_ppt" INTEGER NOT NULL,
-    "min_ppt" INTEGER NOT NULL,
+    "ma_ppt" INTEGER NOT NULL DEFAULT 1,
+    "min_ppt" INTEGER NOT NULL DEFAULT 1,
     "tags" TEXT[],
     "state" "STATE" NOT NULL DEFAULT 'DRAFT',
     "state_history" "STATE"[],
@@ -49,8 +50,8 @@ CREATE TABLE "Events" (
     "is_only_somaiya" BOOLEAN NOT NULL DEFAULT true,
     "attendance_type" "ATTENDANCE_TYPE",
     "registration_type" "REGISTRATION_TYPE" NOT NULL DEFAULT 'ONPLATFORM',
-    "external_registration_link" TEXT NOT NULL,
-    "is_ticket_feature_enabled" BOOLEAN NOT NULL,
+    "external_registration_link" TEXT,
+    "is_ticket_feature_enabled" BOOLEAN NOT NULL DEFAULT true,
 
     CONSTRAINT "Events_pkey" PRIMARY KEY ("id")
 );
