@@ -22,12 +22,12 @@ router.get(
         const accessToken = jwt.sign(
             { user_id: user.id },
             process.env.JWT_SECRET,
-            { expiresIn: "5m" }
+            { expiresIn: process.env.AT_EXPIRATION }
         );
         const refreshToken = jwt.sign(
             { user_id: user.id },
             process.env.JWT_SECRET,
-            { expiresIn: "7d" }
+            { expiresIn: process.env.RT_EXPIRATION }
         );
 
         prisma.user
@@ -70,7 +70,7 @@ router.post("/refresh-token", async (req, res) => {
         const accessToken = jwt.sign(
             { user_id: user.id },
             process.env.JWT_SECRET,
-            { expiresIn: "5m" }
+            { expiresIn: process.env.AT_EXPIRATION }
         );
         res.json({ accessToken });
     } catch (error) {
