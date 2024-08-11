@@ -63,7 +63,7 @@ export default function Sidebar() {
               <h1 className="text-red font-marcellus text-center text-3xl">
                 Eventio
               </h1>
-              <h2 className="text-md font-fira italic">By CSI-KJSCE</h2>
+              <h2 className="text-md text-center font-fira italic">By CSI-KJSCE</h2>
             </div>
           </header>
           <div className="my-10 flex flex-col gap-10">
