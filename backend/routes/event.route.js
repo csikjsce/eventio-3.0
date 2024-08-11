@@ -36,7 +36,7 @@ router.post(protected + "/get", authCheck, async (req, res) => {
         }
     }
 });
-router.post(protected + "/get:id", authCheck, async (req, res) => {
+router.post(protected + "/get/:id", authCheck, async (req, res) => {
     if (!req.user) {
         return res.status(401).json({ error: true, message: "Unauthorized" });
     }
@@ -62,14 +62,81 @@ router.post(protected + "/get:id", authCheck, async (req, res) => {
             registration_type: event.registration_type,
             external_registration_link: event.external_registration_link,
             is_ticket_feature_enabled: event.is_ticket_feature_enabled,
-        }
+        };
         res.json({ error: false, event: eventResponse });
     } catch (err) {
         logger.error(err);
         return res.status(500).json({ error: true, message: "error fetching" });
     }
 });
-router.post(protected + "/create", authCheck, (req, res) => {});
+router.post(protected + "/create", authCheck, (req, res) => {
+    if (!req.user) {
+        return res.status(401).json({ error: true, message: "Unauthorized" });
+    }
+    if (req.user.role != "COUNCIL") {
+        return res.status(403).json({ error: true, message: "Forbidden" });
+    }
+    let {
+        name,
+        title,
+        tag_line,
+        description,
+        long_description,
+        event_type,
+        is_only_somaiya,
+        fee,
+        tags,
+        banner_url,
+        logo_image__url,
+        event_page_image_url,
+        is_feedback_enabled,
+        attendance_type,
+        registration_type,
+        external_registration_link,
+        is_ticket_feature_enabled,
+        venue,
+        dates
+    } = req.body;
+    prisma.events
+        .create({
+            data: {
+                name,
+                title,
+                tag_line,
+                event_type,
+                description,
+                long_description,
+                is_only_somaiya,
+                venue,
+                fee,
+                tags,
+                banner_url,
+                logo_image__url,
+                event_page_image_url,
+                is_feedback_enabled,
+                attendance_type,
+                registration_type,
+                external_registration_link,
+                is_ticket_feature_enabled,
+                organizer_id: req.user.id,
+                dates
+            },
+        })
+        .then((event) => {
+            res.json({
+                error: false,
+                message: "Event created successfully",
+                event,
+            });
+        })
+        .catch((err) => {
+            logger.error(err);
+            res.status(500).json({
+                error: true,
+                message: "Error creating event",
+            });
+        });
+});
 router.post(protected + "/search", authCheck, (req, res) => {});
 router.post(protected + "/get-children/:id", authCheck, (req, res) => {});
 router.post(protected + "/get-calendar", authCheck, (req, res) => {});
