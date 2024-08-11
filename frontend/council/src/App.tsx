@@ -14,7 +14,7 @@ export default function App() {
     <Router>
       <div className='w-screen p-4 flex flex-row gap-4'>
         <Sidebar />
-        <div className=''>
+        <div>
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/events" element={<Events />} />

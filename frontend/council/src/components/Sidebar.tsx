@@ -1,4 +1,3 @@
-
 import { NavLink } from "react-router-dom";
 import { Grid3, Gift, Calendar, Chart, Logout, Icon as IconType} from "iconsax-react";
 import Eventio from "../assets/Eventio.svg";
@@ -49,7 +48,7 @@ export default function Sidebar() {
   ];
 
   return (
-    <div className="h-[96vh] w-64 bg-[#f3f3f3] rounded-3xl px-9 py-14 my-auto">
+    <div className="h-[96vh] w-64 bg-[#f3f3f3] rounded-2xl px-9 py-14 my-auto">
       <nav className="flex h-full flex-col justify-between">
         <div>
           <header className="flex justify-between gap-3.5 whitespace-nowrap">
