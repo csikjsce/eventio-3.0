@@ -1,29 +1,30 @@
 
-import { Link, useLocation } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import { Grid3, Gift, Calendar, Chart, Logout, Icon as IconType} from "iconsax-react";
 import Eventio from "../assets/Eventio.svg";
 
-const MenuItem = ({ Icon, href, children, isSelected } :
-  { Icon: IconType, href: string, children: string, isSelected: boolean }
+const MenuItem = ({ Icon, href, children } :
+  { Icon: IconType, href: string, children: string }
 ) => (
-  <Link to={href} className="hover:cursor-pointer hover:drop-shadow-xl">
-    <div
-      className={`font-poppins flex items-center gap-4 whitespace-nowrap ${
-        isSelected ? "text-[#b61f2d]" : "text-gray-600"
-      }`}
-    >
-      <Icon
-        size="26"
-        variant={isSelected ? "Bold" : "Linear"}
-        color={isSelected ? "#b61f2d" : "currentColor"}
-      />
-      <div className="flex-auto">{children}</div>
-    </div>
-  </Link>
+  <NavLink to={href} className="hover:cursor-pointer hover:drop-shadow-xl">
+    {({ isActive }) => (
+      <div
+        className={`font-poppins flex items-center gap-4 whitespace-nowrap ${
+          isActive ? "text-[#b61f2d]" : "text-gray-600"
+        }`}
+      >
+        <Icon
+          size="26"
+          variant={isActive ? "Bold" : "Linear"}
+          color={isActive ? "#b61f2d" : "currentColor"}
+        />
+        <div className="flex-auto">{children}</div>
+      </div>
+    )}
+  </NavLink>
 );
 
 export default function Sidebar() {
-  const location = useLocation();
   const menuItems = [
     {
       icon: Grid3,
@@ -71,7 +72,6 @@ export default function Sidebar() {
                 key={index}
                 Icon={item.icon}
                 href={item.href}
-                isSelected={location.pathname === item.href}
               >
                 {item.text}
               </MenuItem>
