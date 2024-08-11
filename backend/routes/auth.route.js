@@ -20,12 +20,12 @@ router.get(
         const user = req.user;
 
         const accessToken = jwt.sign(
-            { google_Id: user.id },
+            { user_id: user.id },
             process.env.JWT_SECRET,
             { expiresIn: "5m" }
         );
         const refreshToken = jwt.sign(
-            { google_Id: user.id },
+            { user_id: user.id },
             process.env.JWT_SECRET,
             { expiresIn: "7d" }
         );
@@ -58,17 +58,17 @@ router.post("/refresh-token", async (req, res) => {
     try {
         const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET);
         const user = await prisma.user.findUnique({
-            where: { id: decoded.userId },
+            where: { id: decoded.user_id },
         });
 
-        if (!user || user.refreshToken !== refreshToken) {
+        if (!user || user.refresh_token !== refreshToken) {
             return res
                 .status(401)
                 .json({ error: true, message: "Invalid refresh token" });
         }
 
         const accessToken = jwt.sign(
-            { userId: user.id },
+            { user_id: user.id },
             process.env.JWT_SECRET,
             { expiresIn: "5m" }
         );
