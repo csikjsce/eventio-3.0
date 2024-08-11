@@ -2,6 +2,7 @@ const express = require("express");
 const authCheck = require("../middleware/auth.middleware");
 const prisma = require("../utils/prisma_client");
 const logger = require("../utils/logger");
+const validateUpdateFields = require("../middleware/field-validator.middlware");
 const router = express.Router();
 
 let protected = "/p";
@@ -95,7 +96,7 @@ router.post(protected + "/create", authCheck, (req, res) => {
         external_registration_link,
         is_ticket_feature_enabled,
         venue,
-        dates
+        dates,
     } = req.body;
     prisma.events
         .create({
@@ -119,7 +120,7 @@ router.post(protected + "/create", authCheck, (req, res) => {
                 external_registration_link,
                 is_ticket_feature_enabled,
                 organizer_id: req.user.id,
-                dates
+                dates,
             },
         })
         .then((event) => {
@@ -137,7 +138,106 @@ router.post(protected + "/create", authCheck, (req, res) => {
             });
         });
 });
-router.post(protected + "/search", authCheck, (req, res) => {});
+router.post(
+    protected + "/update/:id",
+    authCheck,
+    validateUpdateFields,
+    async (req, res) => {
+        if (!req.user) {
+            return res
+                .status(401)
+                .json({ error: true, message: "Unauthorized" });
+        }
+        if (req.user.role != "COUNCIL") {
+            return res.status(403).json({ error: true, message: "Forbidden" });
+        }
+        try {
+            const event = await prisma.events.findUnique({
+                where: {
+                    id: parseInt(req.params.id),
+                },
+            });
+            if (event.organizer_id != req.user.id) {
+                return res
+                    .status(403)
+                    .json({ error: true, message: "Forbidden" });
+            }
+        } catch (err) {
+            console.error(err);
+            return res.status(404).json({
+                error: true,
+                message: "Event not found",
+            });
+        }
+
+        let field = req.body;
+        try {
+            await prisma.events.update({
+                where: {
+                    id: parseInt(req.params.id),
+                },
+                data: field,
+            });
+            res.json({
+                error: false,
+                message: "Event updated successfully",
+            });
+        } catch (err) {
+            logger.error(err);
+            return res.status(500).json({
+                error: true,
+                message: "Error updating event",
+            });
+        }
+    }
+);
+router.get(protected + "/search/", authCheck, async (req, res) => {
+    if (!req.user) {
+        return res.status(401).json({ error: true, message: "Unauthorized" });
+    }
+
+    let { q } = req.query;
+    if (q == null || q.length == 0) {
+        return res
+            .status(400)
+            .json({ error: true, message: "Invalid search query" });
+    }
+    try {
+        let events = await prisma.events.findMany({
+            where: {
+                OR: [
+                    { name: { contains: q } },
+                    { description: { contains: q } },
+                    { long_description: { contains: q } },
+                    { tags: { hasSome: [q] } },
+                ],
+            },
+            orderBy: {
+                created_at: "desc",
+            },
+            take: 10,
+            select: {
+                id: true,
+                name: true,
+                name: true,
+                organizer: {
+                    select: {
+                        id: true,
+                        name: true,
+                        photo_url: true,
+                    },
+                },
+                tag_line: true,
+            },
+        });
+        res.json({ error: false, events });
+    } catch (er) {
+        console.error(er);
+        return res
+            .status(500)
+            .json({ error: true, message: "Internal Server Error" });
+    }
+});
 router.post(protected + "/get-children/:id", authCheck, (req, res) => {});
 router.post(protected + "/get-calendar", authCheck, (req, res) => {});
 router.post(protected + "/register-for-event", authCheck, (req, res) => {});
