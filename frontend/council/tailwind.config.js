@@ -12,7 +12,7 @@ module.exports = withMT({
     extend: {
       fontFamily: {
         marcellus: "Marcellus",
-        fira: "Fira Sans",
+        fira: ["Fira Sans", "sans-serif"],
         poppins: "Poppins",
       }
     },
