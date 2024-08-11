@@ -1,7 +1,5 @@
 import React from 'react';
 
 export default function Calendar() {
-  return(
-    <p>calendar</p>
-  )
+  return <p>calendar</p>;
 }

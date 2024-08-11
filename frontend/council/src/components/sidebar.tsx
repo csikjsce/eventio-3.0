@@ -1,22 +1,34 @@
+import { NavLink } from 'react-router-dom';
+import {
+  Grid3,
+  Gift,
+  Calendar,
+  Chart,
+  Logout,
+  Icon as IconType,
+} from 'iconsax-react';
+import Eventio from '../assets/Eventio.svg';
 
-import { NavLink } from "react-router-dom";
-import { Grid3, Gift, Calendar, Chart, Logout, Icon as IconType} from "iconsax-react";
-import Eventio from "../assets/Eventio.svg";
-
-const MenuItem = ({ Icon, href, children } :
-  { Icon: IconType, href: string, children: string }
-) => (
+const MenuItem = ({
+  Icon,
+  href,
+  children,
+}: {
+  Icon: IconType;
+  href: string;
+  children: string;
+}) => (
   <NavLink to={href} className="hover:cursor-pointer hover:drop-shadow-xl">
     {({ isActive }) => (
       <div
         className={`font-poppins flex items-center gap-4 whitespace-nowrap ${
-          isActive ? "text-[#b61f2d]" : "text-gray-600"
+          isActive ? 'text-[#b61f2d]' : 'text-gray-600'
         }`}
       >
         <Icon
           size="26"
-          variant={isActive ? "Bold" : "Linear"}
-          color={isActive ? "#b61f2d" : "currentColor"}
+          variant={isActive ? 'Bold' : 'Linear'}
+          color={isActive ? '#b61f2d' : 'currentColor'}
         />
         <div className="flex-auto">{children}</div>
       </div>
@@ -28,28 +40,28 @@ export default function Sidebar() {
   const menuItems = [
     {
       icon: Grid3,
-      text: "Dashboard",
-      href: "/",
+      text: 'Dashboard',
+      href: '/',
     },
     {
       icon: Gift,
-      text: "Events",
-      href: "/events",
+      text: 'Events',
+      href: '/events',
     },
     {
       icon: Calendar,
-      text: "Calendar",
-      href: "/calendar",
+      text: 'Calendar',
+      href: '/calendar',
     },
     {
       icon: Chart,
-      text: "Statistics",
-      href: "/stats",
+      text: 'Statistics',
+      href: '/stats',
     },
   ];
 
   return (
-    <div className="h-[96vh] w-64 bg-[#f3f3f3] rounded-3xl px-9 py-14 my-auto">
+    <div className="h-[96vh] w-64 bg-[#f3f3f3] rounded-lg px-9 py-14">
       <nav className="flex h-full flex-col justify-between">
         <div>
           <header className="flex justify-between gap-3.5 whitespace-nowrap">
@@ -63,16 +75,14 @@ export default function Sidebar() {
               <h1 className="text-red font-marcellus text-center text-3xl">
                 Eventio
               </h1>
-              <h2 className="text-md text-center font-fira italic">By CSI-KJSCE</h2>
+              <h2 className="text-md text-center font-fira italic">
+                By CSI-KJSCE
+              </h2>
             </div>
           </header>
           <div className="my-10 flex flex-col gap-10">
             {menuItems.map((item, index) => (
-              <MenuItem
-                key={index}
-                Icon={item.icon}
-                href={item.href}
-              >
+              <MenuItem key={index} Icon={item.icon} href={item.href}>
                 {item.text}
               </MenuItem>
             ))}
