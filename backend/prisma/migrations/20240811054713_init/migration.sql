@@ -59,22 +59,24 @@ CREATE TABLE "Events" (
 CREATE TABLE "User" (
     "id" SERIAL NOT NULL,
     "email" TEXT NOT NULL,
-    "degree" TEXT NOT NULL,
-    "brach" "BRANCH" NOT NULL,
-    "gender" "GENDER" NOT NULL,
+    "google_id" TEXT NOT NULL,
+    "degree" TEXT,
+    "brach" "BRANCH",
+    "gender" "GENDER",
     "interests" TEXT[],
     "name" TEXT NOT NULL,
-    "phone_number" INTEGER NOT NULL,
+    "phone_number" INTEGER,
     "photo_url" TEXT NOT NULL,
-    "roll_number" INTEGER NOT NULL,
-    "year" INTEGER NOT NULL,
+    "roll_number" INTEGER,
+    "year" INTEGER,
     "role" "ROLE" NOT NULL DEFAULT 'USER',
-    "about" TEXT NOT NULL,
-    "college" TEXT NOT NULL,
+    "about" TEXT,
+    "college" TEXT,
     "is_somaiya_student" BOOLEAN NOT NULL,
-    "council_type" TEXT NOT NULL,
+    "council_type" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
+    "refresh_token" TEXT,
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
 );
@@ -113,6 +115,12 @@ CREATE TABLE "Participant_user" (
 
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_google_id_key" ON "User"("google_id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_refresh_token_key" ON "User"("refresh_token");
 
 -- AddForeignKey
 ALTER TABLE "Events" ADD CONSTRAINT "Events_organizer_id_fkey" FOREIGN KEY ("organizer_id") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

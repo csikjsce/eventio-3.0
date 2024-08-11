@@ -2,11 +2,11 @@ const express = require("express");
 const jwt = require("jsonwebtoken");
 const router = express.Router();
 const passport = require("passport");
+const prisma = require("../utils/prisma_client");
 
-router.post("/google", (req, res, next) => {
+router.get("/google", (req, res, next) => {
     passport.authenticate("google", {
         scope: ["profile", "email"],
-        session: false,
     })(req, res, next);
 });
 
@@ -14,30 +14,29 @@ router.get(
     "/google/callback",
     passport.authenticate("google", {
         failureRedirect: "/login",
-        session: false,
     }),
     async (req, res) => {
-        const profile = req.user;
-        console.log(profile);
         const user = req.user;
 
         const accessToken = jwt.sign(
-            { userId: user.id },
+            { google_Id: user.id },
             process.env.JWT_SECRET,
             { expiresIn: "5m" }
         );
         const refreshToken = jwt.sign(
-            { userId: user.id },
+            { google_Id: user.id },
             process.env.JWT_SECRET,
             { expiresIn: "7d" }
         );
 
         await prisma.user.update({
-            where: { id: user.id },
-            data: { refreshToken },
+            where: { google_id: user.id },
+            data: { refresh_token: refreshToken },
         });
 
-        res.json({ accessToken, refreshToken });
+        res.redirect(
+            `http://localhost:5173?accessToken=${accessToken}&refreshToken=${refreshToken}`
+        );
     }
 );
 

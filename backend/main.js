@@ -7,6 +7,7 @@ const logger = require("./utils/logger");
 const passport = require("passport");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const prisma = require("./utils/prisma_client");
+const session = require("express-session");
 
 const userRoute = require("./routes/user.route");
 const authRoute = require("./routes/auth.route");
@@ -24,23 +25,28 @@ passport.use(
         async (accessToken, refreshToken, profile, done) => {
             try {
                 let user = await prisma.user.findUnique({
-                    where: { googleId: profile.id },
+                    where: { google_id: profile.id },
                 });
-
-                if (!user) {
-                    user = await prisma.user.create({
+                return done(null, profile);
+            } catch (e) {
+                let email = profile.emails[0].value;
+                is_somaiya_student = email.split("@")[2] == "somaiya.edu";
+                try {
+                    let user = await prisma.user.create({
                         data: {
-                            googleId: profile.id,
-                            email: profile.emails[0].value,
+                            google_id: profile.id,
+                            email: email,
                             name: profile.displayName,
-                            photo_url: profile.picture
+                            photo_url: profile.photos[0].value,
+                            is_somaiya_student: is_somaiya_student,
                         },
                     });
-                }
 
-                return done(null, profile);
-            } catch (error) {
-                return done(error, null);
+                    return done(null, profile);
+                } catch (err) {
+                    console.log(err);
+                    return done(err, null);
+                }
             }
         }
     )
@@ -50,8 +56,8 @@ passport.serializeUser((user, done) => {
 });
 passport.deserializeUser(async (user, done) => {
     try {
-        const user = await prisma.user.findUnique({
-            where: { id },
+        const p = await prisma.user.findUnique({
+            where: { google_id: user.id },
         });
         done(null, user);
     } catch (error) {
@@ -61,13 +67,16 @@ passport.deserializeUser(async (user, done) => {
 
 //middlewares
 app.use(passport.initialize());
+app.use(
+    session({ secret: "secretkey", resave: false, saveUninitialized: true })
+);
+app.use(passport.session());
 app.use(httpLogger);
 app.use(express.json());
 app.use(
     cors({
         origin: "*",
         credentials: true,
-        optionsSuccessStatus: 200,
     })
 );
 

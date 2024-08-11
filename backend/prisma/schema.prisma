@@ -110,18 +110,18 @@ model User {
   id                 Int                @id @default(autoincrement())
   email              String             @unique
   google_id          String             @unique
-  degree             String
-  brach              BRANCH
-  gender             GENDER
+  degree             String?
+  brach              BRANCH?
+  gender             GENDER?
   interests          String[]
   name               String
   phone_number       Int?
   photo_url          String
-  roll_number        Int
-  year               Int
+  roll_number        Int?
+  year               Int?
   role               ROLE               @default(USER)
-  about              String
-  college            String
+  about              String?
+  college            String?
   is_somaiya_student Boolean
   council_type       String?
   created_at         DateTime           @default(now())
