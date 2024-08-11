@@ -12,7 +12,7 @@ export default function App() {
 
   return (
     <Router>
-      <div className='w-screen p-4 flex flex-row gap-4'>
+      <div className='w-screen p-4 flex flex-row gap-4 border-4 border-red-500'>
         <Sidebar />
         <div>
           <Routes>
