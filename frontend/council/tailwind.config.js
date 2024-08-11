@@ -9,7 +9,13 @@ module.exports = withMT({
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      fontFamily: {
+        marcellus: "Marcellus",
+        fira: "Fira Sans",
+        poppins: "Poppins",
+      }
+    },
   },
   plugins: [],
 });
