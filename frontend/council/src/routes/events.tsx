@@ -1,5 +1,6 @@
 import EventCard from '../components/Events/EventCard';
 import Divider from '../components/Events/Divider';
+import { Link } from 'react-router-dom';
 
 import image1 from '../assets/demoImages/image1.png';
 import image2 from '../assets/demoImages/image2.png';
@@ -38,9 +39,12 @@ export default function Events() {
           <h1 className="text-4xl font-bold font-fira">Events</h1>
           <p className="text-gray-500 font-fira">Your events</p>
         </div>
-        <button className="ml-auto max-h-16 bg-red-500 text-white rounded-lg px-4 py-2 font-fira">
-          Create Event
-        </button>
+        <Link
+          to="/addevent"
+          className="ml-auto max-h-16 bg-red-500 text-white rounded-lg px-4 py-2 font-fira"
+        >
+          New Event
+        </Link>
       </div>
       <EventList />
     </div>

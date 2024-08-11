@@ -1,8 +1,9 @@
 import React from 'react';
 
-import Sidebar from './components/Sidebar.tsx';
+import Sidebar from './components/sidebar.tsx';
 import Dashboard from './routes/dashboard.tsx';
 import Events from './routes/events.tsx';
+import NewEvent from './routes/newEvent.tsx';
 import Calendar from './routes/calendar.tsx';
 import Statistics from './routes/statistics.tsx';
 
@@ -17,6 +18,7 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/events" element={<Events />} />
+            <Route path="/addEvent" element={<NewEvent />} />
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/stats" element={<Statistics />} />
           </Routes>
