@@ -3,6 +3,7 @@ const jwt = require("jsonwebtoken");
 const router = express.Router();
 const passport = require("passport");
 const prisma = require("../utils/prisma_client");
+const logger = require("../utils/logger");
 
 router.get("/google", (req, res, next) => {
     passport.authenticate("google", {
@@ -13,7 +14,7 @@ router.get("/google", (req, res, next) => {
 router.get(
     "/google/callback",
     passport.authenticate("google", {
-        failureRedirect: "/login",
+        failureRedirect: `${process.env.CLIENT_URL}?failure=${400}`,
     }),
     async (req, res) => {
         const user = req.user;
@@ -29,13 +30,18 @@ router.get(
             { expiresIn: "7d" }
         );
 
-        await prisma.user.update({
-            where: { google_id: user.id },
-            data: { refresh_token: refreshToken },
-        });
+        prisma.user
+            .update({
+                where: { google_id: user.id },
+                data: { refresh_token: refreshToken },
+            })
+            .catch((e) => {
+                logger.error(e);
+                res.redirect(`${process.env.CLIENT_URL}?failure=${500}`);
+            });
 
         res.redirect(
-            `http://localhost:5173?accessToken=${accessToken}&refreshToken=${refreshToken}`
+            `${process.env.CLIENT_URL}?accessToken=${accessToken}&refreshToken=${refreshToken}`
         );
     }
 );
@@ -44,7 +50,9 @@ router.post("/refresh-token", async (req, res) => {
     const { refreshToken } = req.body;
 
     if (!refreshToken) {
-        return res.status(400).json({ message: "Refresh token is required" });
+        return res
+            .status(400)
+            .json({ error: true, message: "Refresh token is required" });
     }
 
     try {
@@ -54,7 +62,9 @@ router.post("/refresh-token", async (req, res) => {
         });
 
         if (!user || user.refreshToken !== refreshToken) {
-            return res.status(401).json({ message: "Invalid refresh token" });
+            return res
+                .status(401)
+                .json({ error: true, message: "Invalid refresh token" });
         }
 
         const accessToken = jwt.sign(
@@ -65,7 +75,7 @@ router.post("/refresh-token", async (req, res) => {
         res.json({ accessToken });
     } catch (error) {
         console.error(error);
-        res.status(401).json({ message: "Invalid refresh token" });
+        res.status(401).json({ error: true, message: "Invalid refresh token" });
     }
 });
 

@@ -27,6 +27,7 @@ passport.use(
                 let user = await prisma.user.findUnique({
                     where: { google_id: profile.id },
                 });
+                profile["user_id"] = user.id;
                 return done(null, profile);
             } catch (e) {
                 let email = profile.emails[0].value;
@@ -41,11 +42,14 @@ passport.use(
                             is_somaiya_student: is_somaiya_student,
                         },
                     });
-
+                    profile["user_id"] = user.id;
                     return done(null, profile);
                 } catch (err) {
-                    console.log(err);
-                    return done(err, null);
+                    logger.error(err);
+                    return done(
+                        new Error("error fetching/creating user"),
+                        null
+                    );
                 }
             }
         }
