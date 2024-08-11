@@ -1,9 +1,11 @@
-import React from "react";
+
 import { Link, useLocation } from "react-router-dom";
-import { Grid3, Gift, Calendar, Chart, Logout } from "iconsax-react";
+import { Grid3, Gift, Calendar, Chart, Logout, Icon as IconType} from "iconsax-react";
 import Eventio from "../assets/Eventio.svg";
 
-const MenuItem = ({ Icon, href, children, isSelected }) => (
+const MenuItem = ({ Icon, href, children, isSelected } :
+  { Icon: IconType, href: string, children: string, isSelected: boolean }
+) => (
   <Link to={href} className="hover:cursor-pointer hover:drop-shadow-xl">
     <div
       className={`font-poppins flex items-center gap-4 whitespace-nowrap ${
