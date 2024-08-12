@@ -19,127 +19,44 @@ const Navbar = () => {
     // let navigation = useNavigation();
     // let route = useRoute();
     return (
-        <div className="flex flex-row items-center justify-center">
-            <button
-                
-                style={{borderRadius: 15}}
-                className="flex-[0.25] h-full flex justify-center items-center py-5"
-                onClick={() => undefined}>
-                <div className="flex flex-row items-center justify-center mb-1">
-                    <Home2
-                        color={
-                            location.pathname === 'home' || location.pathname === 'ChildEvent'
-                                ? colors.primary
-                                : colors.gray[1]
-                        }
-                        variant={
-                            location.pathname === 'home' || location.pathname === 'ChildEvent'
-                                ? 'Bold'
-                                : 'Linear'
-                        }
-                        size={24}
-                    />
-                </div>
-                <div className="flex flex-row items-center justify-center">
-                    <p
-                        className={` text-xs ${
-                            location.pathname === 'home' || location.pathname === 'ChildEvent'
-                                ? 'text-primary'
-                                : 'text-gray-1'
-                        }`}>
-                        Home
-                    </p>
-                </div>
-            </button>
-            <button
-                // android_ripple={{
-                //     color: '#B61F2D20',
-                //     borderless: true,
-                //     radius: 50,
-                // }}
-                onClick={() => undefined}
-                className="flex-[0.25] h-full flex justify-center items-center py-5">
-                <div className="flex flex-row items-center justify-center mb-1">
-                    <Calendar
-                        color={
-                            location.pathname === 'calendarScreen'
-                                ? colors.primary
-                                : colors.gray[1]
-                        }
-                        variant={
-                            location.pathname === 'calendarScreen' ? 'Bold' : 'Linear'
-                        }
-                        size={24}
-                    />
-                </div>
-                <div className="flex flex-row items-center justify-center">
-                    <p
-                        className={` text-xs ${
-                            location.pathname === 'calendarScreen'
-                                ? 'text-primary'
-                                : 'text-gray-1'
-                        }`}>
-                        Calendar
-                    </p>
-                </div>
-            </button>
-            <button
-                
-                className="flex-[0.25] h-full flex justify-center items-center py-5"
-                onClick={() => undefined}>
-                <div className="flex flex-row items-center justify-center mb-1">
-                    <People
-                        color={
-                            location.pathname === 'council'
-                                ? colors.primary
-                                : colors.gray[1]
-                        }
-                        variant={location.pathname === 'council' ? 'Bold' : 'Linear'}
-                        size={24}
-                    />
-                </div>
-                <div className="flex flex-row items-center justify-center">
-                    <p
-                        className={` text-xs ${
-                            location.pathname === 'council'
-                                ? 'text-primary'
-                                : 'text-gray-1'
-                        }`}>
-                        Councils
-                    </p>
-                </div>
-            </button>
-            <button
-                // android_ripple={{
-                //     color: '#B61F2D20',
-                //     borderless: true,
-                //     radius: 50,
-                // }}
-                className="flex-[0.25] h-full flex justify-center items-center py-5"
-                onClick={undefined  }>
-                <div className="flex flex-row items-center justify-center mb-1">
-                    <ProfileCircle
-                        color={
-                            location.pathname === 'profile'
-                                ? colors.primary
-                                : colors.gray[1]
-                        }
-                        variant={location.pathname === 'profile' ? 'Bold' : 'Linear'}
-                        size={24}
-                    />
-                </div>
-                <div className="flex flex-row items-center justify-center">
-                    <p
-                        className={` text-xs ${
-                            location.pathname === 'profile'
-                                ? 'text-primary'
-                                : 'text-gray-1'
-                        }`}>
-                        Profile
-                    </p>
-                </div>
-            </button>
+    <div className="w-[428px] h-[107px] px-2.5 pt-[15px] pb-2.5 bg-white shadow backdrop-blur-[50px] flex-col justify-start items-center gap-[35px] inline-flex">
+        <div className="w-[345px] justify-between items-start inline-flex">
+        <div className="shadow flex-col justify-start items-center gap-[3px] inline-flex">
+        <div className="w-[26px] h-[26px] justify-center items-center inline-flex">
+            <div className="w-[26px] h-[26px] relative">
+            </div>
         </div>
+        <Home/>
+        <div className="text-center text-[#b61f2d] text-[10px] font-normal font-['Marcellus']">Home</div>
+        </div>
+        <div className="flex-col justify-start items-center gap-[3px] inline-flex">
+        <div className="w-[26px] h-[26px] justify-center items-center inline-flex">
+            <div className="w-[26px] h-[26px] relative">
+            </div>
+        </div>
+        <Calendar/>
+        <div className="text-center text-[#57585a] text-[10px] font-normal font-['Marcellus']">Calendar</div>
+        </div>
+        <div className="flex-col justify-start items-center gap-[3px] inline-flex">
+        <div className="w-[26px] h-[26px] relative">
+            <div className="w-[7.19px] h-[13.57px] left-[16.61px] top-[2.17px] absolute">
+            </div>
+            <div className="w-[7.19px] h-[13.57px] left-[2.17px] top-[2.17px] absolute">
+            </div>
+            <div className="w-[8.60px] h-[13.58px] left-[8.70px] top-[10.26px] absolute">
+            </div>
+        </div>
+        <People/>
+        <div className="text-center text-[#57585a] text-[10px] font-normal font-['Marcellus']">Councils</div>
+        </div>
+        <div className="flex-col justify-start items-center gap-[3px] inline-flex">
+        <div className="w-[26px] h-[26px] relative" />
+        <ProfileCircle/>
+        <div className="text-center text-[#57585a] text-[10px] font-normal font-['Marcellus']">My Profile</div>
+        </div>
+    </div>
+    
+    </div>
     );
 };
 

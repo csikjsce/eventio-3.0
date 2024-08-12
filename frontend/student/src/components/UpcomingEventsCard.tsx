@@ -1,142 +1,46 @@
-import {Calendar, Location} from 'iconsax-react';
-import React from 'react';
-import {colors} from '../colors';
-
-// import {Image} from 'react-native-paper/lib/typescript/components/Avatar/Avatar';
-
-interface UpcomingEventsCardProps {
-    eventPic: any;
-    councilImg: any;
-    eventName: string;
-    councilName: string;
-    eventDateAndTime: string;
-    eventVenue: string;
-    tags: string[];
-    eid: string;
-    isParent: boolean;
-}
-
-const UpcomingEventsCard: React.FC<UpcomingEventsCardProps> = props => {
-    
-    return (
-        <button
-            className="flex flex-row justify-center items-center h-36 w-full bg-card-light dark:bg-card-dark mb-2 py-5"
-            style={{borderRadius: 10}}
-            onClick={() => {
-                console.log("is parent:",props);
-                if (props.isParent) {
-                    //@ts-ignore
-                    navigation.navigate('ChildEvent', {
-                        event_id: props.eid,
-                        name: props.eventName,
-                    });
-                } else {
-                    console.log("pressed");
-                    //@ts-ignore
-                    navigation.navigate('EventDetails', {
-                        event_id: props.eid,
-                    });
-                }
-                
-               
-                
-            }}
-            >
-            <div className="flex-[0.32] h-full flex justify-center items-center">
-                <img
-                    src={props.eventPic}
-                    className="w-24 h-full"
-                    style={{
-                        borderRadius: 10,
-                        borderWidth: 1,
-                        borderColor: '#57585A',
-                    }}></img>
+import React from "react";
+import { Calendar } from "iconsax-react";
+import { Location } from "iconsax-react";
+import abhi from "../assets/abhi.png";
+export const UpcomingEventsCard = (): JSX.Element => {
+  return (
+    <div className="flex w-[380px] items-center gap-2.5 px-2.5 py-0 relative bg-constants-cardcolor rounded-lg overflow-hidden">
+      <div className="inline-flex items-start gap-2.5 px-0 py-2.5 relative flex-[0_0_auto]">
+        <img className="w-[114px] h-[114px] relative object-cover" alt="Image" src={abhi} />
+      </div>
+      <div className="flex flex-col items-start gap-2.5 relative flex-1 grow">
+        <div className="inline-flex items-center gap-[9px] relative flex-[0_0_auto]">
+          <img className="w-7 h-7 relative object-cover" alt="Image" src={abhi} />
+          <div className="inline-flex flex-col items-start gap-2.5 relative flex-[0_0_auto]">
+            <div className="inline-flex flex-col items-start relative flex-[0_0_auto]">
+              <div className="relative w-fit mt-[-1.00px] font-marcellus font-bold text-constants-foregroundcolor text-lg tracking-[0.20px] leading-[25.2px] whitespace-nowrap">
+                Naari ‘23 Celebration
+              </div>
+              
             </div>
-            <div className="flex items-start justify-between flex-[0.68] h-full">
-                <div className="flex flex-row gap-x-1.5 items-center justify-start w-[80%]">
-                    <img
-                        src={props.councilImg}
-                        className="h-7 w-7 rounded-full"
-                    />
-
-                    <div className="flex justify-center items-start ">
-                        <p style={styles.boldText}>{props.eventName}</p>
-                        <p
-                            style={styles.lightText}
-                            className="text-primary text-xs mt-[-5]">
-                            By {props.councilName}
-                        </p>
-                    </div>
-                </div>
-                <div className="flex flex-row  items-start justify-center gap-x-2.5">
-                    <div className="flex flex-row items-center">
-                        <Calendar
-                            color={colors.gray[1]}
-                            size={20}
-                            className="mr-1"
-                        />
-                        <p
-                            style={styles.lightText}
-                            className="text-xs text-gray">
-                            {props.eventDateAndTime}
-                        </p>
-                    </div>
-                    <div className="flex flex-row items-center">
-                        <Location
-                            color={colors.gray[1]}
-                            size={20}
-                            className="mr-1"
-                        />
-                        <p
-                            style={styles.lightText}
-                            className="text-xs  text-gray">
-                            {props.eventVenue}
-                        </p>
-                    </div>
-                </div>
-                <div className="flex flex-row gap-x-2">
-                    {props.tags.map((tag: string, index: number) => (
-                        <div
-                            key={index}
-                            className="bg-darkorange rounded-md border border-orange px-2.5">
-                            <p
-                                className="text-xs text-orange"
-                                style={styles.lightText}>
-                                {tag}
-                            </p>
-                        </div>
-                    ))}
-                </div>
+          </div>
+        </div>
+        <div className="inline-flex items-start gap-2.5 relative flex-[0_0_auto]">
+          <div className="inline-flex items-center gap-[5px] relative flex-[0_0_auto]">
+            <Calendar className="!relative !w-5 !h-5" />
+            <div className="relative w-fit [font-family:'Fira_Sans-Regular',Helvetica] font-normal text-constants-graytext text-xs tracking-[0] leading-[normal] whitespace-nowrap">
+              Oct 24th, 11:00 AM
             </div>
-        </button>
-    );
+          </div>
+          <div className="inline-flex items-center gap-[5px] relative flex-[0_0_auto]">
+            <Location className="!relative !w-5 !h-5" color="#57585A" />
+            <div className="relative w-fit [font-family:'Fira_Sans-Regular',Helvetica] font-normal text-constants-graytext text-xs tracking-[0] leading-[normal] whitespace-nowrap">
+              Auditorium
+            </div>
+          </div>
+        </div>
+        <div className="inline-flex h-5 items-center justify-center gap-2.5 p-2.5 relative bg-[#f582201a] rounded-md border border-solid border-constants-constants-orange shadow-[0px_2px_5px_#e91b1b26]">
+          <div className="relative w-fit mt-[-9.50px] mb-[-7.50px] [font-family:'Fira_Sans-Regular',Helvetica] font-normal text-constants-constants-orange text-xs tracking-[0.20px] leading-[16.8px] whitespace-nowrap">
+            Cultural &amp; Fun
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 };
-
-const styles: { [key: string]: React.CSSProperties } = {
-    container: {
-      flex: 1,
-      justifyContent: 'flex-start',
-      alignItems: 'flex-start',
-      margin: 20,
-    },
-    boldText: {
-      fontFamily: 'FiraSans-Bold',
-      fontSize: 18,
-      fontWeight: 'bold',
-    },
-    semiboldText: {
-      fontFamily: 'FiraSans-Medium',
-      fontSize: 20,
-      marginTop: 20,
-    },
-    lightText: {
-      fontFamily: 'FiraSans-SemiBold',
-    },
-    image: {
-      height: 100,
-      width: 'auto',
-      overflow: 'hidden',
-    },
-  };
-
 export default UpcomingEventsCard;
