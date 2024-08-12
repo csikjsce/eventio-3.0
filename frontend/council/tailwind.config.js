@@ -9,12 +9,9 @@ module.exports = withMT({
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
-    extend: {
-      fontFamily: {
-        marcellus: "Marcellus",
-        fira: "Fira Sans",
-        poppins: "Poppins",
-      }
+    extend: {},
+    fontFamily: {
+      sans: ["Open Sans", "sans-serif" , "fira-sans-regular"],
     },
   },
   plugins: [],
