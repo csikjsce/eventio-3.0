@@ -36,9 +36,7 @@ function GetStarted() {
           </button>
         </div>
         {showGoogleSignIn && (
-          <button
-            className="px-6 py-2 bg-white text-black font-semibold rounded-lg shadow-md border border-black focus:outline-none focus:ring-2 focus:ring-black focus:ring-opacity-75 transition mt-4"
-          >
+          <button className="px-6 py-2 bg-white text-black font-semibold rounded-lg shadow-md border border-black focus:outline-none focus:ring-2 focus:ring-black focus:ring-opacity-75 transition mt-4">
             Sign in with Google
           </button>
         )}
