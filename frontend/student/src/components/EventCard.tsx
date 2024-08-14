@@ -19,14 +19,14 @@ export default function EventCard({
   };
 }) {
   return (
-    <div className="flex h-32 flex-row gap-2 justify-around bg-card-light dark:bg-card-dark rounded-lg p-3">
+    <div className="flex h-40 flex-row gap-2 justify-around bg-card-light dark:bg-card-dark rounded-lg p-2"> { /* TODO: imporve sizing and styling */ }
       <img
         src={event.image}
         alt="event"
-        className="h-full aspect-square object-cover rounded-lg"
+        className="h-3/4 sm:h-full my-auto aspect-square object-cover rounded-lg"
       />
-      <div className="flex flex-col flex-1 max-w-96 gap-2 justify-start">
-        <div className="flex flex-row flex-1 gap-2 items-center">
+      <div className="flex flex-col flex-1 max-w-96 gap-1 justify-around">
+        <div className="flex flex-row gap-2 items-center">
           {/* council pic and event name */}
           <img
             src={event.councilImage}
@@ -34,7 +34,7 @@ export default function EventCard({
             className="w-8 h-8 aspect-square rounded-full object-cover border border-vitality-red"
           />
           <div className="flex flex-col flex-1 text-left">
-            <p className="font-fira font-medium text-lg text-foreground-light dark:text-foreground-dark">{event.name}</p>
+            <p className="font-fira font-medium text-md sm:text-lg text-foreground-light dark:text-foreground-dark">{event.name}</p>
             <p className="font-fira text-xs text-vitality-red">By {event.council}</p>
           </div>
         </div>
@@ -48,7 +48,7 @@ export default function EventCard({
             <p className="font-fira text-xs text-gray-1">{event.location}</p>
           </div>
         </div>
-        <div className="flex flex-row gap-2">
+        <div className="flex flex-row gap-2 px-2">
           {event.tags.map((tag) => (
             <span
               className={`font-fira font-semibold text-xs px-2 py-1 rounded-lg ${tagHighlights[tag]}`}
