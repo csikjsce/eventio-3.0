@@ -19,7 +19,7 @@ export default function EventCard({
   };
 }) {
   return (
-    <div className="flex h-32 flex-row gap-2 justify-around bg-gray-100 rounded-lg p-3">
+    <div className="flex h-32 flex-row gap-2 justify-around bg-card-light dark:bg-card-dark rounded-lg p-3">
       <img
         src={event.image}
         alt="event"
@@ -31,21 +31,21 @@ export default function EventCard({
           <img
             src={event.councilImage}
             alt="man1"
-            className="w-8 h-8 aspect-square rounded-full object-cover border border-red-500"
+            className="w-8 h-8 aspect-square rounded-full object-cover border border-vitality-red"
           />
           <div className="flex flex-col flex-1 text-left">
-            <p className="font-fira font-medium text-lg">{event.name}</p>
-            <p className="font-fira text-xs">By {event.council}</p>
+            <p className="font-fira font-medium text-lg text-foreground-light dark:text-foreground-dark">{event.name}</p>
+            <p className="font-fira text-xs text-vitality-red">By {event.council}</p>
           </div>
         </div>
         <div className="flex flex-row gap-2 justify-around">
           <div className="flex flex-row gap-1">
-            <Calendar color="#000" size="16" />
-            <p className="font-fira text-xs">{event.date.toDateString()}</p>
+            <Calendar color="#57585A" size="16" /> { /* TODO: use Tailwind theme */ }
+            <p className="font-fira text-xs text-gray-1">{event.date.toDateString()}</p>
           </div>
           <div className="flex flex-row gap-1">
-            <Location color="#000" size="16" />
-            <p className="font-fira text-xs">{event.location}</p>
+            <Location color="#57585A" size="16" /> { /* TODO: use Tailwind theme */ }
+            <p className="font-fira text-xs text-gray-1">{event.location}</p>
           </div>
         </div>
         <div className="flex flex-row gap-2">

@@ -38,7 +38,7 @@ export default function Home() {
         <Header />
         <SearchBar Icon={SearchNormal1} text="Search" />
         <div className="flex flex-col gap-4 z-10">
-          <p className="text-lg font-medium font-fira text-left">
+          <p className="text-lg font-medium font-fira text-left text-foreground-light dark:text-foreground-dark">
             Trending Events
           </p>
           <div className="overflow-x-auto">
@@ -47,7 +47,7 @@ export default function Home() {
           </div>
         </div>
         <div className="flex flex-col gap-4 z-10">
-          <p className="text-lg font-medium font-fira text-left">
+          <p className="text-lg font-medium font-fira text-left text-foreground-light dark:text-foreground-dark">
             Upcoming Events
           </p>
           <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3 overflow-x-auto mb-12">

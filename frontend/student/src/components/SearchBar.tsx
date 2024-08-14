@@ -9,7 +9,7 @@ export default function SearchBar({
   text: string;
 }) {
   return (
-    <div className="flex flex-row gap-4 px-4 py-1 rounded-xl items-center outline outline-gray-300 focus-within:outline-blue-500">
+    <div className="flex flex-row gap-4 px-4 py-1 rounded-xl items-center outline outline-1 outline-gray-1 focus-within:outline-blue-500">
       <Icon />
       <Input
         variant="standard"
