@@ -53,7 +53,7 @@ const indexRoutes = [
   {
     path: '/my-events',
     name: 'My Events',
-    component: <h1>My Events</h1>,
+    component:<MyEvents/>,
   },
   {
     path: '/child-events/:parentId',
@@ -64,11 +64,6 @@ const indexRoutes = [
     path: '/search-events',
     name: 'Search Events',
     component: <h1>Search Events</h1>,
-  },
-  {
-    path :'/myevents',
-    name:"My Events",
-    component:<MyEvents/>
   }
 ];
 
