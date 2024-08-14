@@ -32,11 +32,12 @@ CREATE TABLE "Events" (
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "fee" DOUBLE PRECISION NOT NULL DEFAULT 0.0,
     "event_type" "EVENT_TYPE" NOT NULL,
+    "online_event_link" TEXT,
     "dates" TIMESTAMP(3)[],
     "venue" TEXT NOT NULL,
     "organizer_id" INTEGER NOT NULL,
-    "ma_ppt" INTEGER NOT NULL,
-    "min_ppt" INTEGER NOT NULL,
+    "ma_ppt" INTEGER NOT NULL DEFAULT 1,
+    "min_ppt" INTEGER NOT NULL DEFAULT 1,
     "tags" TEXT[],
     "state" "STATE" NOT NULL DEFAULT 'DRAFT',
     "state_history" "STATE"[],
@@ -49,8 +50,8 @@ CREATE TABLE "Events" (
     "is_only_somaiya" BOOLEAN NOT NULL DEFAULT true,
     "attendance_type" "ATTENDANCE_TYPE",
     "registration_type" "REGISTRATION_TYPE" NOT NULL DEFAULT 'ONPLATFORM',
-    "external_registration_link" TEXT NOT NULL,
-    "is_ticket_feature_enabled" BOOLEAN NOT NULL,
+    "external_registration_link" TEXT,
+    "is_ticket_feature_enabled" BOOLEAN NOT NULL DEFAULT true,
 
     CONSTRAINT "Events_pkey" PRIMARY KEY ("id")
 );
@@ -59,22 +60,24 @@ CREATE TABLE "Events" (
 CREATE TABLE "User" (
     "id" SERIAL NOT NULL,
     "email" TEXT NOT NULL,
-    "degree" TEXT NOT NULL,
-    "brach" "BRANCH" NOT NULL,
-    "gender" "GENDER" NOT NULL,
+    "google_id" TEXT NOT NULL,
+    "degree" TEXT,
+    "brach" "BRANCH",
+    "gender" "GENDER",
     "interests" TEXT[],
     "name" TEXT NOT NULL,
-    "phone_number" INTEGER NOT NULL,
+    "phone_number" INTEGER,
     "photo_url" TEXT NOT NULL,
-    "roll_number" INTEGER NOT NULL,
-    "year" INTEGER NOT NULL,
+    "roll_number" INTEGER,
+    "year" INTEGER,
     "role" "ROLE" NOT NULL DEFAULT 'USER',
-    "about" TEXT NOT NULL,
-    "college" TEXT NOT NULL,
+    "about" TEXT,
+    "college" TEXT,
     "is_somaiya_student" BOOLEAN NOT NULL,
-    "council_type" TEXT NOT NULL,
+    "council_type" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
+    "refresh_token" TEXT,
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
 );
@@ -113,6 +116,12 @@ CREATE TABLE "Participant_user" (
 
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_google_id_key" ON "User"("google_id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_refresh_token_key" ON "User"("refresh_token");
 
 -- AddForeignKey
 ALTER TABLE "Events" ADD CONSTRAINT "Events_organizer_id_fkey" FOREIGN KEY ("organizer_id") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
