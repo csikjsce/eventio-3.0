@@ -1,3 +1,6 @@
+import Onboarding from '../screens/getStarted/Onboarding.tsx';
+
+
 const indexRoutes = [
   {
     path: '/',
@@ -7,7 +10,7 @@ const indexRoutes = [
   {
     path: '/onboarding',
     name: 'Onboarding',
-    component: <h1>Onboarding</h1>,
+    component: <Onboarding />,
   },
   {
     path: '/event-details/:id',

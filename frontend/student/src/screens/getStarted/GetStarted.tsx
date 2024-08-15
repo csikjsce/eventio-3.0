@@ -1,7 +1,11 @@
 import { useState } from 'react';
 import Quote from '../../components/Quote';
 
-function GetStarted() {
+interface GetStartedProps {
+  continueWithGoogle: () => void;
+}
+
+function GetStarted({ continueWithGoogle }: GetStartedProps) {
   const [buttonClicked, setButtonClicked] = useState<'yes' | 'no' | null>(null);
   const [showGoogleSignIn, setShowGoogleSignIn] = useState(false);
 
@@ -40,7 +44,10 @@ function GetStarted() {
             </button>
           </div>
           {showGoogleSignIn && (
-            <button className="px-6 py-2 bg-white text-black font-semibold rounded-lg shadow-md border border-black focus:outline-none focus:ring-2 focus:ring-black focus:ring-opacity-75 transition mt-4">
+            <button
+              onClick={continueWithGoogle}
+              className="px-6 py-2 bg-white text-black font-semibold rounded-lg shadow-md border border-black focus:outline-none focus:ring-2 focus:ring-black focus:ring-opacity-75 transition mt-4"
+            >
               Sign in with Google
             </button>
           )}

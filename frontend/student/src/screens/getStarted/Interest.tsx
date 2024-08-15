@@ -2,10 +2,10 @@ import { useState } from 'react';
 import Quote from '../../components/Quote';
 
 interface InterestProps {
-  data: string[];
+  nextStep: () => void;
 }
 
-const Interest: React.FC<InterestProps> = () => {
+const Interest: React.FC<InterestProps> = ({ nextStep }) => {
   const data: string[] = [
     'Computer Science',
     'Cybersecurity',
@@ -37,7 +37,6 @@ const Interest: React.FC<InterestProps> = () => {
   ];
 
   const [interests, setInterests] = useState<string[]>([]);
-  const [visible, setVisible] = useState<boolean>(false);
   const [showAll, setShowAll] = useState<boolean>(false);
 
   const handleTagPress = (title: string) => {
@@ -50,6 +49,14 @@ const Interest: React.FC<InterestProps> = () => {
 
   const handleMorePress = () => {
     setShowAll((prevShowAll) => !prevShowAll);
+  };
+
+  const handleContinue = () => {
+    if (interests.length > 0) {
+      nextStep(); 
+    } else {
+      alert("Please select at least five interest to continue.");
+    }
   };
 
   const itemsToShow = showAll ? data : data.slice(0, 12);
@@ -88,19 +95,12 @@ const Interest: React.FC<InterestProps> = () => {
               <div className="flex flex-row justify-between items-center px-4 py-2">
                 <div className="flex items-center text-gray-500">Back</div>
                 <button
-                  className={`w-90% sm:w-48 md:w-56 lg:w-64 px-4 py-2 rounded-full border-2 border-red-200 font-poppins`}
+                  className={`w-90% sm:w-48 md:w-56 lg:w-64 px-4 py-2 rounded-full border-2 border-red-200 font-poppins text-red-700`}
+                  onClick={handleContinue}
                 >
-                  <h1 className="text-red">Continue &#8594;</h1>
+                  Continue &#8594;
                 </button>
               </div>
-              {visible && (
-                <div className="fixed bottom-0 left-0 right-0 p-4 bg-red-700 text-white">
-                  <span>Please enter all the details</span>
-                  <button className="ml-4" onClick={() => setVisible(false)}>
-                    Undo
-                  </button>
-                </div>
-              )}
             </div>
           </div>
         </div>
