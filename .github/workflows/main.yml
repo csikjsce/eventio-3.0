@@ -1,0 +1,45 @@
+name: Lint and Format
+
+on: 
+  push:
+    paths:
+      - 'frontend/student/**'
+      - 'frontend/dean/**'
+      - 'frontend/council/**'
+  pull_request:
+    paths:
+      - 'frontend/student/**'
+      - 'frontend/dean/**'
+      - 'frontend/council/**'
+
+jobs:
+  lint-and-format:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        directory: 
+          - frontend/student
+          - frontend/dean
+          - frontend/council
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+        working-directory: ${{ matrix.directory }}
+
+      - name: Run ESLint
+        run: npm run lint
+        working-directory: ${{ matrix.directory }}
+
+      - name: Run Prettier
+        run: npm run format -- --check
+        working-directory: ${{ matrix.directory }}
