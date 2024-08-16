@@ -69,8 +69,8 @@ model Events {
   banner_url                 String
   logo_image__url            String
   event_page_image_url       String
-  parent                     Events?           @relation("EventToEvent", fields: [parentId], references: [id])
-  parentId                   Int?
+  parent                     Events?           @relation("EventToEvent", fields: [parent_id], references: [id])
+  parent_id                  Int?
   children                   Events[]          @relation("EventToEvent")
   is_feedback_enabled        Boolean           @default(false)
   is_only_somaiya            Boolean           @default(true)
@@ -131,6 +131,8 @@ model User {
   Events             Events[]
   Participant        Participant[]
   participant_users  Participant_user[]
+
+  Team Team[]
 }
 
 enum PAYMENT_STATUS {
@@ -159,6 +161,8 @@ model Participant {
 model Team {
   id                Int                @id @default(autoincrement())
   name              String
+  leader            User               @relation(fields: [leader_id], references: [id])
+  leader_id         Int
   participant_users Participant_user[]
   Participant       Participant[]
 }
