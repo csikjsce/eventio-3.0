@@ -3,10 +3,15 @@ import Councils from '../screens/councils/Councils';
 import Calendar from '../screens/calendar/Calendar';
 import Profile from '../screens/profile/Profile';
 import MyEvents from '../screens/events/MyEvents';
-import { Component } from 'iconsax-react';
+import GetStarted from '../screens/getStarted/page';
 const indexRoutes = [
   {
     path: '/',
+    name: 'getStarted<',
+    component: <GetStarted />,
+  },
+  {
+    path: '/home',
     name: 'Home<',
     component: <Home />,
   },
@@ -53,7 +58,7 @@ const indexRoutes = [
   {
     path: '/my-events',
     name: 'My Events',
-    component:<MyEvents/>,
+    component: <MyEvents />,
   },
   {
     path: '/child-events/:parentId',
@@ -64,7 +69,7 @@ const indexRoutes = [
     path: '/search-events',
     name: 'Search Events',
     component: <h1>Search Events</h1>,
-  }
+  },
 ];
 
 export default indexRoutes;
