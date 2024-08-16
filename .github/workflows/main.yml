@@ -16,6 +16,13 @@ jobs:
   lint-and-format:
     runs-on: ubuntu-latest
     
+    strategy:
+      matrix:
+        directory: 
+          - frontend/student
+          - frontend/dean
+          - frontend/council
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -24,24 +31,15 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '20'
-          
+
       - name: Install dependencies
         run: npm install
+        working-directory: ${{ matrix.directory }}
 
-      - name: Run ESLint on student directory
-        run: npm run lint -- frontend/student
+      - name: Run ESLint
+        run: npm run lint
+        working-directory: ${{ matrix.directory }}
 
-      - name: Run ESLint on dean directory
-        run: npm run lint -- frontend/dean
-
-      - name: Run ESLint on council directory
-        run: npm run lint -- frontend/council
-        
-      - name: Run Prettier on student directory
-        run: npm run format -- frontend/student --check
-
-      - name: Run Prettier on dean directory
-        run: npm run format -- frontend/dean --check
-
-      - name: Run Prettier on council directory
-        run: npm run format -- frontend/council --check
+      - name: Run Prettier
+        run: npm run format -- --check
+        working-directory: ${{ matrix.directory }}
