@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 
 function StatCard({ number, description }) {
   return (
@@ -11,9 +11,9 @@ function StatCard({ number, description }) {
 
 function DashboardStats() {
   const stats = [
-    { number: 33, description: "Total Councils" },
-    { number: 24, description: "Events Done" },
-    { number: 10, description: "Pending Approvals" },
+    { number: 33, description: 'Total Councils' },
+    { number: 24, description: 'Events Done' },
+    { number: 10, description: 'Pending Approvals' },
   ];
 
   return (

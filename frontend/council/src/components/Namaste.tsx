@@ -1,4 +1,4 @@
-import icons from "../assets/namaste/icons.svg";
+import icons from '../assets/namaste/icons.svg';
 
 type GreetingSectionProps = {
   userName: string;
