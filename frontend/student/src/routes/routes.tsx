@@ -3,7 +3,6 @@ import Councils from '../screens/councils/Councils';
 import Calendar from '../screens/calendar/Calendar';
 import Profile from '../screens/profile/Profile';
 import MyEvents from '../screens/events/MyEvents';
-import { Component } from 'iconsax-react';
 const indexRoutes = [
   {
     path: '/',
