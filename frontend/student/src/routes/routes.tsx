@@ -1,8 +1,14 @@
+import Home from '../screens/home/home';
+import Councils from '../screens/councils/Councils';
+import Calendar from '../screens/calendar/Calendar';
+import Profile from '../screens/profile/Profile';
+import MyEvents from '../screens/events/MyEvents';
+import { Component } from 'iconsax-react';
 const indexRoutes = [
   {
     path: '/',
-    name: 'Home',
-    component: <h1>Home</h1>,
+    name: 'Home<',
+    component: <Home />,
   },
   {
     path: '/onboarding',
@@ -17,7 +23,7 @@ const indexRoutes = [
   {
     path: '/calendar',
     name: 'Calendar',
-    component: <h1>Calendar</h1>,
+    component: <Calendar />,
   },
   {
     path: '/council-details/:id',
@@ -27,12 +33,12 @@ const indexRoutes = [
   {
     path: '/councils',
     name: 'Councils',
-    component: <h1>Councils</h1>,
+    component: <Councils />,
   },
   {
     path: '/profile',
     name: 'Profile',
-    component: <h1>Profile</h1>,
+    component: <Profile />,
   },
   {
     path: '/ticket/:id',
@@ -47,7 +53,7 @@ const indexRoutes = [
   {
     path: '/my-events',
     name: 'My Events',
-    component: <h1>My Events</h1>,
+    component:<MyEvents/>,
   },
   {
     path: '/child-events/:parentId',
@@ -58,7 +64,7 @@ const indexRoutes = [
     path: '/search-events',
     name: 'Search Events',
     component: <h1>Search Events</h1>,
-  },
+  }
 ];
 
 export default indexRoutes;
