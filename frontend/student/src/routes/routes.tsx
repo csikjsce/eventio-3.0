@@ -2,7 +2,8 @@ import Home from '../screens/home/home';
 import Councils from '../screens/councils/Councils';
 import Calendar from '../screens/calendar/Calendar';
 import Profile from '../screens/profile/Profile';
-
+import MyEvents from '../screens/events/MyEvents';
+import { Component } from 'iconsax-react';
 const indexRoutes = [
   {
     path: '/',
@@ -52,7 +53,7 @@ const indexRoutes = [
   {
     path: '/my-events',
     name: 'My Events',
-    component: <h1>My Events</h1>,
+    component:<MyEvents/>,
   },
   {
     path: '/child-events/:parentId',
@@ -63,7 +64,7 @@ const indexRoutes = [
     path: '/search-events',
     name: 'Search Events',
     component: <h1>Search Events</h1>,
-  },
+  }
 ];
 
 export default indexRoutes;
