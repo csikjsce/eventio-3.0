@@ -1,0 +1,47 @@
+name: Lint and Format
+
+on: 
+  push:
+    paths:
+      - 'frontend/student/**'
+      - 'frontend/dean/**'
+      - 'frontend/council/**'
+  pull_request:
+    paths:
+      - 'frontend/student/**'
+      - 'frontend/dean/**'
+      - 'frontend/council/**'
+
+jobs:
+  lint-and-format:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+          
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run ESLint on student directory
+        run: npm run lint -- frontend/student
+
+      - name: Run ESLint on dean directory
+        run: npm run lint -- frontend/dean
+
+      - name: Run ESLint on council directory
+        run: npm run lint -- frontend/council
+        
+      - name: Run Prettier on student directory
+        run: npm run format -- frontend/student --check
+
+      - name: Run Prettier on dean directory
+        run: npm run format -- frontend/dean --check
+
+      - name: Run Prettier on council directory
+        run: npm run format -- frontend/council --check
