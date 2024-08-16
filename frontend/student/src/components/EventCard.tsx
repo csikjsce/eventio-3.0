@@ -19,7 +19,9 @@ export default function EventCard({
   };
 }) {
   return (
-    <div className="flex h-40 flex-row gap-2 justify-around bg-card-light dark:bg-card-dark rounded-lg p-2"> { /* TODO: imporve sizing and styling */ }
+    <div className="flex h-40 flex-row gap-2 justify-around bg-card-light dark:bg-card-dark rounded-lg p-2">
+      {' '}
+      {/* TODO: imporve sizing and styling */}
       <img
         src={event.image}
         alt="event"
@@ -34,17 +36,25 @@ export default function EventCard({
             className="w-8 h-8 aspect-square rounded-full object-cover border border-vitality-red"
           />
           <div className="flex flex-col flex-1 text-left">
-            <p className="font-fira font-medium text-md sm:text-lg text-foreground-light dark:text-foreground-dark">{event.name}</p>
-            <p className="font-fira text-xs text-vitality-red">By {event.council}</p>
+            <p className="font-fira font-medium text-md sm:text-lg text-foreground-light dark:text-foreground-dark">
+              {event.name}
+            </p>
+            <p className="font-fira text-xs text-vitality-red">
+              By {event.council}
+            </p>
           </div>
         </div>
         <div className="flex flex-row gap-2 justify-around">
           <div className="flex flex-row gap-1">
-            <Calendar color="#57585A" size="16" /> { /* TODO: use Tailwind theme */ }
-            <p className="font-fira text-xs text-gray-1">{event.date.toDateString()}</p>
+            <Calendar color="#57585A" size="16" />{' '}
+            {/* TODO: use Tailwind theme */}
+            <p className="font-fira text-xs text-gray-1">
+              {event.date.toDateString()}
+            </p>
           </div>
           <div className="flex flex-row gap-1">
-            <Location color="#57585A" size="16" /> { /* TODO: use Tailwind theme */ }
+            <Location color="#57585A" size="16" />{' '}
+            {/* TODO: use Tailwind theme */}
             <p className="font-fira text-xs text-gray-1">{event.location}</p>
           </div>
         </div>

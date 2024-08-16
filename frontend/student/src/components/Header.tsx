@@ -15,7 +15,9 @@ export default function Header() {
         />
         <div className="flex flex-col text-left">
           <p className="font-marcellus text-gray-1">Namaste</p>
-          <p className="font-marcellus text-xl text-foreground-light dark:text-foreground-dark">Kunal Chaturvedi</p>
+          <p className="font-marcellus text-xl text-foreground-light dark:text-foreground-dark">
+            Kunal Chaturvedi
+          </p>
         </div>
       </div>
       <div className="flex flex-row items-center gap-5">

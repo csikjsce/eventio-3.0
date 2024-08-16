@@ -19,7 +19,7 @@ const indexRoutes = [
   {
     path: '/event-details/:id',
     name: 'Event Details',
-    component: <EventDetails/>,
+    component: <EventDetails />,
   },
   {
     path: '/calendar',
@@ -54,7 +54,7 @@ const indexRoutes = [
   {
     path: '/my-events',
     name: 'My Events',
-    component:<MyEvents/>,
+    component: <MyEvents />,
   },
   {
     path: '/child-events/:parentId',
@@ -65,7 +65,7 @@ const indexRoutes = [
     path: '/search-events',
     name: 'Search Events',
     component: <h1>Search Events</h1>,
-  }
+  },
 ];
 
 export default indexRoutes;

@@ -23,10 +23,12 @@ function ProfileItem({
   return (
     <Link to={to} className="flex flex-row items-center justify-between">
       <div className="flex flex-row items-center gap-2">
-        <Icon size="24" color='#231F20'/>
-        <p className="font-fira text-lg text-foreground-light dark:text-foreground-dark">{title}</p>
+        <Icon size="24" color="#231F20" />
+        <p className="font-fira text-lg text-foreground-light dark:text-foreground-dark">
+          {title}
+        </p>
       </div>
-      <ArrowRight2 size="24" color='#231F20'/>
+      <ArrowRight2 size="24" color="#231F20" />
     </Link>
   );
 }
@@ -35,14 +37,18 @@ export default function Profile() {
   return (
     <>
       <div className="flex flex-col gap-8 items-center">
-        <p className="font-fira font-semibold text-lg text-foreground-light dark:text-foreground-dark">My Profile</p>
+        <p className="font-fira font-semibold text-lg text-foreground-light dark:text-foreground-dark">
+          My Profile
+        </p>
         <div className="flex flex-col gap-3 items-center">
           <img
             src={man1}
             alt="profile"
             className="w-28 h-28 object-cover rounded-full"
           />
-          <p className="font-marcellus text-2xl text-foreground-light dark:text-foreground-dark">Kunal Chaturvedi</p>
+          <p className="font-marcellus text-2xl text-foreground-light dark:text-foreground-dark">
+            Kunal Chaturvedi
+          </p>
         </div>
         <hr className="w-full border-1 border-gray-700" />
         <div className="flex flex-col gap-8 w-full">
