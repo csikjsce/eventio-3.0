@@ -23,7 +23,7 @@ function NavbarItem({
         <>
           <Icon
             variant={isActive ? 'Bold' : 'Linear'}
-            color={isActive ? '#B61F2D' : '#57585A'} // TODO: Pass from tailwind theme 
+            color={isActive ? '#B61F2D' : '#57585A'} // TODO: Pass from tailwind theme
           />
           <span
             className={`text-xs font-marcellus ${isActive ? 'text-primary' : 'text-mute-text-light dark:text-mute-text-dark'}`}
@@ -38,7 +38,7 @@ function NavbarItem({
 
 export default function FooterNav() {
   return (
-    <div className="h-20 fixed bottom-0 left-0 w-full flex flex-row justify-around pt-3 z-10 bg-background-light dark:bg-background-dark">
+    <div className="h-20 fixed bottom-0 left-0 w-full flex flex-row justify-around pt-3 z-10 bg-background-light dark:bg-background-dark shadow-2xl">
       <NavbarItem Icon={Home} text="Home" to="/" />
       <NavbarItem Icon={Calendar} text="Calendar" to="/calendar" />
       <NavbarItem Icon={People} text="Councils" to="/councils" />
