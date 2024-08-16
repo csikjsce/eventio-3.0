@@ -1,3 +1,5 @@
+
+import EventDetails from '../screens/events/EventDetails';
 const indexRoutes = [
   {
     path: '/',
@@ -12,7 +14,7 @@ const indexRoutes = [
   {
     path: '/event-details/:id',
     name: 'Event Details',
-    component: <h1>Event Details</h1>,
+    component: <EventDetails/>,
   },
   {
     path: '/calendar',
