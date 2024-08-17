@@ -12,7 +12,7 @@ export default function ConditionalRoute({
       .fetch()
       .then((user) => {
         console.log('User fetched', user);
-        if (routeType === 'loading' && user) {
+        if (routeType === 'login' && user) {
           window.location.href = '/';
         } else if (routeType === 'protected' && !user) {
           window.location.href = '/login';
@@ -29,6 +29,6 @@ export default function ConditionalRoute({
 }
 
 export type ConditionalRouteProps = {
-  routeType: 'loading' | 'protected';
+  routeType: 'login' | 'protected';
   children: React.ReactNode;
 };

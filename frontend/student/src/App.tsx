@@ -20,7 +20,7 @@ function App() {
                 key={key}
                 element={
                   <ConditionalRoute
-                    routeType={prop.routeType as 'protected' | 'loading'}
+                    routeType={prop.routeType as 'protected' | 'login'}
                     key={key}
                   >
                     {prop.component}
