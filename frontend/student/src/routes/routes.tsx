@@ -4,16 +4,12 @@ import MyEvents from '../screens/events/MyEvents';
 import GetStarted from '../screens/getStarted/page';
 import Home from '../screens/home/home';
 import Profile from '../screens/profile/Profile';
-import ConditionalRoute from './conditionalRoute';
 const indexRoutes = [
   {
     path: '/',
     name: 'getStarted<',
-    component: (
-      <ConditionalRoute routeType="protected">
-        <GetStarted />,
-      </ConditionalRoute>
-    ),
+    component: <GetStarted />,
+    routeType: 'protected'
   },
   {
     path: '/home',
