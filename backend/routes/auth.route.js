@@ -41,7 +41,9 @@ router.get(
             });
 
         res.redirect(
-            `${process.env.CLIENT_URL}?accessToken=${accessToken}&refreshToken=${refreshToken}`
+            `${
+                process.env.CLIENT_URL + process.env.FRONTEND_REDIRECT_PATH
+            }?accessToken=${accessToken}&refreshToken=${refreshToken}`
         );
     }
 );
