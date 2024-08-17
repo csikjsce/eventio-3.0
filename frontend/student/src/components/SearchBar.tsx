@@ -1,6 +1,8 @@
 import { Input } from '@material-tailwind/react';
 import { Icon as IconType, Setting4 } from 'iconsax-react';
 
+
+
 export default function SearchBar({
   Icon,
   text,
@@ -9,18 +11,22 @@ export default function SearchBar({
   text: string;
 }) {
   return (
-    <div className="flex flex-row gap-4 px-4 py-1 rounded-xl items-center outline outline-1 outline-gray-1 focus-within:outline-blue-500">
-      <Icon />
+    <div className="relative flex items-center gap-2 rounded-xl  outline-1 outline-gray-300 focus:outline-none">
       <Input
-        variant="standard"
-        label="Search"
+        variant="outlined"
+        label="What event are you looking for...  "
         placeholder={text}
-        color="blue"
-        onPointerEnterCapture={undefined}
-        onPointerLeaveCapture={undefined}
-        crossOrigin={undefined}
-      />
-      <Setting4 />
+        className="border-0 focus:outline-none  pr-12 placeholder-padding label-padding-50" 
+        containerProps={{ className: 'w-full' }} 
+        onPointerEnterCapture={undefined} onPointerLeaveCapture={undefined} crossOrigin={undefined}  />
+      {Icon && (
+        <div className="absolute right-11 top-1/2 transform -translate-y-1/2">
+          <Icon aria-label="Search Icon" className="w-5 h-5" /> 
+        </div>
+      )}
+      <Setting4
+        aria-label="Settings Icon"
+        className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5"   />
     </div>
   );
 }

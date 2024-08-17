@@ -1,9 +1,8 @@
-import Home from '../screens/home/home';
-import Councils from '../screens/councils/Councils';
 import Calendar from '../screens/calendar/Calendar';
-import Profile from '../screens/profile/Profile';
+import Councils from '../screens/councils/Councils';
 import MyEvents from '../screens/events/MyEvents';
-import { Component } from 'iconsax-react';
+import Home from '../screens/home/home';
+import Profile from '../screens/profile/Profile';
 const indexRoutes = [
   {
     path: '/',
