@@ -45,7 +45,7 @@ CREATE TABLE "Events" (
     "banner_url" TEXT NOT NULL,
     "logo_image__url" TEXT NOT NULL,
     "event_page_image_url" TEXT NOT NULL,
-    "parentId" INTEGER,
+    "parent_id" INTEGER,
     "is_feedback_enabled" BOOLEAN NOT NULL DEFAULT false,
     "is_only_somaiya" BOOLEAN NOT NULL DEFAULT true,
     "attendance_type" "ATTENDANCE_TYPE",
@@ -102,6 +102,7 @@ CREATE TABLE "Participant" (
 CREATE TABLE "Team" (
     "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
+    "leader_id" INTEGER NOT NULL,
 
     CONSTRAINT "Team_pkey" PRIMARY KEY ("id")
 );
@@ -127,7 +128,7 @@ CREATE UNIQUE INDEX "User_refresh_token_key" ON "User"("refresh_token");
 ALTER TABLE "Events" ADD CONSTRAINT "Events_organizer_id_fkey" FOREIGN KEY ("organizer_id") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Events" ADD CONSTRAINT "Events_parentId_fkey" FOREIGN KEY ("parentId") REFERENCES "Events"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "Events" ADD CONSTRAINT "Events_parent_id_fkey" FOREIGN KEY ("parent_id") REFERENCES "Events"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Participant" ADD CONSTRAINT "Participant_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -137,6 +138,9 @@ ALTER TABLE "Participant" ADD CONSTRAINT "Participant_team_id_fkey" FOREIGN KEY 
 
 -- AddForeignKey
 ALTER TABLE "Participant" ADD CONSTRAINT "Participant_event_id_fkey" FOREIGN KEY ("event_id") REFERENCES "Events"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Team" ADD CONSTRAINT "Team_leader_id_fkey" FOREIGN KEY ("leader_id") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Participant_user" ADD CONSTRAINT "Participant_user_participant_id_fkey" FOREIGN KEY ("participant_id") REFERENCES "Team"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
