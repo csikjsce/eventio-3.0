@@ -29,15 +29,23 @@ export default function TrendingCard({
             className="w-10 h-10 aspect-square rounded-full object-cover border border-vitality-red"
           />
           <div className="flex flex-col text-left">
-            <p className="font-fira font-semibold text-lg text-foreground-light dark:text-foreground-dark">{event.name}</p>
-            <p className="font-fira text-xs text-foreground-light dark:text-foreground-dark">{event.shortDesc}</p>
+            <p className="font-fira font-semibold text-lg text-foreground-light dark:text-foreground-dark">
+              {event.name}
+            </p>
+            <p className="font-fira text-xs text-foreground-light dark:text-foreground-dark">
+              {event.shortDesc}
+            </p>
           </div>
         </div>
         <div className="flex flex-col items-start">
-          <p className="font-fira text-xs text-mute-text-light dark:text-mute-text-dark">Event is</p>
+          <p className="font-fira text-xs text-mute-text-light dark:text-mute-text-dark">
+            Event is
+          </p>
           <div className="flex flex-row gap-1">
             <Brodcast size={16} color="#B61F2D" />
-            <p className="font-fira text-xs text-mute-text-light dark:text-mute-text-dark">{event.status}</p>
+            <p className="font-fira text-xs text-mute-text-light dark:text-mute-text-dark">
+              {event.status}
+            </p>
           </div>
         </div>
       </div>
