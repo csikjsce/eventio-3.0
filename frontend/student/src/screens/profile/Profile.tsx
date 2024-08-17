@@ -1,15 +1,15 @@
+import {
+  ArrowRight2,
+  Calendar,
+  CallCalling,
+  Icon as Icontype,
+  Key,
+  LogoutCurve,
+  UserEdit,
+} from 'iconsax-react';
+import { Link } from 'react-router-dom';
 import man1 from '../../assets/man1.jpeg';
 import FooterNav from '../../components/FooterNav';
-import { Link } from 'react-router-dom';
-import {
-  Icon as Icontype,
-  ArrowRight2,
-  UserEdit,
-  Calendar,
-  Key,
-  CallCalling,
-  LogoutCurve,
-} from 'iconsax-react';
 
 function ProfileItem({
   Icon,
@@ -36,7 +36,7 @@ function ProfileItem({
 export default function Profile() {
   return (
     <>
-      <div className="flex flex-col gap-8 items-center">
+      <div className="flex flex-col gap-8 items-center p-4">
         <p className="font-fira font-semibold text-lg text-foreground-light dark:text-foreground-dark">
           My Profile
         </p>

@@ -1,3 +1,4 @@
+import Login from '../login/page';
 import Calendar from '../screens/calendar/Calendar';
 import Councils from '../screens/councils/Councils';
 import MyEvents from '../screens/events/MyEvents';
@@ -8,10 +9,14 @@ import Profile from '../screens/profile/Profile';
 
 const indexRoutes = [
   {
+    path: '/login',
+    name: 'Login',
+    component: <Login />,
+  },
+  {
     path: '/',
     name: 'getStarted<',
     component: <GetStarted />,
-    routeType: 'protected'
   },
   {
     path: '/home',
