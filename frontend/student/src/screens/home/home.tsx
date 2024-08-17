@@ -1,9 +1,9 @@
+import { SearchNormal1 } from 'iconsax-react';
+import EventCard from '../../components/EventCard';
 import FooterNav from '../../components/FooterNav';
 import Header from '../../components/Header';
-import TrendingCard from '../../components/TrendingCard';
-import EventCard from '../../components/EventCard';
 import SearchBar from '../../components/SearchBar';
-import { SearchNormal1 } from 'iconsax-react';
+import TrendingCard from '../../components/TrendingCard';
 
 import abhi from '../../assets/abhi.jpeg';
 import man1 from '../../assets/man1.jpeg';
