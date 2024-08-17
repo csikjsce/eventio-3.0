@@ -20,7 +20,8 @@ passport.use(
         {
             clientID: process.env.GOOGLE_CLIENT_ID,
             clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-            callbackURL: process.env.SERVER_URL+process.env.GOOGLE_CALLBACK_URL,
+            callbackURL:
+                process.env.SERVER_URL + process.env.GOOGLE_CALLBACK_URL,
         },
         async (accessToken, refreshToken, profile, done) => {
             try {
@@ -31,7 +32,7 @@ passport.use(
                 return done(null, profile);
             } catch (e) {
                 let email = profile.emails[0].value;
-                is_somaiya_student = email.split("@")[2] == "somaiya.edu";
+                let is_somaiya_student = email.split("@")[1] == "somaiya.edu";
                 try {
                     let user = await prisma.user.create({
                         data: {

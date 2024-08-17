@@ -11,6 +11,7 @@ const indexRoutes = [
     path: '/',
     name: 'getStarted<',
     component: <GetStarted />,
+    routeType: 'protected'
   },
   {
     path: '/home',
