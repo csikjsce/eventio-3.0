@@ -33,10 +33,10 @@ const event: {
 export default function Home() {
   return (
     <div className="flex flex-col">
-      <div className="flex flex-col gap-8 ">
+      <div className="flex flex-col gap-8">
         {/* main area */}
         <Header />
-        <SearchBar Icon={SearchNormal1} text="Search" />
+        <SearchBar Icon={SearchNormal1} text="What event are you looking for..." />
         <div className="flex flex-col gap-4 z-10">
           <p className="text-lg font-medium font-fira text-left text-foreground-light dark:text-foreground-dark">
             Trending Events

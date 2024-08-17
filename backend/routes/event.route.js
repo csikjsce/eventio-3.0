@@ -8,13 +8,44 @@ const router = express.Router();
 let protected = "/p";
 
 router.post(protected + "/get", authCheck, async (req, res) => {
+    console.log(req.query);
     if (!req.user) {
         return res.status(401).json({ error: "Unauthorized" });
     }
     if (req.user.is_somaiya_student) {
         try {
-            let events = await prisma.events.findMany({});
-            res.json({ error: false, events: events });
+            let events = [];
+            if (req.query.state) {
+                events = await prisma.events.findMany({
+                    where: {
+                        state: {
+                            in: req.query.state,
+                        },
+                    },
+                });
+            } else {
+                events = await prisma.events.findMany({
+                    where: {
+                        state: {
+                            in: [
+                                "UPCOMING",
+                                "REGISTRATION_OPEN",
+                                "REGISTRATION_CLOSED",
+                                "TICKET_OPEN",
+                                "TICKET_CLOSED",
+                                "ONGOING",
+                            ],
+                        },
+                        is_only_somaiya: true,
+                    },
+                });
+            }
+            let event = {};
+            events.forEach((e) => {
+                if (!event[e.state]) [(event[e.state] = [])];
+                event[e.state].push(e);
+            });
+            res.json({ error: false, events: event });
         } catch (err) {
             console.log(err);
             return res
@@ -23,12 +54,39 @@ router.post(protected + "/get", authCheck, async (req, res) => {
         }
     } else {
         try {
-            let events = await prisma.events.findMany({
-                where: {
-                    is_only_somaiya: false,
-                },
+            let events = [];
+            if (req.query.state) {
+                events = await prisma.events.findMany({
+                    where: {
+                        state: {
+                            in: req.query.state,
+                        },
+                        is_only_somaiya: false,
+                    },
+                });
+            } else {
+                events = await prisma.events.findMany({
+                    where: {
+                        state: {
+                            in: [
+                                "UPCOMING",
+                                "REGISTRATION_OPEN",
+                                "REGISTRATION_CLOSED",
+                                "TICKET_OPEN",
+                                "TICKET_CLOSED",
+                                "ONGOING",
+                            ],
+                        },
+                        is_only_somaiya: false,
+                    },
+                });
+            }
+            let event = {};
+            events.forEach((e) => {
+                if (!event[e.state]) [(event[e.state] = [])];
+                event[e.state].push(e);
             });
-            res.json({ error: false, events: events });
+            res.json({ error: false, events: event });
         } catch (err) {
             console.log(err);
             return res
@@ -77,66 +135,86 @@ router.post(protected + "/create", authCheck, (req, res) => {
     if (req.user.role != "COUNCIL") {
         return res.status(403).json({ error: true, message: "Forbidden" });
     }
-    let {
-        name,
-        title,
-        tag_line,
-        description,
-        long_description,
-        event_type,
-        is_only_somaiya,
-        fee,
-        tags,
-        banner_url,
-        logo_image__url,
-        event_page_image_url,
-        is_feedback_enabled,
-        attendance_type,
-        registration_type,
-        external_registration_link,
-        is_ticket_feature_enabled,
-        venue,
-        dates,
-    } = req.body;
-    prisma.events
-        .create({
-            data: {
-                name,
-                title,
-                tag_line,
-                event_type,
-                description,
-                long_description,
-                is_only_somaiya,
-                venue,
-                fee,
-                tags,
-                banner_url,
-                logo_image__url,
-                event_page_image_url,
-                is_feedback_enabled,
-                attendance_type,
-                registration_type,
-                external_registration_link,
-                is_ticket_feature_enabled,
-                organizer_id: req.user.id,
-                dates,
-            },
-        })
-        .then((event) => {
-            res.json({
-                error: false,
-                message: "Event created successfully",
-                event,
+
+    if (req.body.is_parent) {
+        let {
+            name,
+            title,
+            tag_line,
+            description,
+            long_description,
+            event_type,
+            banner_url,
+            logo_image__url,
+            event_page_image_url,
+            dates,
+            tags,
+            is_only_somaiya,
+            fee,
+        } = req.body;
+        
+    } else {
+        let {
+            name,
+            title,
+            tag_line,
+            description,
+            long_description,
+            event_type,
+            is_only_somaiya,
+            fee,
+            tags,
+            banner_url,
+            logo_image__url,
+            event_page_image_url,
+            is_feedback_enabled,
+            attendance_type,
+            registration_type,
+            external_registration_link,
+            is_ticket_feature_enabled,
+            venue,
+            dates,
+        } = req.body;
+        prisma.events
+            .create({
+                data: {
+                    name,
+                    title,
+                    tag_line,
+                    event_type,
+                    description,
+                    long_description,
+                    is_only_somaiya,
+                    venue,
+                    fee,
+                    tags,
+                    banner_url,
+                    logo_image__url,
+                    event_page_image_url,
+                    is_feedback_enabled,
+                    attendance_type,
+                    registration_type,
+                    external_registration_link,
+                    is_ticket_feature_enabled,
+                    organizer_id: req.user.id,
+                    dates,
+                },
+            })
+            .then((event) => {
+                res.json({
+                    error: false,
+                    message: "Event created successfully",
+                    event,
+                });
+            })
+            .catch((err) => {
+                logger.error(err);
+                res.status(500).json({
+                    error: true,
+                    message: "Error creating event",
+                });
             });
-        })
-        .catch((err) => {
-            logger.error(err);
-            res.status(500).json({
-                error: true,
-                message: "Error creating event",
-            });
-        });
+    }
 });
 router.post(
     protected + "/update/:id",
@@ -240,6 +318,71 @@ router.get(protected + "/search/", authCheck, async (req, res) => {
 });
 router.post(protected + "/get-children/:id", authCheck, (req, res) => {});
 router.post(protected + "/get-calendar", authCheck, (req, res) => {});
-router.post(protected + "/register-for-event", authCheck, (req, res) => {});
+router.post(protected + "/register-for-event", authCheck, async (req, res) => {
+    if (!req.user) {
+        return res.status(401).json({ error: true, message: "Unauthorized" });
+    }
+    let { event_id } = req.body;
+    let event = null;
+    try {
+        event = await prisma.events.findUnique({
+            where: {
+                id: parseInt(event_id),
+            },
+        });
+    } catch (err) {
+        logger.error(err);
+        return res
+            .status(500)
+            .json({ error: true, message: "Error fetching event" });
+    }
+
+    try {
+        await prisma.participant.findFirstOrThrow({
+            where: {
+                user_id: req.user.id,
+                event_id: parseInt(event_id),
+            },
+        });
+        return res.status(400).json({
+            error: true,
+            message: "User already registered for this event",
+        });
+    } catch (e) {
+        if (event.ma_ppt > 1) {
+            return res.status(403).json({
+                error: true,
+                message: "Team event registration not yet implmented",
+            });
+        }
+        if (!req.user.is_somaiya_student && event.is_only_somaiya) {
+            return res.status(403).json({
+                error: true,
+                message:
+                    "Only Somaiya participants are allowed to register for this event",
+            });
+        }
+        try {
+            await prisma.participant.create({
+                data: {
+                    event_id: parseInt(event_id),
+                    user_id: req.user.id,
+                    amount: event.fee,
+                    payment_status: event.fee == 0 ? "SUCCESS" : "PENDING",
+                },
+            });
+            res.json({
+                error: false,
+                message: "Registration successful",
+            });
+        } catch (err) {
+            logger.error(err);
+            return res.status(500).json({
+                error: true,
+                message: "Error registering for event",
+            });
+        }
+    }
+});
 
 module.exports = router;
