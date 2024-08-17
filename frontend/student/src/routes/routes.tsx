@@ -1,10 +1,10 @@
-import Home from '../screens/home/home';
-import Councils from '../screens/councils/Councils';
 import Calendar from '../screens/calendar/Calendar';
-import Profile from '../screens/profile/Profile';
+import Councils from '../screens/councils/Councils';
 import MyEvents from '../screens/events/MyEvents';
 import EventDetails from '../screens/events/EventDetails';
 import GetStarted from '../screens/getStarted/page';
+import Home from '../screens/home/home';
+import Profile from '../screens/profile/Profile';
 
 const indexRoutes = [
   {
