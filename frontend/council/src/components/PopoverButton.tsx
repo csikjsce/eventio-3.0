@@ -14,7 +14,7 @@ const eventData = {
 };
 
 export default function PopoverCustomAnimation() {
-  const [popupState, setPopupState] = useState<PopupState>(eventData.state);
+  const [popupState, _setPopupState] = useState<PopupState>(eventData.state);
 
   const getButtonStyle = () => {
     switch (popupState) {
