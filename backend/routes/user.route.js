@@ -6,15 +6,15 @@ const logger = require("../utils/logger");
 
 let protected = "/p";
 router.post(protected + "/me", authCheck, (req, res) => {
-    let newUser = {
-        name: req.user.name,
-        email: req.user.email,
-        role: req.user.role,
-        photo_url: req.user.photo_url,
-    };
+    delete req.user['google_id']
+    delete req.user['refresh_token']
+    delete req.user['updated_at']
+    delete req.user['created_at']
+    delete req.user['council_type']
+    delete req.user['about']
     res.json({
         error: false,
-        user: newUser,
+        user: req.user,
     });
 });
 router.post(protected + "/update", authCheck, (req, res) => {
