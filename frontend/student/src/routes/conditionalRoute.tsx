@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useUserData } from '../hooks/useUserData';
+import Loader from '../components/Loader';
 
 export default function ConditionalRoute({
   routeType,
@@ -25,7 +26,7 @@ export default function ConditionalRoute({
         // window.location.href = '/something-went-wrong';
       });
   }, [routeType, useUser]);
-  return <>{loading ? <h1>LOADING...</h1> : children}</>;
+  return <>{loading ? <Loader /> : children}</>;
 }
 
 export type ConditionalRouteProps = {

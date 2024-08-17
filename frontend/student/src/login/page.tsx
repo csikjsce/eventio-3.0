@@ -13,11 +13,8 @@ export default function Login() {
     const refreshTokenParam = urlParams.get('refreshToken');
 
     if (accessTokenParam && refreshTokenParam) {
-      // Store tokens in localStorage
       localStorage.setItem('accessToken', accessTokenParam);
       localStorage.setItem('refreshToken', refreshTokenParam);
-
-      // Clear the tokens from the URL
       window.history.replaceState(null, '', window.location.pathname);
     }
   }, []);
