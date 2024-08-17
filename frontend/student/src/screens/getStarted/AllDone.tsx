@@ -9,7 +9,12 @@ export default function AllDone() {
           Start your new journey and experience now
         </p>
       </div>
-      <button className="w-5/12 sm:w-40 md:w-56 lg:w-64 px-4 py-2 mt-8 rounded-full border-2 border-red-200 font-poppins">
+      <button
+        className="w-5/12 sm:w-40 md:w-56 lg:w-64 px-4 py-2 mt-8 rounded-full border-2 border-red-200 font-poppins"
+        onClick={() => {
+          window.location.href = '/home';
+        }}
+      >
         Start Exploring &#8594;
       </button>
     </div>

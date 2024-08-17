@@ -4,10 +4,16 @@ import Calendar from '../screens/calendar/Calendar';
 import Profile from '../screens/profile/Profile';
 import MyEvents from '../screens/events/MyEvents';
 import EventDetails from '../screens/events/EventDetails';
+import GetStarted from '../screens/getStarted/page';
 
 const indexRoutes = [
   {
     path: '/',
+    name: 'getStarted<',
+    component: <GetStarted />,
+  },
+  {
+    path: '/home',
     name: 'Home<',
     component: <Home />,
   },
