@@ -70,7 +70,7 @@ model Events {
   logo_image__url            String
   event_page_image_url       String
   parent                     Events?           @relation("EventToEvent", fields: [parent_id], references: [id])
-  parent_id                   Int?
+  parent_id                  Int?
   children                   Events[]          @relation("EventToEvent")
   is_feedback_enabled        Boolean           @default(false)
   is_only_somaiya            Boolean           @default(true)
@@ -78,7 +78,6 @@ model Events {
   registration_type          REGISTRATION_TYPE @default(ONPLATFORM)
   external_registration_link String?
   is_ticket_feature_enabled  Boolean           @default(true)
-  is_parent                  Boolean           @default(false)
 
   Participant Participant[]
 }

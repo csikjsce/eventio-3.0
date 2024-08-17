@@ -1,11 +1,17 @@
 import Calendar from '../screens/calendar/Calendar';
 import Councils from '../screens/councils/Councils';
 import MyEvents from '../screens/events/MyEvents';
+import GetStarted from '../screens/getStarted/page';
 import Home from '../screens/home/home';
 import Profile from '../screens/profile/Profile';
 const indexRoutes = [
   {
     path: '/',
+    name: 'getStarted<',
+    component: <GetStarted />,
+  },
+  {
+    path: '/home',
     name: 'Home<',
     component: <Home />,
   },
@@ -52,7 +58,7 @@ const indexRoutes = [
   {
     path: '/my-events',
     name: 'My Events',
-    component:<MyEvents/>,
+    component: <MyEvents />,
   },
   {
     path: '/child-events/:parentId',
@@ -63,7 +69,7 @@ const indexRoutes = [
     path: '/search-events',
     name: 'Search Events',
     component: <h1>Search Events</h1>,
-  }
+  },
 ];
 
 export default indexRoutes;
