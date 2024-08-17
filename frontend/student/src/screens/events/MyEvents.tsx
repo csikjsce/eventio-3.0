@@ -29,7 +29,7 @@ const event: {
 export default function MyEvents() {
   return (
     <>
-      <div className="flex flex-col">
+      <div className="flex flex-col m-2">
         <div className="flex flex-col gap-8 ">
           <Header />
           <div className="flex flex-col gap-4 z-10">

@@ -1,3 +1,5 @@
+import { ArrowRight } from 'iconsax-react';
+
 export default function AllDone() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen">
@@ -10,7 +12,7 @@ export default function AllDone() {
         </p>
       </div>
       <button
-        className="w-5/12 sm:w-40 md:w-56 lg:w-64 px-4 py-2 mt-8 rounded-full border-2 border-red-200 font-poppins"
+        className=" w-56 px-4 py-2 mt-8 rounded-full border-2 border-red-200 font-poppins"
         onClick={() => {
           window.location.href = '/home';
         }}

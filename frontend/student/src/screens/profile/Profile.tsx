@@ -34,7 +34,7 @@ function ProfileItem({
 export default function Profile() {
   return (
     <>
-      <div className="flex flex-col gap-8 items-center">
+      <div className="flex flex-col gap-8 items-center m-2">
         <p className="font-fira font-semibold text-lg text-foreground-light dark:text-foreground-dark">My Profile</p>
         <div className="flex flex-col gap-3 items-center">
           <img
