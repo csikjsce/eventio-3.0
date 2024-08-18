@@ -1,0 +1,38 @@
+export const departmentOptions: { [key: string]: string[] } = {
+  '2025': [
+    'Computer Engineering',
+    'Information Technology',
+    'Electronics',
+    'Mechanical',
+    'Electronics and Telecommunications',
+  ],
+  '2026': [
+    'Computer Engineering',
+    'Information Technology',
+    'Mechanical',
+    'Electronics and Telecommunications',
+    'Electronics and Computers',
+  ],
+  '2027': [
+    'Computer Engineering',
+    'Computer and Communication',
+    'Information Technology',
+    'Artificial Intelligence and Data Science',
+    'Mechanical',
+    'Electronics and Telecommunications',
+    'Electronics and Computers',
+    'Robotics and Artificial Intelligence',
+  ],
+  '2028': [
+    'Computer Engineering',
+    'Computer and Communication',
+    'Computer Science and Business Systems',
+    'Information Technology',
+    'Artificial Intelligence and Data Science',
+    'Mechanical',
+    'Electronics and Telecommunications',
+    'Electronics and Computers',
+    'Electronics VLSI',
+    'Robotics and Artificial Intelligence',
+  ],
+};
