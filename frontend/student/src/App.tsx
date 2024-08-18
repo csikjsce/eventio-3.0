@@ -9,34 +9,26 @@ function App() {
   const userContext = useContext(UserDataContext);
   userContext.userData = user;
   userContext.setUserData = setUser;
+
   return (
     <Routes>
-      {indexRoutes.map((prop, key) => {
-        return (
-          <>
-            {prop.routeType ? (
-              <Route
-                path={prop.path}
-                key={key}
-                element={
-                  <ConditionalRoute
-                    routeType={prop.routeType as 'protected' | 'login'}
-                    key={key}
-                  >
-                    {prop.component}
-                  </ConditionalRoute>
-                }
-              ></Route>
-            ) : (
-              <Route
-                path={prop.path}
-                key={key}
-                element={prop.component}
-              ></Route>
-            )}
-          </>
-        );
-      })}
+      {indexRoutes.map((prop, key) =>
+        prop.routeType ? (
+          <Route
+            path={prop.path}
+            key={key}
+            element={
+              <ConditionalRoute
+                routeType={prop.routeType as 'protected' | 'login'}
+              >
+                {prop.component}
+              </ConditionalRoute>
+            }
+          />
+        ) : (
+          <Route path={prop.path} key={key} element={prop.component} />
+        ),
+      )}
       {/* <Route path="/404" element={<TechnicalError  />} /> */}
     </Routes>
   );

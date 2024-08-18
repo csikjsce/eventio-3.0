@@ -5,12 +5,13 @@ export default function ConditionalRoute({
   routeType,
   children,
 }: ConditionalRouteProps): JSX.Element {
-  const useUser = useUserData();
+  const { fetch, userContext } = useUserData();
   const [loading, setLoading] = useState<boolean>(true);
+
   useEffect(() => {
-    useUser
-      .fetch()
-      .then((user) => {
+    const checkUserData = async () => {
+      if (!userContext.userData) {
+        const user = await fetch();
         console.log('User fetched', user);
         if (routeType === 'login' && user) {
           window.location.href = '/';
@@ -19,12 +20,22 @@ export default function ConditionalRoute({
         } else {
           setLoading(false);
         }
-      })
-      .catch((err: Error) => {
-        console.error(err.name);
-        // window.location.href = '/something-went-wrong';
-      });
-  }, [routeType, useUser]);
+      } else {
+        if (routeType === 'login' && userContext.userData) {
+          window.location.href = '/';
+        } else if (routeType === 'protected' && !userContext.userData) {
+          window.location.href = '/login';
+        } else {
+          setLoading(false);
+        }
+      }
+    };
+
+    checkUserData().catch((err) => {
+      console.error(err.name);
+    });
+  }, [routeType, fetch, userContext.userData]);
+
   return <>{loading ? <h1>LOADING...</h1> : children}</>;
 }
 
