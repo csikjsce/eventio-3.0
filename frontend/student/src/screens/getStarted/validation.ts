@@ -7,7 +7,7 @@ export const personalDetailsSchema = (currentStep: string) =>
       .matches(/^\d{10}$/, 'Mobile number must be 10 digits')
       .required('Mobile number is required'),
 
-    roll_number: yup.string().required('Student ID is required'),
+    roll_number: yup.string(),
 
     gender: yup.string().required('Gender is required'),
 
