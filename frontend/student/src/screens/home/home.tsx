@@ -9,7 +9,6 @@ import TrendingCard from '../../components/TrendingCard';
 import abhi from '../../assets/abhi.jpeg';
 import man1 from '../../assets/man1.jpeg';
 import { useUserData } from '../../hooks/useUserData';
-import { useEffect, useState } from 'react';
 import Loader from '../../components/Loader';
 import { axiosCall } from '../../utils/api';
 
@@ -27,27 +26,35 @@ const dummyEvent = {
 
 export default function Home() {
   const [upcomingEvents, setUpcomingEvents] = useState<EventData[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  console.log(upcomingEvents);
   useEffect(() => {
     const fetchEvents = async () => {
       try {
         const response = await axiosCall('POST', '/event/p/get', true);
-        setUpcomingEvents(response.events?.UPCOMING || []);
+        if (response.events) {
+          setUpcomingEvents(response.events.UPCOMING);
+        }
       } catch (error) {
         console.error('Error fetching events:', error);
       }
     };
+
     fetchEvents();
   }, []);
 
   const user = useUserData();
-  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
     if (user.userContext.userData) {
       setLoading(false);
     }
   }, [user.userContext.userData]);
+
+  if (loading) {
+    return <Loader />;
+  }
+
   return (
     <div className="flex flex-col p-4">
       <div className="flex flex-col gap-8">
@@ -61,9 +68,9 @@ export default function Home() {
           <p className="text-lg font-medium font-fira text-left text-foreground-light dark:text-foreground-dark">
             Trending Events
           </p>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto flex gap-4">
             <TrendingCard event={dummyEvent} />
-            {/* TODO: horizontal scrolling */}
+            {/* TODO: Add more trending events here if needed */}
           </div>
         </div>
         <div className="flex flex-col gap-4 z-10">
@@ -77,9 +84,7 @@ export default function Home() {
           </div>
         </div>
       </div>
-
-        <FooterNav />
-      </div>
-    </>
+      <FooterNav />
+    </div>
   );
 }
