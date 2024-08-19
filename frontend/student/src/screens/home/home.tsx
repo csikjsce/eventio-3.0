@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { SearchNormal1 } from 'iconsax-react';
 import EventCard from '../../components/EventCard';
 import FooterNav from '../../components/FooterNav';
@@ -7,18 +8,9 @@ import TrendingCard from '../../components/TrendingCard';
 
 import abhi from '../../assets/abhi.jpeg';
 import man1 from '../../assets/man1.jpeg';
+import { axiosCall } from '../../utils/api';
 
-const event: {
-  name: string;
-  council: string;
-  image: string;
-  councilImage: string;
-  date: Date;
-  location: string;
-  tags: string[];
-  shortDesc: string;
-  status: string;
-} = {
+const dummyEvent = {
   name: 'Road To Programming',
   council: 'CSI KJSCE',
   image: abhi,
@@ -31,6 +23,21 @@ const event: {
 };
 
 export default function Home() {
+  const [upcomingEvents, setUpcomingEvents] = useState<EventData[]>([]);
+
+  console.log(upcomingEvents);
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const response = await axiosCall('POST', '/event/p/get', true);
+        setUpcomingEvents(response.events?.UPCOMING || []);
+      } catch (error) {
+        console.error('Error fetching events:', error);
+      }
+    };
+    fetchEvents();
+  }, []);
+
   return (
     <div className="flex flex-col p-4">
       <div className="flex flex-col gap-8">
@@ -45,7 +52,7 @@ export default function Home() {
             Trending Events
           </p>
           <div className="overflow-x-auto">
-            <TrendingCard event={event} />
+            <TrendingCard event={dummyEvent} />
             {/* TODO: horizontal scrolling */}
           </div>
         </div>
@@ -54,11 +61,9 @@ export default function Home() {
             Upcoming Events
           </p>
           <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3 overflow-x-auto mb-12">
-            <EventCard event={event} />
-            <EventCard event={event} />
-            <EventCard event={event} />
-            <EventCard event={event} />
-            <EventCard event={event} />
+            {upcomingEvents.map((event) => (
+              <EventCard key={event.id} event={event} />
+            ))}
           </div>
         </div>
       </div>

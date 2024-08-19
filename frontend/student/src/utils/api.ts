@@ -4,7 +4,7 @@ export const axiosCall = (
   method: 'GET' | 'POST',
   path: string,
   sendToken: true,
-  data: object | null
+  data?: object | null,
 ): Promise<UserResponse> => {
   return new Promise<UserResponse>((resolve, reject) => {
     axios
@@ -14,8 +14,8 @@ export const axiosCall = (
         method: method,
         headers: sendToken
           ? {
-            Authorization: 'Bearer ' + localStorage.getItem('accessToken'),
-          }
+              Authorization: 'Bearer ' + localStorage.getItem('accessToken'),
+            }
           : {},
         data: data,
       })

@@ -5,63 +5,78 @@ const tagHighlights: { [key: string]: string } = {
   Registered: 'bg-green-500 border-2 border-green-500 text-white',
 };
 
-export default function EventCard({
-  event,
-}: {
-  event: {
-    name: string;
-    council: string;
-    image: string;
-    councilImage: string;
-    date: Date;
-    location: string;
-    tags: string[];
-  };
-}) {
+export default function EventCard({ event }: { event: EventData }) {
+  console.log(event);
+
+  // Map the data fields to the EventCard component with empty string fallbacks
+  const eventName = event.name || '';
+  const eventCouncil = event.organizer_id
+    ? `Organizer ${event.organizer_id}`
+    : ''; // Replace with actual logic if available
+  const eventDate = event.created_at ? new Date(event.created_at) : null;
+  const eventLocation = event.venue || '';
+  const eventTags = event.tags || [];
+  const eventImage = event.banner_url || '';
+  const councilImage = event.logo_image_url || '';
+
   return (
-    <div className="flex h-40 flex-row gap-2 justify-around bg-card-light dark:bg-card-dark rounded-lg p-2">
-      {' '}
-      {/* TODO: imporve sizing and styling */}
-      <img
-        src={event.image}
-        alt="event"
-        className="h-3/4 sm:h-full my-auto aspect-square object-cover rounded-lg"
-      />
-      <div className="flex flex-col flex-1 max-w-96 gap-1 justify-around">
+    <div className="flex h-40 flex-row gap-4 justify-around bg-card-light dark:bg-card-dark rounded-lg p-4 shadow-md">
+      {/* Event Image */}
+      {eventImage ? (
+        <img
+          src={eventImage}
+          alt={`${eventName} event`}
+          className="h-3/4 sm:h-full my-auto aspect-square object-cover rounded-lg"
+        />
+      ) : (
+        <div className="h-3/4 sm:h-full my-auto aspect-square rounded-lg bg-gray-200" />
+      )}
+      <div className="flex flex-col flex-1 max-w-96 gap-2 justify-around">
+        {/* Council Image and Event Name */}
         <div className="flex flex-row gap-2 items-center">
-          {/* council pic and event name */}
-          <img
-            src={event.councilImage}
-            alt="man1"
-            className="w-8 h-8 aspect-square rounded-full object-cover border border-vitality-red"
-          />
+          {councilImage ? (
+            <img
+              src={councilImage}
+              alt={`${eventCouncil} council`}
+              className="w-8 h-8 aspect-square rounded-full object-cover border border-vitality-red"
+            />
+          ) : (
+            <div className="w-8 h-8 aspect-square rounded-full bg-gray-200 border border-vitality-red" />
+          )}
           <div className="flex flex-col flex-1 text-left">
             <p className="font-fira font-medium text-md sm:text-lg text-foreground-light dark:text-foreground-dark">
-              {event.name}
+              {eventName}
             </p>
             <p className="font-fira text-xs text-vitality-red">
-              By {event.council}
+              By {eventCouncil}
             </p>
           </div>
         </div>
-        <div className="flex flex-row gap-2 justify-around">
-          <div className="flex flex-row gap-1">
-            <Calendar color="#57585A" size="16" />{' '}
-            {/* TODO: use Tailwind theme */}
-            <p className="font-fira text-xs text-gray-1">
-              {event.date.toDateString()}
-            </p>
-          </div>
-          <div className="flex flex-row gap-1">
-            <Location color="#57585A" size="16" />{' '}
-            {/* TODO: use Tailwind theme */}
-            <p className="font-fira text-xs text-gray-1">{event.location}</p>
-          </div>
+        {/* Date and Location */}
+        <div className="flex flex-row gap-4 justify-between items-center">
+          {eventDate ? (
+            <div className="flex flex-row items-center gap-1">
+              <Calendar color="#57585A" size="16" />
+              <p className="font-fira text-xs text-gray-500 dark:text-gray-300">
+                {eventDate.toDateString()}
+              </p>
+            </div>
+          ) : null}
+          {eventLocation ? (
+            <div className="flex flex-row items-center gap-1">
+              <Location color="#57585A" size="16" />
+              <p className="font-fira text-xs text-gray-500 dark:text-gray-300">
+                {eventLocation}
+              </p>
+            </div>
+          ) : null}
         </div>
-        <div className="flex flex-row gap-2 px-2">
-          {event.tags.map((tag) => (
+        {/* Event Tags */}
+        <div className="flex flex-wrap gap-2">
+          {eventTags.map((tag: string, index: number) => (
             <span
-              className={`font-fira font-semibold text-xs px-2 py-1 rounded-lg ${tagHighlights[tag]}`}
+              key={index}
+              className={`font-fira font-semibold text-xs px-2 py-1 rounded-lg ${tagHighlights[tag] || 'bg-gray-200 text-gray-600'}`}
             >
               {tag}
             </span>
