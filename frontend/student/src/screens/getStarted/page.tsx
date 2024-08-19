@@ -21,7 +21,7 @@ export default function GetStarted() {
         setLoading(false);
       }
     });
-  });
+  }, [useUser]);
 
   const [currentStep, setCurrentStep] =
     React.useState<string>('PersonalDetails');

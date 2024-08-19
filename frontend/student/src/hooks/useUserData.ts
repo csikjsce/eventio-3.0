@@ -7,7 +7,7 @@ export const useUserData = () => {
   const fetch = async () => {
     if (userContext.userData == null) {
       try {
-        const a = await axiosCall('POST', '/user/p/me', true);
+        const a = await axiosCall('POST', '/user/p/me', true, {});
         if (a.error) {
           throw new Error('error fetching');
         }

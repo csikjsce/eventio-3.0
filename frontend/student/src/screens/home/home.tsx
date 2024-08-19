@@ -8,6 +8,9 @@ import TrendingCard from '../../components/TrendingCard';
 
 import abhi from '../../assets/abhi.jpeg';
 import man1 from '../../assets/man1.jpeg';
+import { useUserData } from '../../hooks/useUserData';
+import { useEffect, useState } from 'react';
+import Loader from '../../components/Loader';
 import { axiosCall } from '../../utils/api';
 
 const dummyEvent = {
@@ -38,6 +41,13 @@ export default function Home() {
     fetchEvents();
   }, []);
 
+  const user = useUserData();
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    if (user.userContext.userData) {
+      setLoading(false);
+    }
+  }, [user.userContext.userData]);
   return (
     <div className="flex flex-col p-4">
       <div className="flex flex-col gap-8">
@@ -68,7 +78,8 @@ export default function Home() {
         </div>
       </div>
 
-      <FooterNav />
-    </div>
+        <FooterNav />
+      </div>
+    </>
   );
 }
