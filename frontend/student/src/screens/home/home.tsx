@@ -7,6 +7,9 @@ import TrendingCard from '../../components/TrendingCard';
 
 import abhi from '../../assets/abhi.jpeg';
 import man1 from '../../assets/man1.jpeg';
+import { useUserData } from '../../hooks/useUserData';
+import { useEffect, useState } from 'react';
+import Loader from '../../components/Loader';
 
 const event: {
   name: string;
@@ -31,39 +34,52 @@ const event: {
 };
 
 export default function Home() {
+  const user = useUserData();
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    if (user.userContext.userData) {
+      setLoading(false);
+    }
+  }, [user.userContext.userData]);
   return (
-    <div className="flex flex-col p-4">
-      <div className="flex flex-col gap-8">
-        {/* main area */}
-        <Header />
-        <SearchBar
-          Icon={SearchNormal1}
-          text="What event are you looking for..."
-        />
-        <div className="flex flex-col gap-4 z-10">
-          <p className="text-lg font-medium font-fira text-left text-foreground-light dark:text-foreground-dark">
-            Trending Events
-          </p>
-          <div className="overflow-x-auto">
-            <TrendingCard event={event} />
-            {/* TODO: horizontal scrolling */}
+    <>
+      {loading && <Loader />}
+      <div className="flex flex-col p-4">
+        <div className="flex flex-col gap-8">
+          {/* main area */}
+          <Header
+            name={user.userContext.userData?.name}
+            photo_url={user.userContext.userData?.photo_url}
+          />
+          <SearchBar
+            Icon={SearchNormal1}
+            text="What event are you looking for..."
+          />
+          <div className="flex flex-col gap-4 z-10">
+            <p className="text-lg font-medium font-fira text-left text-foreground-light dark:text-foreground-dark">
+              Trending Events
+            </p>
+            <div className="overflow-x-auto">
+              <TrendingCard event={event} />
+              {/* TODO: horizontal scrolling */}
+            </div>
+          </div>
+          <div className="flex flex-col gap-4 z-10">
+            <p className="text-lg font-medium font-fira text-left text-foreground-light dark:text-foreground-dark">
+              Upcoming Events
+            </p>
+            <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3 overflow-x-auto mb-12">
+              <EventCard event={event} />
+              <EventCard event={event} />
+              <EventCard event={event} />
+              <EventCard event={event} />
+              <EventCard event={event} />
+            </div>
           </div>
         </div>
-        <div className="flex flex-col gap-4 z-10">
-          <p className="text-lg font-medium font-fira text-left text-foreground-light dark:text-foreground-dark">
-            Upcoming Events
-          </p>
-          <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3 overflow-x-auto mb-12">
-            <EventCard event={event} />
-            <EventCard event={event} />
-            <EventCard event={event} />
-            <EventCard event={event} />
-            <EventCard event={event} />
-          </div>
-        </div>
-      </div>
 
-      <FooterNav />
-    </div>
+        <FooterNav />
+      </div>
+    </>
   );
 }
