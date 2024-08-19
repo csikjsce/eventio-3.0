@@ -1,0 +1,53 @@
+import { NotificationBing } from 'iconsax-react';
+
+type Props = {
+  council: string;
+  date: number;
+  title: string;
+  type: string;
+  startTime: string;
+};
+
+const Event = (props: Props) => {
+  function getOrdinalSuffix(number: number) {
+    const remainderOf100 = number % 100;
+    if (remainderOf100 >= 11 && remainderOf100 <= 13) {
+      return 'th';
+    }
+
+    switch (number % 10) {
+      case 1:
+        return 'st';
+      case 2:
+        return 'nd';
+      case 3:
+        return 'rd';
+      default:
+        return 'th';
+    }
+  }
+
+  return (
+    <div className="flex min-w-full my-2">
+      <div className="bg-vitality-red w-[20%] rounded-l-[6px] flex items-center justify-center p-1">
+        <h2 className="font-fira font-normal not-italic">
+          {props.date + getOrdinalSuffix(props.date)}
+        </h2>
+      </div>
+      <div className="bg-card-light dark:bg-card-dark w-[10%] flex items-center ml-1">
+        <img src={`/${props.council}.png`} alt="council image" />
+      </div>
+
+      <div className="bg-card-light dark:bg-card-dark w-[60%] flex flex-col items-start p-1">
+        <h2 className="text-black font-marcellus text-left">{props?.title}</h2>
+        <h3 className="text-gray-1 font-fira">{props?.startTime}</h3>
+      </div>
+
+      <div className="bg-card-light dark:bg-card-dark w-[10%] flex justify-center items-center rounded-r-[6px] p-1">
+        <NotificationBing className="h-[20px] w-[20px]" color="#FF8A65" />
+      </div>
+    </div>
+  );
+};
+
+export default Event;
