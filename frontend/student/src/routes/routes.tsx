@@ -1,10 +1,12 @@
 import Login from '../login/page';
 import Calendar from '../screens/calendar/Calendar';
 import Councils from '../screens/councils/Councils';
+import EventDetails from '../screens/events/EventDetails';
 import MyEvents from '../screens/events/MyEvents';
 import GetStarted from '../screens/getStarted/page';
 import Home from '../screens/home/home';
 import Profile from '../screens/profile/Profile';
+
 const indexRoutes = [
   {
     path: '/login',
@@ -13,15 +15,16 @@ const indexRoutes = [
     routeType: 'login',
   },
   {
-    path: '/',
+    path: '/getting-started',
     name: 'getStarted',
     component: <GetStarted />,
     routeType: 'protected',
   },
   {
-    path: '/home',
+    path: '/',
     name: 'Home',
     component: <Home />,
+    routeType: 'protected',
   },
   {
     path: '/onboarding',
@@ -31,7 +34,8 @@ const indexRoutes = [
   {
     path: '/event-details/:id',
     name: 'Event Details',
-    component: <h1>Event Details</h1>,
+    component: <EventDetails />,
+    // routeType: 'protected',
   },
   {
     path: '/calendar',

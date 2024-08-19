@@ -1,3 +1,41 @@
+// TypeScript Interface for Event Data
+interface EventData {
+  attendance_type: string | null;
+  banner_url: string;
+  created_at: string;
+  dates: string[]; // Adjust as necessary
+  description: string;
+  event_page_image_url: string;
+  event_type: string;
+  external_registration_link: string | null;
+  fee: number;
+  id: number;
+  is_feedback_enabled: boolean;
+  is_only_somaiya: boolean;
+  is_ticket_feature_enabled: boolean;
+  logo_image_url: string;
+  long_description: string;
+  ma_ppt: number;
+  min_ppt: number;
+  name: string;
+  online_event_link: string | null;
+  organizer_id: number;
+  parent_id: number | null;
+  registration_type: string;
+  state: string;
+  state_history: string[];
+  tag_line: string;
+  tags: string[];
+  updated_at: string;
+  venue: string;
+}
+
+// Interface for the Events object
+interface Events {
+  UPCOMING: EventData[];
+}
+
+// TypeScript Interface for User Data
 type User = {
   id: string;
   name: string;
@@ -20,4 +58,5 @@ type UserResponse = {
   error: boolean;
   message?: string;
   user?: User;
+  events?: Events;
 };

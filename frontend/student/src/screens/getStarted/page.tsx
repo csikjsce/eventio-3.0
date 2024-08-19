@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
 import PersonalDetails from './PersonalDetails';
 import EducationalDetails from './EducationalDetails';
@@ -7,8 +7,22 @@ import AllDone from './AllDone';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { PersonalDetailsSchema, personalDetailsSchema } from './validation';
 import { axiosCall } from '../../utils/api';
+import { useUserData } from '../../hooks/useUserData';
+import Loader from '../../components/Loader';
 
 export default function GetStarted() {
+  const [loading, setLoading] = useState(true);
+  const useUser = useUserData();
+  useEffect(() => {
+    useUser.fetch().then((user) => {
+      if (user && (user.phone_number != null || user.roll_number != null)) {
+        window.location.href = '/';
+      } else {
+        setLoading(false);
+      }
+    });
+  }, [useUser]);
+
   const [currentStep, setCurrentStep] =
     React.useState<string>('PersonalDetails');
 
@@ -49,22 +63,28 @@ export default function GetStarted() {
   };
 
   return (
-    <FormProvider {...methods}>
-      <div>
-        {currentStep === 'PersonalDetails' && (
-          <PersonalDetails setCurrentStep={setCurrentStep} />
-        )}
-        {currentStep === 'EducationalDetails' && (
-          <EducationalDetails setCurrentStep={setCurrentStep} />
-        )}
-        {currentStep === 'Interest' && (
-          <Interest
-            setCurrentStep={setCurrentStep}
-            onSubmit={methods.handleSubmit(onSubmit)}
-          />
-        )}
-        {currentStep === 'AllDone' && <AllDone />}
-      </div>
-    </FormProvider>
+    <>
+      {loading ? (
+        <Loader />
+      ) : (
+        <FormProvider {...methods}>
+          <div>
+            {currentStep === 'PersonalDetails' && (
+              <PersonalDetails setCurrentStep={setCurrentStep} />
+            )}
+            {currentStep === 'EducationalDetails' && (
+              <EducationalDetails setCurrentStep={setCurrentStep} />
+            )}
+            {currentStep === 'Interest' && (
+              <Interest
+                setCurrentStep={setCurrentStep}
+                onSubmit={methods.handleSubmit(onSubmit)}
+              />
+            )}
+            {currentStep === 'AllDone' && <AllDone />}
+          </div>
+        </FormProvider>
+      )}
+    </>
   );
 }

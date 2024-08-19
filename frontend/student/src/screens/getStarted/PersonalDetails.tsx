@@ -59,6 +59,7 @@ export default function PersonalDetails({ setCurrentStep }: Props) {
               {...register('phone_number')}
               className="min-h-10 border border-black"
               label="Mobile Number"
+              type='number'
             />
             {errors.phone_number && (
               <p className="text-red-500">{errors.phone_number?.message}</p>
@@ -73,6 +74,7 @@ export default function PersonalDetails({ setCurrentStep }: Props) {
               {...register('roll_number')}
               className="min-h-min border border-black"
               label="Student Id"
+              type='number'
             />
             {errors.roll_number && (
               <p className="text-red-500">{errors.roll_number?.message}</p>
@@ -89,8 +91,8 @@ export default function PersonalDetails({ setCurrentStep }: Props) {
               onPointerEnterCapture={undefined}
               onPointerLeaveCapture={undefined}
             >
-              <Option value="male">Male</Option>
-              <Option value="female">Female</Option>
+              <Option value="MALE">Male</Option>
+              <Option value="FEMALE">Female</Option>
             </Select>
             {errors.gender && (
               <p className="text-red-500">{errors.gender?.message}</p>

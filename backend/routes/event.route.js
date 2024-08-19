@@ -35,8 +35,7 @@ router.post(protected + "/get", authCheck, async (req, res) => {
                                 "TICKET_CLOSED",
                                 "ONGOING",
                             ],
-                        },
-                        is_only_somaiya: true,
+                        }
                     },
                 });
             }

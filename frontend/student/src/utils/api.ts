@@ -4,12 +4,12 @@ export const axiosCall = (
   method: 'GET' | 'POST',
   path: string,
   sendToken: true,
-  data: object | null
+  data?: object | null,
 ): Promise<UserResponse> => {
   return new Promise<UserResponse>((resolve, reject) => {
     axios
       .request({
-        baseURL: 'http://localhost:8000',
+        baseURL: import.meta.env.VITE_APP_SERVER_ADDRESS,
         url: '/api/v1' + path,
         method: method,
         headers: sendToken

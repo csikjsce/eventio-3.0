@@ -7,6 +7,7 @@
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["driverAdapters"]
+  binaryTargets = ["native", "windows", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
@@ -85,14 +86,15 @@ model Events {
 enum BRANCH {
   Artificial_Intelligence_And_Data_Science
   Computer_Engineering
-  Computer_And_Communication_Engineering
+  Computer_And_Communication
   Computer_Science_And_Business_Systems
-  Electronics_And_Computer_Engineering
-  Electronics_And_Telecommunication_Engineering
-  Electronics_Engineering
+  Electronics_And_Computers
+  Electronics_And_Telecommunications
+  Electronics
   Information_Technology
-  Mechanical_Engineering
+  Mechanical
   Robotics_And_Artificial_Intelligence
+  Electronics_VLSI
 }
 
 enum GENDER {
@@ -112,13 +114,13 @@ model User {
   email              String             @unique
   google_id          String             @unique
   degree             String?
-  brach              BRANCH?
+  branch             BRANCH?
   gender             GENDER?
   interests          String[]
   name               String
-  phone_number       Int?
+  phone_number       String?            @unique
   photo_url          String
-  roll_number        Int?
+  roll_number        String?            @unique
   year               Int?
   role               ROLE               @default(USER)
   about              String?

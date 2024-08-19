@@ -34,7 +34,6 @@ router.post(protected + "/update", authCheck, (req, res) => {
         !gender ||
         !interests ||
         !phone_number ||
-        !roll_number ||
         !year ||
         !college
     ) {

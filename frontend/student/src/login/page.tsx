@@ -4,7 +4,10 @@ import { useEffect } from 'react';
 export default function Login() {
   // Function to initiate the Google login process
   const login = () => {
-    window.open('http://localhost:8000/api/v1/auth/google', '_self');
+    window.open(
+      import.meta.env.VITE_APP_SERVER_ADDRESS + '/api/v1/auth/google',
+      '_self',
+    );
   };
 
   useEffect(() => {
