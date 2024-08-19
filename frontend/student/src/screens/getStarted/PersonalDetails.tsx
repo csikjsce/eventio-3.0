@@ -14,7 +14,7 @@ export default function PersonalDetails({ setCurrentStep }: Props) {
     handleSubmit,
     formState: { errors },
     setValue,
-    watch,
+    getValues, // Use getValues instead of watch
   } = useFormContext<PersonalDetailsSchema>(); // Use the correct schema type
 
   console.log(errors);
@@ -56,12 +56,12 @@ export default function PersonalDetails({ setCurrentStep }: Props) {
               onPointerEnterCapture={undefined}
               onPointerLeaveCapture={undefined}
               crossOrigin={undefined}
-              {...register('mobileNumber')}
+              {...register('phone_number')}
               className="min-h-10 border border-black"
               label="Mobile Number"
             />
-            {errors.mobileNumber && (
-              <p className="text-red-500">{errors.mobileNumber?.message}</p>
+            {errors.phone_number && (
+              <p className="text-red-500">{errors.phone_number?.message}</p>
             )}
           </div>
 
@@ -70,12 +70,12 @@ export default function PersonalDetails({ setCurrentStep }: Props) {
               onPointerEnterCapture={undefined}
               onPointerLeaveCapture={undefined}
               crossOrigin={undefined}
-              {...register('studentId')}
+              {...register('roll_number')}
               className="min-h-min border border-black"
               label="Student Id"
             />
-            {errors.studentId && (
-              <p className="text-red-500">{errors.studentId?.message}</p>
+            {errors.roll_number && (
+              <p className="text-red-500">{errors.roll_number?.message}</p>
             )}
           </div>
 
@@ -84,7 +84,7 @@ export default function PersonalDetails({ setCurrentStep }: Props) {
               label="Select Gender"
               className=""
               onChange={(e) => handleGenderChange(e as unknown as string)}
-              value={watch('gender')}
+              value={getValues('gender')} // Use getValues instead of watch
               placeholder={undefined}
               onPointerEnterCapture={undefined}
               onPointerLeaveCapture={undefined}

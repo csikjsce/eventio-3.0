@@ -1,4 +1,4 @@
-export const departmentOptions: { [key: string]: string[] } = {
+export const branchOptions: { [key: string]: string[] } = {
   '2025': [
     'Computer Engineering',
     'Information Technology',

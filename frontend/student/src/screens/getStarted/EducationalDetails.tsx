@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Option, Select, Typography } from '@material-tailwind/react';
 import Quote from '../../components/Quote';
-import { departmentOptions } from '../../constants/values';
+import { branchOptions } from '../../constants/values';
 import { useFormContext } from 'react-hook-form';
 import { PersonalDetailsSchema } from './validation'; // Import the correct schema type
 
@@ -14,24 +14,25 @@ export default function EducationalDetails({ setCurrentStep }: Props) {
     handleSubmit,
     formState: { errors },
     setValue,
-    watch,
     getValues,
-  } = useFormContext<PersonalDetailsSchema>(); // Access form methods via useFormContext
+  } = useFormContext<PersonalDetailsSchema>();
 
-  const [selectedYear, setSelectedYear] = useState<number | null>(null);
-  const [availableDepartments, setAvailableDepartments] = useState<string[]>(
-    [],
+  const [selectedYear, setSelectedYear] = useState<number | null>(
+    getValues('year') || null,
   );
-  console.log(getValues());
+  const [availableBranchs, setAvailableBranchs] = useState<string[]>(
+    branchOptions[selectedYear!] || [],
+  );
+
   const handleYearChange = (year: string) => {
     const yearAsNumber = Number(year);
     setSelectedYear(yearAsNumber);
-    setAvailableDepartments(departmentOptions[yearAsNumber] || []);
-    setValue('graduationYear', yearAsNumber);
+    setAvailableBranchs(branchOptions[yearAsNumber] || []);
+    setValue('year', yearAsNumber);
   };
 
-  const handleDepartmentChange = (department: string) => {
-    setValue('department', department);
+  const handleBranchChange = (branch: string) => {
+    setValue('branch', branch);
   };
 
   const handleClickBack = () => {
@@ -58,7 +59,7 @@ export default function EducationalDetails({ setCurrentStep }: Props) {
         <Typography
           variant="h5"
           color="black"
-          className="mb-4 "
+          className="mb-4"
           placeholder={undefined}
           onPointerEnterCapture={undefined}
           onPointerLeaveCapture={undefined}
@@ -68,8 +69,8 @@ export default function EducationalDetails({ setCurrentStep }: Props) {
         <div className="mb-6 flex flex-col gap-4">
           <Select
             label="Select Graduation Year"
-            onChange={(value) => handleYearChange(value as string)} // Handle value as string first, then convert to number
-            value={watch('graduationYear')?.toString() || ''}
+            onChange={(value) => handleYearChange(value as string)}
+            value={getValues('year')?.toString() || ''}
             placeholder={undefined}
             onPointerEnterCapture={undefined}
             onPointerLeaveCapture={undefined}
@@ -79,27 +80,27 @@ export default function EducationalDetails({ setCurrentStep }: Props) {
             <Option value="2027">2027</Option>
             <Option value="2028">2028</Option>
           </Select>
-          {errors.graduationYear && (
-            <p className="text-red-500">{errors.graduationYear?.message}</p>
+          {errors.year && (
+            <p className="text-red-500">{errors.year?.message}</p>
           )}
 
           <Select
-            label="Select Department"
-            disabled={!selectedYear} // Disable if no year is selected
-            onChange={(value) => handleDepartmentChange(value as string)}
-            value={watch('department')}
+            label="Select Branch"
+            disabled={!selectedYear}
+            onChange={(value) => handleBranchChange(value!)}
+            value={getValues('branch')}
             placeholder={undefined}
             onPointerEnterCapture={undefined}
             onPointerLeaveCapture={undefined}
           >
-            {availableDepartments.map((department, index) => (
-              <Option key={index} value={department}>
-                {department}
+            {availableBranchs.map((branch, index) => (
+              <Option key={index} value={branch}>
+                {branch}
               </Option>
             ))}
           </Select>
-          {errors.department && (
-            <p className="text-red-500">{errors.department?.message}</p>
+          {errors.branch && (
+            <p className="text-red-500">{errors.branch?.message}</p>
           )}
         </div>
         <div className="flex justify-between">
@@ -108,9 +109,9 @@ export default function EducationalDetails({ setCurrentStep }: Props) {
             variant="paragraph"
             color="gray"
             onClick={handleClickBack}
+            placeholder={undefined}
             onPointerEnterCapture={undefined}
             onPointerLeaveCapture={undefined}
-            placeholder={undefined}
           >
             Back
           </Typography>

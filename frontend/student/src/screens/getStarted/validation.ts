@@ -2,16 +2,16 @@ import * as yup from 'yup';
 
 export const personalDetailsSchema = (currentStep: string) =>
   yup.object({
-    mobileNumber: yup
+    phone_number: yup
       .string()
       .matches(/^\d{10}$/, 'Mobile number must be 10 digits')
       .required('Mobile number is required'),
 
-    studentId: yup.string().required('Student ID is required'),
+    roll_number: yup.string().required('Student ID is required'),
 
     gender: yup.string().required('Gender is required'),
 
-    graduationYear: yup
+    year: yup
       .number()
       .typeError('Graduation year must be a number')
       .when([], {
@@ -20,9 +20,9 @@ export const personalDetailsSchema = (currentStep: string) =>
         otherwise: (schema) => schema.notRequired(),
       }),
 
-    department: yup.string().when([], {
+    branch: yup.string().when([], {
       is: () => currentStep === 'EducationalDetails',
-      then: (schema) => schema.required('Department is required'),
+      then: (schema) => schema.required('Branch is required'),
       otherwise: (schema) => schema.notRequired(),
     }),
 

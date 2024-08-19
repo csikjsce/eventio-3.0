@@ -10,15 +10,17 @@ interface Props {
 }
 
 export default function Interest({ setCurrentStep, onSubmit }: Props) {
-  const { setValue, watch } = useFormContext<PersonalDetailsSchema>(); // Access form methods via useFormContext
+  const { setValue, watch, getValues } =
+    useFormContext<PersonalDetailsSchema>();
 
-  const selectedChips = watch('interests') || []; // Watch the interests value from the form state
+  const selectedChips = watch('interests') || []; // Watch the interests value for real-time updates
+  const allChips = getValues('interests') || []; // Get the current value of interests
 
   const handleChipClick = (label: string) => {
     const updatedChips = selectedChips.includes(label)
       ? selectedChips.filter((chip) => chip !== label)
       : [...selectedChips, label];
-    setValue('interests', updatedChips); // Update the interests in form state
+    setValue('interests', updatedChips);
   };
 
   const handleClickBack = () => {
@@ -69,15 +71,13 @@ export default function Interest({ setCurrentStep, onSubmit }: Props) {
               key={chip}
               onClick={() => handleChipClick(chip)}
               className={`${
-                selectedChips.includes(chip)
-                  ? 'bg-red-600 shadow-lg'
-                  : 'bg-gray-200'
+                allChips.includes(chip) ? 'bg-red-600 shadow-lg' : 'bg-gray-200'
               } p-3 rounded-full cursor-pointer`}
             >
               <Chip
                 value={chip}
                 className={`bg-transparent ${
-                  selectedChips.includes(chip) ? 'text-white' : 'text-gray-800'
+                  allChips.includes(chip) ? 'text-white' : 'text-gray-800'
                 }`}
               />
             </button>
