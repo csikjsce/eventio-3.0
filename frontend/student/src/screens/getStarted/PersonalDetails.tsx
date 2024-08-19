@@ -18,9 +18,7 @@ export default function PersonalDetails({ setCurrentStep }: Props) {
   } = useFormContext<PersonalDetailsSchema>(); // Use the correct schema type
 
   console.log(errors);
-  setValue('interests', []);
-  setValue('department', 'null');
-  setValue('graduationYear', 0);
+
   const onSubmit = () => {
     setCurrentStep('EducationalDetails');
   };

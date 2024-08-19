@@ -69,7 +69,7 @@ export default function EducationalDetails({ setCurrentStep }: Props) {
           <Select
             label="Select Graduation Year"
             onChange={(value) => handleYearChange(value as string)} // Handle value as string first, then convert to number
-            value={watch('graduationYear').toString()}
+            value={watch('graduationYear')?.toString() || ''}
             placeholder={undefined}
             onPointerEnterCapture={undefined}
             onPointerLeaveCapture={undefined}
