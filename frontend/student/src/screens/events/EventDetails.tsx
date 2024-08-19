@@ -1,113 +1,57 @@
-import eventpic from '../../assets/eventdetails.png';
 import { Button } from '@material-tailwind/react';
-import { Link } from 'react-router-dom';
-import { useState } from 'react';
+import axios from 'axios';
 import {
   ArrowLeft,
-  Send2,
-  CalendarAdd,
   Calendar2,
+  CalendarAdd,
   Location,
-  User,
-  Icon as IconType,
+  Send2,
+  User
 } from 'iconsax-react';
+import { useEffect, useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import IconText from '../../components/IconText';
+import Passage from '../../components/Passage';
 
-const event: {
-  name: string;
-  council: string;
-  image: string;
-  councilImage: string;
-  date: Date;
-  location: string;
-  tags: string[];
-  shortDesc: string;
-  status: string;
-  about: string;
-  speakers: { img: string; name: string; subtext1: string; subtext2: string }[];
-  takeaways: string;
-  sponsors: { img: string; name: string; subtext1: string }[];
-  rewards: string;
-  contact: { name: string; position: string; phone: string }[];
-} = {
-  name: 'Road To Programming',
-  council: 'CSI KJSCE',
-  image: eventpic,
-  councilImage: eventpic,
-  date: new Date(1724758200000),
-  location: 'Auditorium A Building',
-  tags: ['Tech', 'Registered'],
-  shortDesc: 'Short Description',
-  status: 'Live',
-  about:
-    'Road to Programming is an educational event guiding participants on a concise journey through the fundamentals and pathways of programming, offering insights into coding concepts and career possibilities.',
-  speakers: [
-    {
-      img: eventpic,
-      name: 'Ameya Yeole',
-      subtext1: 'Third Year IT',
-      subtext2: 'Tutor @ Coding Ninjas',
-    },
-    {
-      img: eventpic,
-      name: 'Naman Sachatee',
-      subtext1: 'Second Year IT',
-      subtext2: 'Ops Team Member @ CSI KJSCE',
-    },
-    {
-      img: eventpic,
-      name: 'Ritvik Jindal',
-      subtext1: 'Third Year Comps',
-      subtext2: 'Tech Head @ CSI KJSCE',
-    },
-  ],
-  takeaways:
-    'Prizes, Fundamental Programming Understanding, Real-World Application and Career Pathways, Structured Learning Roadmap',
-  sponsors: [
-    { img: eventpic, name: 'Canva', subtext1: 'Design Partner' },
-    { img: eventpic, name: 'Balaji Wafer', subtext1: 'Snack Partner' },
-    { img: eventpic, name: 'Red Bull', subtext1: 'Drinks Partner' },
-    { img: eventpic, name: 'McLaren', subtext1: 'Sports Partner' },
-  ],
-  rewards:
-    'Engage in domain-specific quizzes and seize your chance to shine. Be among the Top 5 scorers in each domain to win rewards, and you can claim your spot in the elite by securing a place among the overall Top 5 contestants along with getting rewards.',
-  contact: [
-    { name: 'Eshan Trivedi', position: '(Gen Sec)', phone: '+91 7788991122' },
-    { name: 'Ritvik Jindal', position: '(Tech Head)', phone: '+91 9988776655' },
-  ],
-};
 
-function IconText({
-  Icon,
-  line1,
-  line2,
-}: {
-  Icon: IconType;
-  line1: string;
-  line2: string;
-}) {
-  return (
-    <div className="flex flex-col items-center">
-      <Icon size={30} color="#B61F2D" variant="Bold" />
-      <p className="font-fira text-gray-1 text-sm mt-2">{line1}</p>
-      <p className="font-fira text-gray-1 text-sm">{line2}</p>
-    </div>
-  );
-}
 
-function Passage({ title, content }: { title: string; content: string }) {
-  return (
-    <div className="flex flex-col gap-2 items-start text-left">
-      <p className="font-fira text-foreground-light dark:text-foreground-dark text-lg">
-        {title}
-      </p>
-      <p className="font-fira text-gray-1 dark:text-foreground-dark text-xs">
-        {content}
-      </p>
-    </div>
-  );
-}
+
 
 export default function EventDetails() {
+  const [event, setEvent] = useState<{
+    name: string;
+    council: string;
+    image: string;
+    councilImage: string;
+    date: Date;
+    location: string;
+    tags: string[];
+    shortDesc: string;
+    status: string;
+    about: string;
+    speakers: { img: string; name: string; subtext1: string; subtext2: string }[];
+    takeaways: string;
+    sponsors: { img: string; name: string; subtext1: string }[];
+    rewards: string;
+    contact: { name: string; position: string; phone: string }[];
+  }>({
+    name: "",
+    council: "",
+    image: "",
+    councilImage: "",
+    date: new Date(),
+    location: "",
+    tags: [],
+    shortDesc: "",
+    status: "",
+    about: "",
+    speakers: [],
+    takeaways: "",
+    sponsors: [],
+    rewards: "",
+    contact: []
+  });
+  
   const dateString = event.date.toDateString().slice(0, -5); // Remove year
   const timeString = event.date.toLocaleTimeString('en-US', {
     hour: '2-digit',
@@ -116,6 +60,31 @@ export default function EventDetails() {
 
   const [loading, setLoading] = useState(false);
   const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
+
+  const {id} = useParams();
+  useEffect(()=>{
+
+    const fetchEvent = async(_id: string) =>{
+
+
+        axios
+      .request({
+        baseURL: import.meta.env.VITE_APP_SERVER_ADDRESS,
+        url: '/api/v1' + '/event/p/get/15',
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer ' + localStorage.getItem('accessToken'),
+        },
+      })
+      .then((res) => console.log(res.data));
+        
+   
+
+    };
+    if(id)
+    fetchEvent(id);
+
+  },[id])
   return (
     <div className="absolute top-0 left-0">
       <div

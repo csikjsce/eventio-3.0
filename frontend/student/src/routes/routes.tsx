@@ -1,8 +1,8 @@
 import Login from '../login/page';
 import Calendar from '../screens/calendar/Calendar';
 import Councils from '../screens/councils/Councils';
-import MyEvents from '../screens/events/MyEvents';
 import EventDetails from '../screens/events/EventDetails';
+import MyEvents from '../screens/events/MyEvents';
 import GetStarted from '../screens/getStarted/page';
 import Home from '../screens/home/home';
 import Profile from '../screens/profile/Profile';
@@ -35,6 +35,7 @@ const indexRoutes = [
     path: '/event-details/:id',
     name: 'Event Details',
     component: <EventDetails />,
+    // routeType: 'protected',
   },
   {
     path: '/calendar',
