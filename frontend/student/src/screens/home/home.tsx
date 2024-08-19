@@ -32,6 +32,7 @@ export default function Home() {
     const fetchEvents = async () => {
       try {
         const response = await axiosCall('POST', '/event/p/get', true);
+        console.log(response);
         if (response.events) {
           setUpcomingEvents(response.events.UPCOMING);
         }
@@ -59,7 +60,10 @@ export default function Home() {
     <div className="flex flex-col p-4">
       <div className="flex flex-col gap-8">
         {/* main area */}
-        <Header />
+        <Header
+          name={user.userContext.userData?.name}
+          photo_url={user.userContext.userData?.photo_url}
+        />
         <SearchBar
           Icon={SearchNormal1}
           text="What event are you looking for..."
