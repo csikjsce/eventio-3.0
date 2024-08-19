@@ -10,18 +10,19 @@ const indexRoutes = [
     path: '/login',
     name: 'Login',
     component: <Login />,
-    routeType: "login"
+    routeType: 'login',
+  },
+  {
+    path: '/getting-started',
+    name: 'getStarted',
+    component: <GetStarted />,
+    routeType: 'protected',
   },
   {
     path: '/',
-    name: 'getStarted',
-    component: <GetStarted />,
-    routeType: "protected"
-  },
-  {
-    path: '/home',
     name: 'Home',
     component: <Home />,
+    routeType: 'protected',
   },
   {
     path: '/onboarding',
