@@ -11,21 +11,21 @@ import {
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import IconText from '../../components/IconText';
-import Passage from '../../components/Passage';
 import Loader from '../../components/Loader';
+import Passage from '../../components/Passage';
 
 export default function EventDetails() {
   const [event, setEvent] = useState<{
     name: string;
-    council: string;
+    organizer: string;
     image: string;
-    councilImage: string;
+    banner_url: string;
     date: Date;
-    location: string;
+    venue: string;
     tags: string[];
-    shortDesc: string;
-    status: string;
-    about: string;
+    description: string;
+    
+    long_description: string;
     speakers: {
       img: string;
       name: string;
@@ -38,15 +38,15 @@ export default function EventDetails() {
     contact: { name: string; position: string; phone: string }[];
   }>({
     name: '',
-    council: '',
+    organizer: '',
     image: '',
-    councilImage: '',
+    banner_url: '',
     date: new Date(),
-    location: '',
+    venue: '',
     tags: [],
-    shortDesc: '',
-    status: '',
-    about: '',
+    description: '',  
+    
+    long_description: '',
     speakers: [],
     takeaways: '',
     sponsors: [],
@@ -128,30 +128,30 @@ export default function EventDetails() {
             <div className="h-28 flex flex-col justify-between">
               <hr className="border-1 border-gray-1" />
               <div className="flex flex-row justify-between">
-                <IconText
-                  Icon={Calendar2}
-                  line1={event?.date?.toDateString().slice(0, -5)}
-                  line2={event?.date?.toLocaleTimeString('en-US', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                />
-                <IconText
-                  Icon={Location}
-                  line1={event.location.split(' ')[0]}
-                  line2={event.location.slice(event.location.indexOf(' '))}
-                />
-                <IconText Icon={User} line1="100" line2="Participants" />
-              </div>
+  <IconText
+    Icon={Calendar2}
+    line1={event?.date?.toDateString().slice(0, -5)}
+    line2={event?.date?.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+    })}
+  />
+  <IconText
+    Icon={Location}
+    line1={event.venue ? event.venue.split(' ')[0] : 'Location not specified'}
+    line2={event.venue ? event.venue.slice(event.venue.indexOf(' ')) : ''}
+  />
+  <IconText Icon={User} line1="100" line2="Participants" />
+</div>
               <hr className="border-1 border-gray-1" />
             </div>
-            <Passage title="About the Event" content={event.about} />
+            <Passage title="About the Event" content={event.long_description} />
 
             <div className="flex flex-col gap-2 items-start text-left">
               <p className="font-fira text-foreground-light dark:text-foreground-dark text-lg">
                 Notable Speakers
               </p>
-              <div className="flex flex-col gap-3">
+              {/* <div className="flex flex-col gap-3">
                 {event.speakers.map((speaker) => (
                   <div className="flex flex-row gap-3 items-center">
                     <img
@@ -172,12 +172,12 @@ export default function EventDetails() {
                     </div>
                   </div>
                 ))}
-              </div>
+              </div> */}
             </div>
 
             <Passage title="Key Takeaways" content={event.takeaways} />
 
-            <div className="flex flex-col gap-2 items-start text-left">
+            {/* <div className="flex flex-col gap-2 items-start text-left">
               <p className="font-fira text-foreground-light dark:text-foreground-dark text-lg">
                 Sponsors
               </p>
@@ -202,11 +202,11 @@ export default function EventDetails() {
                   </div>
                 ))}
               </div>
-            </div>
+            </div> */}
 
             <Passage title="Rewards" content={event.rewards} />
 
-            <div className="flex flex-col gap-1 items-start text-left">
+            {/* <div className="flex flex-col gap-1 items-start text-left">
               <p className="font-fira text-foreground-light dark:text-foreground-dark text-lg">
                 Contact
               </p>
@@ -225,7 +225,7 @@ export default function EventDetails() {
                   </div>
                 ))}
               </div>
-            </div>
+            </div> */}
           </div>
 
           <div className="fixed bottom-0 left-0 w-screen p-4 bg-background-light dark:bg-background-dark">
