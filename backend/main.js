@@ -101,15 +101,17 @@ app.use("/api/" + version + "/auth", authRoute);
 app.use("/api/" + version + "/event", eventRoute);
 app.use("/api/" + version + "/council", councilRoute);
 
-const port = process.env.PORT || 8000;
-app.listen(port, () => logger.debug(`Server started on port ${port}`));
+if (process.env.NODE_ENV !== "production") {
+    const port = process.env.PORT || 8000;
+    app.listen(port, () => logger.debug(`Server started on port ${port}`));
+} else {
+    const fs = require("fs");
+    const httpsOptions = {
+        key: fs.readFileSync("./cert/privkey.pem"),
+        cert: fs.readFileSync("./cert/fullchain.pem"),
+    };
 
-// const fs = require("fs");
-// const httpsOptions = {
-//     key: fs.readFileSync("./cert/privkey.pem"),
-//     cert: fs.readFileSync("./cert/fullchain.pem"),
-// };
-
-// https.createServer(httpsOptions, app).listen(443, () => {
-//     logger.info("Server started on https://localhost:443");
-// });
+    https.createServer(httpsOptions, app).listen(443, () => {
+        logger.info("Server started on https://localhost:443");
+    });
+}
