@@ -30,13 +30,17 @@ export default function Councils() {
     <div className="flex flex-col p-4">
       <div className="flex flex-col gap-8">
         {/* main area */}
-        <Header
-          name={user.userContext.userData?.name}
-          photo_url={user.userContext.userData?.photo_url}
-        />
+        {user.userContext.userData &&
+          user.userContext.userData.name &&
+          user.userContext.userData.photo_url && (
+            <Header
+              name={user.userContext.userData.name}
+              photo_url={user.userContext.userData.photo_url}
+            />
+          )}
         <SearchBar
           Icon={SearchNormal1}
-          text="What Council are you looking for..."
+          className = "mt-6"
         />
 
         <div className="flex flex-col gap-4 z-10">
