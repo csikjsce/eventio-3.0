@@ -124,7 +124,21 @@ router.post(protected + "/get/:id", authCheck, async (req, res) => {
             where: {
                 id: parseInt(req.params.id),
             },
+            include: {
+                organizer: {
+                    select: {
+                        name: true,
+                        photo_url: true,
+                    },
+                },
+                Participant: {
+                    where: {
+                        user_id: req.user.id,
+                    },
+                },
+            },
         });
+        console.log(event);
         let eventResponse = {
             id: event.id,
             title: event.title,
@@ -134,13 +148,21 @@ router.post(protected + "/get/:id", authCheck, async (req, res) => {
             fee: event.fee,
             tags: event.tags,
             banner_url: event.banner_url,
-            logo_image_url: event.logo_image_url,
+            logo_image_url: event.logo_image__url,
             event_page_image_url: event.event_page_image_url,
             is_feedback_enabled: event.is_feedback_enabled,
             attendance_type: event.attendance_type,
             registration_type: event.registration_type,
             external_registration_link: event.external_registration_link,
             is_ticket_feature_enabled: event.is_ticket_feature_enabled,
+            dates: event.dates,
+            venue: event.venue,
+            organizer: event.organizer,
+            council_type: event.council_type,
+            is_active: event.is_active,
+            is_deleted: event.is_deleted,
+            name: event.name,
+            Participant: event.Participant.length == 0 ? false : true,
         };
         res.json({ error: false, event: eventResponse });
     } catch (err) {
