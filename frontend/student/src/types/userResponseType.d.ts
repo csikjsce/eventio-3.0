@@ -3,7 +3,7 @@ interface EventData {
   attendance_type: string | null;
   banner_url: string;
   created_at: string;
-  dates: string[]; // Adjust as necessary
+  dates: Date[];
   description: string;
   event_page_image_url: string;
   event_type: string;
@@ -13,12 +13,16 @@ interface EventData {
   is_feedback_enabled: boolean;
   is_only_somaiya: boolean;
   is_ticket_feature_enabled: boolean;
-  logo_image_url: string;
+  logo_image__url: string;
   long_description: string;
   ma_ppt: number;
   min_ppt: number;
   name: string;
   online_event_link: string | null;
+  organizer: {
+    name: string;
+    photo_url: string;
+  }
   organizer_id: number;
   parent_id: number | null;
   registration_type: string;

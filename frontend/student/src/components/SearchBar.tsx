@@ -1,33 +1,28 @@
-import { Input } from '@material-tailwind/react';
-import { Icon as IconType, Setting4 } from 'iconsax-react';
+import { Icon as IconType } from 'iconsax-react';
 
 export default function SearchBar({
   Icon,
-  text,
+  className,
 }: {
   Icon: IconType;
-  text: string;
+  className?: string;
 }) {
   return (
-    <div className="relative flex items-center gap-2 rounded-xl  outline-1 outline-gray-300 focus:outline-none">
-      <Input
-        variant="outlined"
-        label="What event are you looking for...  "
-        placeholder={text}
-        className="border-0 focus:outline-none  pr-12 placeholder-padding label-padding-50"
-        containerProps={{ className: 'w-full' }}
-        onPointerEnterCapture={undefined}
-        onPointerLeaveCapture={undefined}
-        crossOrigin={undefined}
-      />
+    <div
+      className={
+        'h-14 p-4 relative flex items-center gap-4 rounded-xl outline-1 border-gray-400 focus:outline-none border-2 ' +
+        className
+      }
+    >
       {Icon && (
-        <div className="absolute right-11 top-1/2 transform -translate-y-1/2">
+        <div className="">
           <Icon aria-label="Search Icon" className="w-5 h-5" />
         </div>
       )}
-      <Setting4
-        aria-label="Settings Icon"
-        className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5"
+      <input
+        placeholder={'What event are you looking for...'}
+        className="border-0 outline-none w-full h-10"
+        type="text"
       />
     </div>
   );

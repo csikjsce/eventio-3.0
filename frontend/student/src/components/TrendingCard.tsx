@@ -10,23 +10,15 @@ export default function TrendingCard({ event }: { event: EventData }) {
       console.error('Event ID is missing');
     }
   };
-
-  const {
-    banner_url = '',
-    logo_image_url = '',
-    name = 'Event Name',
-    created_at = new Date().toISOString(),
-  } = event;
-
   return (
     <div
-      className="min-w-full flex flex-col mr-1 gap-2 bg-card-light dark:bg-card-dark rounded-b-lg cursor-pointer"
+      className="min-w-[97%] flex flex-col mr-1 gap-2 bg-card-light dark:bg-card-dark rounded-b-lg cursor-pointer shadow-lg"
       onClick={handleClick}
     >
       {/* Event picture */}
       <img
-        src={banner_url}
-        alt={name}
+        src={event.banner_url}
+        alt={event.name}
         className="w-full h-40 object-cover rounded-t-lg"
       />
       {/* Event details */}
@@ -34,16 +26,17 @@ export default function TrendingCard({ event }: { event: EventData }) {
         <div className="flex flex-row gap-2 items-center">
           {/* Council picture and event name */}
           <img
-            src={logo_image_url}
+            src={event.organizer.photo_url}
             alt="Event Logo"
+            referrerPolicy="no-referrer"
             className="w-10 h-10 aspect-square rounded-full object-cover border border-vitality-red"
           />
           <div className="flex flex-col text-left">
             <p className="font-fira font-semibold text-lg text-foreground-light dark:text-foreground-dark">
-              {name}
+              {event.name}
             </p>
             <p className="font-fira text-xs text-foreground-light dark:text-foreground-dark">
-              {new Date(created_at).toLocaleDateString()}
+              {new Date(event.created_at).toLocaleDateString()}
             </p>
           </div>
         </div>
