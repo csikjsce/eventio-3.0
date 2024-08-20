@@ -8,7 +8,7 @@ const logger = require("../utils/logger");
 router.get("/google", (req, res, next) => {
     passport.authenticate("google", {
         scope: ["profile", "email"],
-        hd: "somaiya.edu"
+        ...(process.env.NODE_ENV == "production" && { hd: "somaiya.edu" }),
     })(req, res, next);
 });
 

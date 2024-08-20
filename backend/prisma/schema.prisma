@@ -6,8 +6,8 @@
 
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["driverAdapters"]
-  binaryTargets = ["native", "windows", "linux-musl-openssl-3.0.x"]
+  previewFeatures = ["driverAdapters", "relationJoins"]
+  binaryTargets   = ["native", "windows", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
@@ -68,7 +68,7 @@ model Events {
   state_history              STATE[]
   updated_at                 DateTime          @updatedAt
   banner_url                 String
-  logo_image__url            String
+  logo_image__url             String
   event_page_image_url       String
   parent                     Events?           @relation("EventToEvent", fields: [parent_id], references: [id])
   parent_id                  Int?
