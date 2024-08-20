@@ -1,7 +1,5 @@
-import React from 'react';
+import React from "react";
 
 export default function Events() {
-  return(
-    <p>events</p>
-  )
+    return <p>events</p>;
 }
