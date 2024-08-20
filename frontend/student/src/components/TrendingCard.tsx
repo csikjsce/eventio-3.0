@@ -4,8 +4,19 @@ export default function TrendingCard({ event }: { event: EventData }) {
   const navigate = useNavigate();
 
   const handleClick = () => {
-    navigate(`/event-details/${event.id}`);
+    if (event.id) {
+      navigate(`/event-details/${event.id}`);
+    } else {
+      console.error('Event ID is missing');
+    }
   };
+
+  const {
+    banner_url = '',
+    logo_image_url = '',
+    name = 'Event Name',
+    created_at = new Date().toISOString(),
+  } = event;
 
   return (
     <div
@@ -14,8 +25,8 @@ export default function TrendingCard({ event }: { event: EventData }) {
     >
       {/* Event picture */}
       <img
-        src={event.banner_url}
-        alt={event.name}
+        src={banner_url}
+        alt={name}
         className="w-full h-40 object-cover rounded-t-lg"
       />
       {/* Event details */}
@@ -23,16 +34,16 @@ export default function TrendingCard({ event }: { event: EventData }) {
         <div className="flex flex-row gap-2 items-center">
           {/* Council picture and event name */}
           <img
-            src={event.logo_image_url}
-            alt="CSI"
+            src={logo_image_url}
+            alt="Event Logo"
             className="w-10 h-10 aspect-square rounded-full object-cover border border-vitality-red"
           />
           <div className="flex flex-col text-left">
             <p className="font-fira font-semibold text-lg text-foreground-light dark:text-foreground-dark">
-              {event.name}
+              {name}
             </p>
             <p className="font-fira text-xs text-foreground-light dark:text-foreground-dark">
-              {new Date(event.created_at).toLocaleDateString()}
+              {new Date(created_at).toLocaleDateString()}
             </p>
           </div>
         </div>
