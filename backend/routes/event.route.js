@@ -22,6 +22,10 @@ router.post(protected + "/get", authCheck, async (req, res) => {
                             in: req.query.state,
                         },
                     },
+                    relationLoadStrategy: "join",
+                    include: {
+                        organizer: true,
+                    },
                 });
             } else {
                 events = await prisma.events.findMany({
@@ -35,7 +39,11 @@ router.post(protected + "/get", authCheck, async (req, res) => {
                                 "TICKET_CLOSED",
                                 "ONGOING",
                             ],
-                        }
+                        },
+                    },
+                    relationLoadStrategy: "join",
+                    include: {
+                        organizer: true,
                     },
                 });
             }
@@ -62,6 +70,10 @@ router.post(protected + "/get", authCheck, async (req, res) => {
                         },
                         is_only_somaiya: false,
                     },
+                    relationLoadStrategy: "join",
+                    include: {
+                        organizer: true,
+                    },
                 });
             } else {
                 events = await prisma.events.findMany({
@@ -77,6 +89,15 @@ router.post(protected + "/get", authCheck, async (req, res) => {
                             ],
                         },
                         is_only_somaiya: false,
+                    },
+                    relationLoadStrategy: "join",
+                    include: {
+                        organizer: {
+                            select: {
+                                name: true,
+                                photo_url: true,
+                            },
+                        },
                     },
                 });
             }
@@ -151,7 +172,6 @@ router.post(protected + "/create", authCheck, (req, res) => {
             is_only_somaiya,
             fee,
         } = req.body;
-        
     } else {
         let {
             name,
@@ -174,6 +194,9 @@ router.post(protected + "/create", authCheck, (req, res) => {
             venue,
             dates,
         } = req.body;
+        if (dates && dates.length) {
+            dates = dates.map((d) => new Date(d));
+        }
         prisma.events
             .create({
                 data: {
@@ -248,6 +271,10 @@ router.post(
         }
 
         let field = req.body;
+
+        if (field.dates && field.dates.length) {
+            field.dates = field.dates.map((d) => new Date(d));
+        }
         try {
             await prisma.events.update({
                 where: {
