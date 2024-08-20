@@ -1,5 +1,6 @@
 import { Button } from '@material-tailwind/react';
 import { useEffect } from 'react';
+import EventioLogo from '../assets/EventioLogo.svg'
 
 export default function Login() {
   // Function to initiate the Google login process
@@ -23,16 +24,23 @@ export default function Login() {
   }, []);
 
   return (
-    <div className="flex justify-center items-center h-screen">
+    <div className="flex flex-col justify-center items-center h-screen gap-16 p-4">
+      <div className="flex flex-col w-full h-44 items-center align-middle justify-end">
+        <img src={EventioLogo}  alt="Eventio" className="h-20 w-20"/>
+      </div>
+      <div className="fiex justify-center items-center text-center">
+        <p className="font-marcellus text-primary text-3xl">Eventio</p>
+        <p className="text-sm">By CSI-KJSCE</p>
+      </div>
       <Button
-        fullWidth
         onClick={login}
-        className="max-w-xs bg-blue-500 text-white"
-        placeholder={undefined}
-        onPointerEnterCapture={undefined}
-        onPointerLeaveCapture={undefined}
+        size="lg"
+        variant="outlined"
+        color="blue-gray"
+        className="flex items-center gap-3"
       >
-        Login with Google
+        <img src="https://docs.material-tailwind.com/icons/google.svg" alt="metamask" className="h-6 w-6" />
+        Continue with Google
       </Button>
     </div>
   );
