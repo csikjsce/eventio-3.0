@@ -1,3 +1,4 @@
+// import React, { useState } from "react";
 import {
   Popover,
   PopoverHandler,
@@ -13,6 +14,7 @@ const eventData = {
 };
 
 export default function PopoverCustomAnimation() {
+  // const [popupState, _setPopupState] = useState<PopupState>(eventData.state);
 
   const getButtonStyle = () => {
     switch (popupState) {
