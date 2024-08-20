@@ -14,8 +14,8 @@ export const axiosCall = (
         method: method,
         headers: sendToken
           ? {
-            Authorization: 'Bearer ' + localStorage.getItem('accessToken'),
-          }
+              Authorization: 'Bearer ' + localStorage.getItem('accessToken'),
+            }
           : {},
         data: data,
       })

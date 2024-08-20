@@ -59,7 +59,7 @@ export default function PersonalDetails({ setCurrentStep }: Props) {
               {...register('phone_number')}
               className="min-h-10 border border-black"
               label="Mobile Number"
-              type='number'
+              type="number"
             />
             {errors.phone_number && (
               <p className="text-red-500">{errors.phone_number?.message}</p>
@@ -74,7 +74,7 @@ export default function PersonalDetails({ setCurrentStep }: Props) {
               {...register('roll_number')}
               className="min-h-min border border-black"
               label="Student Id"
-              type='number'
+              type="number"
             />
             {errors.roll_number && (
               <p className="text-red-500">{errors.roll_number?.message}</p>

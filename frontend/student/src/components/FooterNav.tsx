@@ -1,12 +1,6 @@
-import {
-  Home,
-  Icon as IconType,
-  People,
-  ProfileCircle
-} from 'iconsax-react';
+import { Home, Icon as IconType, People, ProfileCircle } from 'iconsax-react';
 
 import { NavLink } from 'react-router-dom';
-
 
 function NavbarItem({
   Icon,

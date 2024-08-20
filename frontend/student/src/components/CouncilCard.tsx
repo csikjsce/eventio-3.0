@@ -8,13 +8,12 @@ const tagHighlights: { [key: string]: string } = {
 export default function CouncilCard({
   council,
 }: {
-    council: {
+  council: {
     name: string;
     phoneNumber: string;
-        
+
     image: string;
-   
-   
+
     tag: string;
   };
 }) {
@@ -29,34 +28,29 @@ export default function CouncilCard({
       />
       <div className="flex flex-col flex-1 max-w-96 gap-1 justify-around">
         <div className="flex flex-row gap-2 items-center">
-
           <div className="flex flex-col flex-1 text-left">
             <p className="font-fira font-medium text-md sm:text-lg text-foreground-light dark:text-foreground-dark">
-            {council.name}
+              {council.name}
             </p>
             <p className="font-fira text-xs text-vitality-red">
-               {council.name}
+              {council.name}
             </p>
           </div>
         </div>
         <div className="flex flex-row gap-2 justify-around">
           <div className="flex flex-row gap-1">
-            <Call color="#57585A" size="16" />{' '}
-            {/* TODO: use Tailwind theme */}
+            <Call color="#57585A" size="16" /> {/* TODO: use Tailwind theme */}
             <p className="font-fira text-xs text-gray-1">
               +91 {council.phoneNumber}
             </p>
           </div>
-          
         </div>
         <div className="flex flex-row gap-2 px-2">
-         
-            <span
-              className={`font-fira font-semibold text-xs px-2 py-1 rounded-lg ${tagHighlights[council.tag]}`}
-            >
-              {council.tag}
-            </span>
-          
+          <span
+            className={`font-fira font-semibold text-xs px-2 py-1 rounded-lg ${tagHighlights[council.tag]}`}
+          >
+            {council.tag}
+          </span>
         </div>
       </div>
     </div>

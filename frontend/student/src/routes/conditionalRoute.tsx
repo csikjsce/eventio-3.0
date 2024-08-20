@@ -14,7 +14,11 @@ export default function ConditionalRoute({
       if (!userContext.userData) {
         const user = await fetch();
         console.log('User fetched', user);
-        if (user && (user.phone_number == null || user.roll_number == null) && window.location.pathname != "/getting-started") {
+        if (
+          user &&
+          (user.phone_number == null || user.roll_number == null) &&
+          window.location.pathname != '/getting-started'
+        ) {
           window.location.href = '/getting-started';
           return;
         }
