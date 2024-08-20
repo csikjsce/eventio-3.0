@@ -4,15 +4,39 @@ import FooterNav from '../../components/FooterNav';
 import Header from '../../components/Header';
 import SearchBar from '../../components/SearchBar';
 
+import { useEffect, useState } from 'react';
+import { useUserData } from '../../hooks/useUserData';
+import Loader from '../../components/Loader';
+
+import csiLogo from '../../assets/csiLogo.png';
+
 export default function Councils() {
+
+  const [loading, setLoading] = useState(true);
+
+  const user = useUserData();
+
+  useEffect(() => {
+    if (user.userContext.userData) {
+      setLoading(false);
+    }
+  }, [user.userContext.userData]);
+
+  if (loading) {
+    return <Loader />;
+  }
+
   return (
     <div className="flex flex-col p-4">
       <div className="flex flex-col gap-8">
         {/* main area */}
-        <Header />
+        <Header
+          name={user.userContext.userData?.name}
+          photo_url={user.userContext.userData?.photo_url}
+        />
         <SearchBar
           Icon={SearchNormal1}
-          text="What event are you looking for..."
+          text="What Council are you looking for..."
         />
 
         <div className="flex flex-col gap-4 z-10">
@@ -23,8 +47,8 @@ export default function Councils() {
             <CouncilCard
               council={{
                 name: 'CSI KJSCE',
-                phoneNumber: '+91 8879773599',
-                image: 'https://images.pexels.com/photos/976866/pexels-photo-976866.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500',
+                phoneNumber: '8657432101',
+                image: csiLogo,
                 tag: 'Tech',
               }}
             />

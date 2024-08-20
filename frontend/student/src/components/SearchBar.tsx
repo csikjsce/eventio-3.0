@@ -12,7 +12,7 @@ export default function SearchBar({
     <div className="relative flex items-center gap-2 rounded-xl  outline-1 outline-gray-300 focus:outline-none">
       <Input
         variant="outlined"
-        label="What event are you looking for...  "
+        label={text}
         placeholder={text}
         className="border-0 focus:outline-none  pr-12 placeholder-padding label-padding-50"
         containerProps={{ className: 'w-full' }}
