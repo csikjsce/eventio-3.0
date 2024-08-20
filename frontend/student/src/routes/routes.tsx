@@ -52,6 +52,7 @@ const indexRoutes = [
     path: '/councils',
     name: 'Councils',
     component: <Councils />,
+    routeType: 'protected',
   },
   {
     path: '/profile',
