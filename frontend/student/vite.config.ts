@@ -29,7 +29,7 @@ export default defineConfig({
           purpose: 'any'
         },
         {
-          src: 'android-chrome-512x512.png',
+          src: 'maskable-icon.png',
           sizes: '512x512',
           type: 'image/png',
           purpose: 'maskable'
