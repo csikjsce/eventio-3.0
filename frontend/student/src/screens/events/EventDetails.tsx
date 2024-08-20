@@ -205,12 +205,45 @@ export default function EventDetails() {
                 color="#fff"
                 variant="Bold"
                 className="bg-primary h-11 w-11 rounded-full pt-2 pr-2 pl-1.5 pb-1.5 hover:cursor-pointer"
+                onClick={() => {
+                  if (navigator.share) {
+                    navigator.share({
+                      title: event?.name,
+                      url: window.location.href,
+                      text: event?.description,
+                    });
+                  }
+                }}
               />
               <CalendarAdd
                 size={24}
                 color="#fff"
                 variant="Bold"
                 className="bg-primary h-11 w-11 rounded-full p-2 hover:cursor-pointer"
+                onClick={() => {
+                  const date =
+                    (event?.dates[0] && new Date(event?.dates[0])) ||
+                    new Date();
+                  const eventTitle = event?.name || 'Eventio event';
+                  const eventDetails = event?.description || 'Eventio event';
+
+                  const year = date.getFullYear();
+
+                  const month = String(date.getMonth() + 1).padStart(2, '0');
+
+                  const day = String(date.getDate()).padStart(2, '0');
+
+                  const hours = String(date.getHours()).padStart(2, '0');
+                  const minutes = String(date.getMinutes()).padStart(2, '0');
+                  const seconds = String(date.getSeconds()).padStart(2, '0');
+
+                  const startDateTime = `${year}${month}${day}T${hours}${minutes}${seconds}`;
+                  const timezone = 'Asia/Kolkata';
+                  const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
+                    eventTitle,
+                  )}&details=${encodeURIComponent(eventDetails)}&dates=${startDateTime}&ctz=${encodeURIComponent(timezone)}`;
+                  window.open(googleCalendarUrl, '_blank');
+                }}
               />
             </div>
           </div>

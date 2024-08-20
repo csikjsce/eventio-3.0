@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { SearchNormal1 } from 'iconsax-react';
 import EventCard from '../../components/EventCard';
 import FooterNav from '../../components/FooterNav';
 import Header from '../../components/Header';
-import SearchBar from '../../components/SearchBar';
+// import { SearchNormal1 } from 'iconsax-react';
+// import SearchBar from '../../components/SearchBar';
 import TrendingCard from '../../components/TrendingCard';
 
 import { useUserData } from '../../hooks/useUserData';
@@ -66,7 +66,7 @@ export default function Home() {
               photo_url={user.userContext.userData.photo_url}
             />
           )}
-        <SearchBar Icon={SearchNormal1} className="mt-6" />
+        {/* <SearchBar Icon={SearchNormal1} className="mt-6" /> */}
         <div className="flex flex-col mt-6 gap-4 z-10">
           <p className="text-lg font-medium font-fira text-left text-foreground-light dark:text-foreground-dark">
             Trending Events
