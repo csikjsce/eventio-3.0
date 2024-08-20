@@ -7,6 +7,7 @@ import Header from '../../components/Header';
 import { EventType } from '../../types/EventType';
 import EventList from '../../components/calendar/eventList';
 import { Tooltip } from '@material-tailwind/react';
+import { useUserData } from '../../hooks/useUserData';
 
 const events: EventType[] = [
   {
@@ -90,9 +91,11 @@ export default function Calendar() {
     return <div className="flex gap-1 justify-center mt-1">{indicators}</div>;
   };
 
+  const user = useUserData();
+
   return (
     <div className="flex flex-col p-4">
-      <Header />
+      <Header name={user.userContext.userData?.name || ""} photo_url={user.userContext.userData?.photo_url || ""} />
       <div className="flex gap-10 sm:divide-x justify-center sm:w-1/2 h-full items-center sm:flex-row flex-col mt-10">
         <div className="w-full h-96 px-5">
           <div className="flex justify-between items-center">
