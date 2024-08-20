@@ -94,7 +94,7 @@ export default function EducationalDetails({ setCurrentStep }: Props) {
             onPointerLeaveCapture={undefined}
           >
             {availableBranchs.map((branch, index) => (
-              <Option key={index} value={branch.replace(" ", "_")}>
+              <Option key={index} value={branch.replace(' ', '_')}>
                 {branch}
               </Option>
             ))}

@@ -1,6 +1,12 @@
 import { Notification, Setting } from 'iconsax-react';
 
-export default function Header({ name, photo_url }: { name?: string, photo_url?: string}) {
+export default function Header({
+  name,
+  photo_url,
+}: {
+  name?: string;
+  photo_url?: string;
+}) {
   return (
     <div className="flex flex-row justify-between items-center">
       {/* header */}
@@ -8,7 +14,7 @@ export default function Header({ name, photo_url }: { name?: string, photo_url?:
         {/* namaste name pfp*/}
         <img
           src={photo_url}
-          alt={"profile"}
+          alt={'profile'}
           className="w-12 h-12 aspect-square rounded-full object-cover border-2 border-blue-500"
         />
         <div className="flex flex-col text-left">

@@ -24,7 +24,7 @@ export default function EventDetails() {
     venue: string;
     tags: string[];
     description: string;
-    
+
     long_description: string;
     speakers: {
       img: string;
@@ -44,8 +44,8 @@ export default function EventDetails() {
     date: new Date(),
     venue: '',
     tags: [],
-    description: '',  
-    
+    description: '',
+
     long_description: '',
     speakers: [],
     takeaways: '',
@@ -96,7 +96,8 @@ export default function EventDetails() {
         setRegistering(false);
         console.log(res.data);
         alert(res.data.message);
-      }).catch((err) => {
+      })
+      .catch((err) => {
         setRegistering(false);
         console.log(err);
         alert(err.response.data.message);
@@ -155,21 +156,29 @@ export default function EventDetails() {
             <div className="h-28 flex flex-col justify-between">
               <hr className="border-1 border-gray-1" />
               <div className="flex flex-row justify-between">
-  <IconText
-    Icon={Calendar2}
-    line1={event?.date?.toDateString().slice(0, -5)}
-    line2={event?.date?.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-    })}
-  />
-  <IconText
-    Icon={Location}
-    line1={event.venue ? event.venue.split(' ')[0] : 'Location not specified'}
-    line2={event.venue ? event.venue.slice(event.venue.indexOf(' ')) : ''}
-  />
-  <IconText Icon={User} line1="100" line2="Participants" />
-</div>
+                <IconText
+                  Icon={Calendar2}
+                  line1={event?.date?.toDateString().slice(0, -5)}
+                  line2={event?.date?.toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                />
+                <IconText
+                  Icon={Location}
+                  line1={
+                    event.venue
+                      ? event.venue.split(' ')[0]
+                      : 'Location not specified'
+                  }
+                  line2={
+                    event.venue
+                      ? event.venue.slice(event.venue.indexOf(' '))
+                      : ''
+                  }
+                />
+                <IconText Icon={User} line1="100" line2="Participants" />
+              </div>
               <hr className="border-1 border-gray-1" />
             </div>
             <Passage title="About the Event" content={event.long_description} />
@@ -259,18 +268,23 @@ export default function EventDetails() {
             {/* TODO: Center align while loading */}
             {registering ? (
               <Button
-              className="rounded-full bg-primary text-center flex flex-row items-center justify-center gap-2"
-              fullWidth
-              disabled
-              placeholder={undefined}
-              onPointerEnterCapture={undefined}
-              onPointerLeaveCapture={undefined}
-            >
-                <Spinner className='w-5' onPointerEnterCapture={undefined} onPointerLeaveCapture={undefined} />
+                className="rounded-full bg-primary text-center flex flex-row items-center justify-center gap-2"
+                fullWidth
+                disabled
+                placeholder={undefined}
+                onPointerEnterCapture={undefined}
+                onPointerLeaveCapture={undefined}
+              >
+                <Spinner
+                  className="w-5"
+                  onPointerEnterCapture={undefined}
+                  onPointerLeaveCapture={undefined}
+                />
                 <p className="font-fira normal-case text-lg">Register</p>
-                <div className='w-5'/> {/* for center align */}
-              </Button>) : (
-                <Button
+                <div className="w-5" /> {/* for center align */}
+              </Button>
+            ) : (
+              <Button
                 className="rounded-full bg-primary text-center"
                 fullWidth
                 placeholder={undefined}
@@ -280,8 +294,7 @@ export default function EventDetails() {
               >
                 <p className="font-fira normal-case text-lg">Register</p>
               </Button>
-              )}
-            
+            )}
           </div>
         </div>
       )}
