@@ -35,7 +35,7 @@ const indexRoutes = [
     path: '/event-details/:id',
     name: 'Event Details',
     component: <EventDetails />,
-    // routeType: 'protected',
+    routeType: 'protected',
   },
   {
     path: '/calendar',
