@@ -22,10 +22,10 @@ export default function Councils() {
           <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3 overflow-x-auto mb-12">
             <CouncilCard
               council={{
-                name: '',
-                phoneNumber: '',
-                image: '',
-                tag: '',
+                name: 'CSI KJSCE',
+                phoneNumber: '+91 8879773599',
+                image: 'https://images.pexels.com/photos/976866/pexels-photo-976866.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500',
+                tag: 'Tech',
               }}
             />
           </div>
