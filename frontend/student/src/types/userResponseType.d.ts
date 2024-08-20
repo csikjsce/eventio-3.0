@@ -32,6 +32,7 @@ interface EventData {
   tags: string[];
   updated_at: string;
   venue: string;
+  Participant?: boolean
 }
 
 // Interface for the Events object

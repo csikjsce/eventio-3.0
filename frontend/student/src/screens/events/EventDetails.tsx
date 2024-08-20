@@ -15,47 +15,21 @@ import Loader from '../../components/Loader';
 import Passage from '../../components/Passage';
 
 export default function EventDetails() {
-  const [event, setEvent] = useState<{
-    name: string;
-    organizer: string;
-    image: string;
-    banner_url: string;
-    date: Date;
-    venue: string;
-    tags: string[];
-    description: string;
-
-    long_description: string;
-    speakers: {
-      img: string;
-      name: string;
-      subtext1: string;
-      subtext2: string;
-    }[];
-    takeaways: string;
-    sponsors: { img: string; name: string; subtext1: string }[];
-    rewards: string;
-    contact: { name: string; position: string; phone: string }[];
-  }>({
-    name: '',
-    organizer: '',
-    image: '',
-    banner_url: '',
-    date: new Date(),
-    venue: '',
-    tags: [],
-    description: '',
-
-    long_description: '',
-    speakers: [],
-    takeaways: '',
-    sponsors: [],
-    rewards: '',
-    contact: [],
-  });
+  const [event, setEvent] = useState<EventData | null>(null);
 
   const [loading, setLoading] = useState(true);
-  const [registering, setRegistering] = useState(false);
+
+  const [buttonState, setButtonState] = useState<{
+    text: string;
+    loading: boolean;
+    disabled: boolean;
+    onClick: () => void;
+  }>({
+    text: 'Loading...',
+    loading: true,
+    disabled: true,
+    onClick: () => {},
+  });
 
   const { id } = useParams();
   useEffect(() => {
@@ -70,16 +44,35 @@ export default function EventDetails() {
           },
         })
         .then((res) => {
-          console.log(res.data);
-          setEvent(res.data);
+          setEvent(res.data.event);
           setLoading(false);
+          if (res.data.event.Participant == true) {
+            setButtonState({
+              text: 'Registered',
+              loading: false,
+              disabled: true,
+              onClick: () => {},
+            });
+          } else {
+            setButtonState({
+              text: 'Register',
+              loading: false,
+              disabled: false,
+              onClick: register,
+            });
+          }
         });
     };
     if (id) fetchEvent(id);
   }, [id]);
 
   function register() {
-    setRegistering(true);
+    setButtonState({
+      text: 'Registering',
+      loading: true,
+      disabled: true,
+      onClick: () => {},
+    });
     axios
       .request({
         baseURL: import.meta.env.VITE_APP_SERVER_ADDRESS,
@@ -92,30 +85,36 @@ export default function EventDetails() {
           event_id: id,
         },
       })
-      .then((res) => {
-        setRegistering(false);
-        console.log(res.data);
-        alert(res.data.message);
+      .then(() => {
+        setButtonState({
+          text: 'Registered',
+          loading: false,
+          disabled: true,
+          onClick: () => {},
+        });
       })
-      .catch((err) => {
-        setRegistering(false);
-        console.log(err);
-        alert(err.response.data.message);
+      .catch(() => {
+        setButtonState({
+          text: 'Register',
+          loading: false,
+          disabled: false,
+          onClick: register,
+        });
       });
   }
 
-  return (
-    <>
-      {loading ? (
-        <Loader />
-      ) : (
+  if (loading && event == null) {
+    return <Loader />;
+  } else
+    return (
+      <>
         <div className="absolute top-0 left-0">
           <div
             className="w-screen aspect-square relative"
-            style={{ backgroundImage: event.image }}
+            style={{ backgroundImage: event?.event_page_image_url }}
           >
             <img
-              src={event.image}
+              src={event?.event_page_image_url}
               alt="Event Details"
               className="w-screen aspect-square object-cover"
             />
@@ -143,14 +142,17 @@ export default function EventDetails() {
           <div className="flex flex-col p-8 gap-8 mb-20 text-foreground-dark dark:text-background-dark">
             <div className="flex flex-col gap-1.5 items-start">
               <p className="font-fira text-foreground-light dark:text-foreground-dark text-2xl text-left">
-                {event.name}
+                {event?.name}
               </p>
               <p className="font-fira text-gray-1 text-sm">
-                {event?.date?.toDateString().slice(0, -5)} at{' '}
-                {event?.date?.toLocaleTimeString('en-US', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
+                {event?.dates[0] &&
+                  new Date(event?.dates[0]).toDateString().slice(0, -5)}{' '}
+                at{' '}
+                {event?.dates[0] &&
+                  new Date(event?.dates[0]).toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
               </p>
             </div>
             <div className="h-28 flex flex-col justify-between">
@@ -158,21 +160,29 @@ export default function EventDetails() {
               <div className="flex flex-row justify-between">
                 <IconText
                   Icon={Calendar2}
-                  line1={event?.date?.toDateString().slice(0, -5)}
-                  line2={event?.date?.toLocaleTimeString('en-US', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
+                  line1={
+                    (event?.dates[0] &&
+                      new Date(event?.dates[0]).toDateString().slice(0, -5)) ||
+                    ''
+                  }
+                  line2={
+                    (event?.dates[0] &&
+                      new Date(event?.dates[0]).toLocaleTimeString('en-US', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })) ||
+                    ''
+                  }
                 />
                 <IconText
                   Icon={Location}
                   line1={
-                    event.venue
+                    event?.venue
                       ? event.venue.split(' ')[0]
                       : 'Location not specified'
                   }
                   line2={
-                    event.venue
+                    event?.venue
                       ? event.venue.slice(event.venue.indexOf(' '))
                       : ''
                   }
@@ -181,123 +191,35 @@ export default function EventDetails() {
               </div>
               <hr className="border-1 border-gray-1" />
             </div>
-            <Passage title="About the Event" content={event.long_description} />
-
-            <div className="flex flex-col gap-2 items-start text-left">
-              <p className="font-fira text-foreground-light dark:text-foreground-dark text-lg">
-                Notable Speakers
-              </p>
-              {/* <div className="flex flex-col gap-3">
-                {event.speakers.map((speaker) => (
-                  <div className="flex flex-row gap-3 items-center">
-                    <img
-                      src={speaker.img}
-                      alt="Speaker"
-                      className="h-12 w-12 rounded-full outline outline-1 outline-primary"
-                    />
-                    <div className="flex flex-col gap-1.5">
-                      <p className="font-fira text-gray-1 dark:text-foreground-dark text-xs">
-                        <strong className="text-foreground-light dark:text-foreground-dark text-sm">
-                          {speaker.name}
-                        </strong>{' '}
-                        {speaker.subtext1}
-                      </p>
-                      <p className="font-fira text-gray-1 dark:text-foreground-dark text-xs">
-                        {speaker.subtext2}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div> */}
-            </div>
-
-            <Passage title="Key Takeaways" content={event.takeaways} />
-
-            {/* <div className="flex flex-col gap-2 items-start text-left">
-              <p className="font-fira text-foreground-light dark:text-foreground-dark text-lg">
-                Sponsors
-              </p>
-              <div className="grid grid-cols-2 gap-2 w-full">
-                {event.sponsors.map((sponsor) => (
-                  <div className="flex flex-row gap-3">
-                    <img
-                      src={sponsor.img}
-                      alt="Sponsor"
-                      className="h-12 w-12 rounded-full outline outline-1 outline-primary"
-                    />
-                    <div className="flex flex-col gap-0.5 justify-center">
-                      <p className="font-fira text-gray-1 dark:text-foreground-dark text-xs">
-                        <strong className="text-foreground-light dark:text-foreground-dark text-sm">
-                          {sponsor.name}
-                        </strong>
-                      </p>
-                      <p className="font-fira text-gray-1 dark:text-foreground-dark text-xs">
-                        {sponsor.subtext1}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div> */}
-
-            <Passage title="Rewards" content={event.rewards} />
-
-            {/* <div className="flex flex-col gap-1 items-start text-left">
-              <p className="font-fira text-foreground-light dark:text-foreground-dark text-lg">
-                Contact
-              </p>
-              <p className="font-fira text-gray-1 dark:text-foreground-dark text-xs">
-                Reach out to us for further queries
-              </p>
-              <div className="flex flex-col">
-                {event.contact.map((contact) => (
-                  <div className="flex flex-col gap-1.5">
-                    <p className="font-fira text-gray-1 dark:text-foreground-dark text-xs">
-                      <strong className="text-foreground-light dark:text-foreground-dark text-sm">
-                        {contact.name}
-                      </strong>{' '}
-                      {contact.position}: {contact.phone}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div> */}
+            <Passage
+              title="About the Event"
+              content={event?.long_description || ''}
+            />
           </div>
 
           <div className="fixed bottom-0 left-0 w-screen p-4 bg-background-light dark:bg-background-dark">
-            {/* TODO: Center align while loading */}
-            {registering ? (
-              <Button
-                className="rounded-full bg-primary text-center flex flex-row items-center justify-center gap-2"
-                fullWidth
-                disabled
-                placeholder={undefined}
-                onPointerEnterCapture={undefined}
-                onPointerLeaveCapture={undefined}
-              >
+            <Button
+              className="rounded-full bg-primary text-center flex flex-row items-center justify-center gap-2"
+              fullWidth
+              placeholder={buttonState.text}
+              onPointerEnterCapture={undefined}
+              onPointerLeaveCapture={undefined}
+              disabled={buttonState.disabled}
+              onClick={buttonState.onClick}
+            >
+              {buttonState.loading && (
                 <Spinner
-                  className="w-5"
+                  scale={2}
                   onPointerEnterCapture={undefined}
                   onPointerLeaveCapture={undefined}
                 />
-                <p className="font-fira normal-case text-lg">Register</p>
-                <div className="w-5" /> {/* for center align */}
-              </Button>
-            ) : (
-              <Button
-                className="rounded-full bg-primary text-center"
-                fullWidth
-                placeholder={undefined}
-                onPointerEnterCapture={undefined}
-                onPointerLeaveCapture={undefined}
-                onClick={() => register()}
-              >
-                <p className="font-fira normal-case text-lg">Register</p>
-              </Button>
-            )}
+              )}
+              <h2 className="font-fira normal-case text-lg">
+                {buttonState.text}
+              </h2>
+            </Button>
           </div>
         </div>
-      )}
-    </>
-  );
+      </>
+    );
 }
