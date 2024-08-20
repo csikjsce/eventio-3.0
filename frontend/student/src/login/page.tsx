@@ -38,6 +38,9 @@ export default function Login() {
         variant="outlined"
         color="blue-gray"
         className="flex items-center gap-3"
+        onPointerEnterCapture={undefined}
+        onPointerLeaveCapture={undefined}
+
       >
         <img src="https://docs.material-tailwind.com/icons/google.svg" alt="metamask" className="h-6 w-6" />
         Continue with Google
