@@ -1,8 +1,8 @@
 import { Call } from 'iconsax-react';
 
 const tagHighlights: { [key: string]: string } = {
-  Tech: 'bg-blue-500/10 border-2 border-blue-700 text-blue-700',
-  Registered: 'bg-green-500 border-2 border-green-500 text-white',
+  Tech: 'bg-blue-500/10 border border-1 border-blue-700 text-blue-700',
+  Registered: 'bg-green-500 border border-1 border-green-500 text-white',
 };
 
 export default function CouncilCard({
