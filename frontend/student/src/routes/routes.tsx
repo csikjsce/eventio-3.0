@@ -5,6 +5,7 @@ import EventDetails from '../screens/events/EventDetails';
 import MyEvents from '../screens/events/MyEvents';
 import GetStarted from '../screens/getStarted/page';
 import Home from '../screens/home/home';
+import Logout from '../screens/logout/page';
 import Profile from '../screens/profile/Profile';
 
 const indexRoutes = [
@@ -82,6 +83,11 @@ const indexRoutes = [
     path: '/search-events',
     name: 'Search Events',
     component: <h1>Search Events</h1>,
+  },
+  {
+    path: '/logout',
+    name: 'Logout',
+    component: <Logout />,
   },
 ];
 
