@@ -1,15 +1,16 @@
 import {
   ArrowRight2,
-  Calendar,
+  // Calendar,
   CallCalling,
   Icon as Icontype,
-  Key,
   LogoutCurve,
-  UserEdit,
+  // UserEdit,
 } from 'iconsax-react';
 import { Link } from 'react-router-dom';
-import man1 from '../../assets/man1.jpeg';
 import FooterNav from '../../components/FooterNav';
+import { useEffect, useState } from 'react';
+import { useUserData } from '../../hooks/useUserData';
+import Loader from '../../components/Loader';
 
 function ProfileItem({
   Icon,
@@ -34,48 +35,56 @@ function ProfileItem({
 }
 
 export default function Profile() {
+  const user = useUserData();
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    if (user.userContext.userData) {
+      setLoading(false);
+    }
+  }, [user.userContext.userData]);
   return (
     <>
-      <div className="flex flex-col gap-8 items-center p-4">
-        <p className="font-fira font-semibold text-lg text-foreground-light dark:text-foreground-dark">
-          My Profile
-        </p>
-        <div className="flex flex-col gap-3 items-center">
-          <img
-            src={man1}
-            alt="profile"
-            className="w-28 h-28 object-cover rounded-full"
-          />
-          <p className="font-marcellus text-2xl text-foreground-light dark:text-foreground-dark">
-            Kunal Chaturvedi
-          </p>
-        </div>
-        <hr className="w-full border-1 border-gray-700" />
-        <div className="flex flex-col gap-8 w-full">
-          <ProfileItem
-            Icon={UserEdit}
-            title="Edit Profile"
-            to="/profile/edit"
-          />
-          <ProfileItem
-            Icon={Calendar}
-            title="My Appointments"
-            to="/profile/appointments"
-          />
-          <ProfileItem
-            Icon={Key}
-            title="Change Password"
-            to="/profile/password"
-          />
-          <ProfileItem
-            Icon={CallCalling}
-            title="Contact Us"
-            to="/profile/contact"
-          />
-          <ProfileItem Icon={LogoutCurve} title="Logout" to="/logout" />
-        </div>
-      </div>
-      <FooterNav />
+      {loading ? (
+        <Loader />
+      ) : (
+        <>
+          <div className="flex flex-col gap-8 items-center p-4">
+            <p className="font-fira font-semibold text-lg text-foreground-light dark:text-foreground-dark">
+              My Profile
+            </p>
+            <div className="flex flex-col gap-3 items-center">
+              <img
+                src={user.userContext.userData?.photo_url}
+                alt="profile"
+                className="w-28 h-28 object-cover rounded-full"
+              />
+              <p className="font-marcellus text-2xl text-foreground-light dark:text-foreground-dark">
+                {user.userContext.userData?.name}
+              </p>
+            </div>
+            <hr className="w-full border-1 border-gray-700" />
+            <div className="flex flex-col gap-8 w-full">
+              {/* <ProfileItem
+                Icon={UserEdit}
+                title="Edit Profile"
+                to="/profile/edit"
+              />
+              <ProfileItem
+                Icon={Calendar}
+                title="My Appointments"
+                to="/profile/appointments"
+              /> */}
+              <ProfileItem
+                Icon={CallCalling}
+                title="Contact Us"
+                to="tel:+918657432101"
+              />
+              <ProfileItem Icon={LogoutCurve} title="Logout" to="/logout" />
+            </div>
+          </div>
+          <FooterNav />
+        </>
+      )}
     </>
   );
 }

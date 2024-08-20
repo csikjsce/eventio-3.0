@@ -56,6 +56,7 @@ const indexRoutes = [
     path: '/profile',
     name: 'Profile',
     component: <Profile />,
+    routeType: 'protected',
   },
   {
     path: '/ticket/:id',
