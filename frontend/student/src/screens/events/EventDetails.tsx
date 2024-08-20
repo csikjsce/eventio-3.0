@@ -1,4 +1,4 @@
-import { Button } from '@material-tailwind/react';
+import { Button, Spinner } from '@material-tailwind/react';
 import axios from 'axios';
 import {
   ArrowLeft,
@@ -55,6 +55,7 @@ export default function EventDetails() {
   });
 
   const [loading, setLoading] = useState(true);
+  const [registering, setRegistering] = useState(false);
 
   const { id } = useParams();
   useEffect(() => {
@@ -76,6 +77,32 @@ export default function EventDetails() {
     };
     if (id) fetchEvent(id);
   }, [id]);
+
+  function register() {
+    setRegistering(true);
+    axios
+      .request({
+        baseURL: import.meta.env.VITE_APP_SERVER_ADDRESS,
+        url: '/api/v1' + `/event/p/register-for-event`,
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer ' + localStorage.getItem('accessToken'),
+        },
+        data: {
+          event_id: id,
+        },
+      })
+      .then((res) => {
+        setRegistering(false);
+        console.log(res.data);
+        alert(res.data.message);
+      }).catch((err) => {
+        setRegistering(false);
+        console.log(err);
+        alert(err.response.data.message);
+      });
+  }
+
   return (
     <>
       {loading ? (
@@ -230,15 +257,31 @@ export default function EventDetails() {
 
           <div className="fixed bottom-0 left-0 w-screen p-4 bg-background-light dark:bg-background-dark">
             {/* TODO: Center align while loading */}
-            <Button
-              className="rounded-full bg-primary text-center"
+            {registering ? (
+              <Button
+              className="rounded-full bg-primary text-center flex flex-row items-center justify-center gap-2"
               fullWidth
+              disabled
               placeholder={undefined}
               onPointerEnterCapture={undefined}
               onPointerLeaveCapture={undefined}
             >
-              <p className="font-fira normal-case text-lg">Register</p>
-            </Button>
+                <Spinner className='w-5' onPointerEnterCapture={undefined} onPointerLeaveCapture={undefined} />
+                <p className="font-fira normal-case text-lg">Register</p>
+                <div className='w-5'/> {/* for center align */}
+              </Button>) : (
+                <Button
+                className="rounded-full bg-primary text-center"
+                fullWidth
+                placeholder={undefined}
+                onPointerEnterCapture={undefined}
+                onPointerLeaveCapture={undefined}
+                onClick={() => register()}
+              >
+                <p className="font-fira normal-case text-lg">Register</p>
+              </Button>
+              )}
+            
           </div>
         </div>
       )}
