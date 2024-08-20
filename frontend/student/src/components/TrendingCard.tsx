@@ -1,31 +1,30 @@
-import { Brodcast } from 'iconsax-react';
+import { useNavigate } from 'react-router-dom';
 
-export default function TrendingCard({
-  event,
-}: {
-  event: {
-    name: string;
-    image: string;
-    councilImage: string;
-    shortDesc: string;
-    status: string;
+export default function TrendingCard({ event }: { event: EventData }) {
+  const navigate = useNavigate();
+
+  const handleClick = () => {
+    navigate(`/event-details/${event.id}`);
   };
-}) {
+
   return (
-    <div className="w-92 flex flex-col mr-1 gap-2 bg-card-light dark:bg-card-dark rounded-b-lg">
-      {/* event pic */}
+    <div
+      className="min-w-full flex flex-col mr-1 gap-2 bg-card-light dark:bg-card-dark rounded-b-lg cursor-pointer"
+      onClick={handleClick}
+    >
+      {/* Event picture */}
       <img
-        src={event.image}
-        alt="abhi"
+        src={event.banner_url}
+        alt={event.name}
         className="w-full h-40 object-cover rounded-t-lg"
       />
-      {/* event details */}
+      {/* Event details */}
       <div className="p-2 pt-0 flex flex-row justify-between items-center">
         <div className="flex flex-row gap-2 items-center">
-          {/* council pic and event name */}
+          {/* Council picture and event name */}
           <img
-            src={event.councilImage}
-            alt="man1"
+            src={event.logo_image_url}
+            alt="CSI"
             className="w-10 h-10 aspect-square rounded-full object-cover border border-vitality-red"
           />
           <div className="flex flex-col text-left">
@@ -33,20 +32,14 @@ export default function TrendingCard({
               {event.name}
             </p>
             <p className="font-fira text-xs text-foreground-light dark:text-foreground-dark">
-              {event.shortDesc}
+              {new Date(event.created_at).toLocaleDateString()}
             </p>
           </div>
         </div>
         <div className="flex flex-col items-start">
-          <p className="font-fira text-xs text-mute-text-light dark:text-mute-text-dark">
-            Event is
+          <p className="text-sm font-fira text-foreground-light dark:text-foreground-dark">
+            Register Now
           </p>
-          <div className="flex flex-row gap-1">
-            <Brodcast size={16} color="#B61F2D" />
-            <p className="font-fira text-xs text-mute-text-light dark:text-mute-text-dark">
-              {event.status}
-            </p>
-          </div>
         </div>
       </div>
     </div>

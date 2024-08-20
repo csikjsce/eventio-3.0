@@ -6,23 +6,9 @@ import Header from '../../components/Header';
 import SearchBar from '../../components/SearchBar';
 import TrendingCard from '../../components/TrendingCard';
 
-import abhi from '../../assets/abhi.jpeg';
-import man1 from '../../assets/man1.jpeg';
 import { useUserData } from '../../hooks/useUserData';
 import Loader from '../../components/Loader';
 import { axiosCall } from '../../utils/api';
-
-const dummyEvent = {
-  name: 'Road To Programming',
-  council: 'CSI KJSCE',
-  image: abhi,
-  councilImage: man1,
-  date: new Date(1724758200000),
-  location: 'KJSCE Auditorium',
-  tags: ['Tech', 'Registered'],
-  shortDesc: 'Short Description',
-  status: 'Live',
-};
 
 export default function Home() {
   const [upcomingEvents, setUpcomingEvents] = useState<EventData[]>([]);
@@ -72,8 +58,10 @@ export default function Home() {
           <p className="text-lg font-medium font-fira text-left text-foreground-light dark:text-foreground-dark">
             Trending Events
           </p>
-          <div className="overflow-x-auto flex gap-4">
-            <TrendingCard event={dummyEvent} />
+          <div className="overflow-x-auto flex gap-4 ">
+            {upcomingEvents.map((event) => (
+              <TrendingCard key={event.id} event={event} />
+            ))}
             {/* TODO: Add more trending events here if needed */}
           </div>
         </div>
