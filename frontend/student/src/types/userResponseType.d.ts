@@ -33,11 +33,18 @@ interface EventData {
   updated_at: string;
   venue: string;
   Participant?: boolean
+  in_event_activity?: string;
+  start_in_event_activity?: boolean;
 }
 
 // Interface for the Events object
 interface Events {
   UPCOMING: EventData[];
+  REGISTRATION_OPEN: EventData[];
+  REGISTRATION_CLOSED: EventData[];
+  TICKET_CLOSED: EventData[];
+  TICKET_OPEN: EventData[];
+  ONGOING: EventData[];
 }
 
 // TypeScript Interface for User Data

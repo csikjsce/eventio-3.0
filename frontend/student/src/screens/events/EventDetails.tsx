@@ -8,7 +8,7 @@ import {
   Send2,
   User,
 } from 'iconsax-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import IconText from '../../components/IconText';
 import Loader from '../../components/Loader';
@@ -32,41 +32,7 @@ export default function EventDetails() {
   });
 
   const { id } = useParams();
-  useEffect(() => {
-    const fetchEvent = async (id: string) => {
-      axios
-        .request({
-          baseURL: import.meta.env.VITE_APP_SERVER_ADDRESS,
-          url: '/api/v1' + `/event/p/get/${id}`,
-          method: 'POST',
-          headers: {
-            Authorization: 'Bearer ' + localStorage.getItem('accessToken'),
-          },
-        })
-        .then((res) => {
-          setEvent(res.data.event);
-          setLoading(false);
-          if (res.data.event.Participant == true) {
-            setButtonState({
-              text: 'Registered',
-              loading: false,
-              disabled: true,
-              onClick: () => {},
-            });
-          } else {
-            setButtonState({
-              text: 'Register',
-              loading: false,
-              disabled: false,
-              onClick: register,
-            });
-          }
-        });
-    };
-    if (id) fetchEvent(id);
-  }, [id]);
-
-  function register() {
+  const register = useCallback(() => {
     setButtonState({
       text: 'Registering',
       loading: true,
@@ -101,7 +67,116 @@ export default function EventDetails() {
           onClick: register,
         });
       });
-  }
+  }, [id]);
+  useEffect(() => {
+    const fetchEvent = async (id: string) => {
+      axios
+        .request({
+          baseURL: import.meta.env.VITE_APP_SERVER_ADDRESS,
+          url: '/api/v1' + `/event/p/get/${id}`,
+          method: 'POST',
+          headers: {
+            Authorization: 'Bearer ' + localStorage.getItem('accessToken'),
+          },
+        })
+        .then((res) => {
+          setEvent(res.data.event);
+          setLoading(false);
+          if (res.data.event.state == 'REGISTRATION_OPEN') {
+            if (res.data.event.Participant == true) {
+              setButtonState({
+                text: 'Registered',
+                loading: false,
+                disabled: true,
+                onClick: () => {},
+              });
+            } else {
+              setButtonState({
+                text: 'Register',
+                loading: false,
+                disabled: false,
+                onClick: register,
+              });
+            }
+          } else if (res.data.event.state == 'REGISTRATION_CLOSED') {
+            if (res.data.event.Participant == true) {
+              setButtonState({
+                text: 'Already registered',
+                loading: false,
+                disabled: true,
+                onClick: () => {},
+              });
+            } else {
+              setButtonState({
+                text: 'Registration Closed',
+                loading: false,
+                disabled: true,
+                onClick: () => {},
+              });
+            }
+          } else if (res.data.event.state == 'TICKET_OPEN') {
+            if (res.data.event.Participant == true) {
+              setButtonState({
+                text: 'View Ticket',
+                loading: false,
+                disabled: false,
+                onClick: () => {},
+              });
+            } else {
+              setButtonState({
+                text: 'Not registered for this event',
+                loading: false,
+                disabled: true,
+                onClick: () => {},
+              });
+            }
+          } else if (res.data.event.state == 'TICKET_CLOSED') {
+            setButtonState({
+              text: 'Entry closed',
+              loading: false,
+              disabled: true,
+              onClick: () => {},
+            });
+          } else if (res.data.event.state == 'UPCOMING') {
+            setButtonState({
+              text: 'Registrations Opening Soon',
+              loading: false,
+              disabled: true,
+              onClick: () => {},
+            });
+          } else if (res.data.event.state == 'ONGOING') {
+            if (res.data.event.registration_type == 'EXTERNAL') {
+              setButtonState({
+                text: 'Register',
+                loading: false,
+                disabled: false,
+                onClick: () => {
+                  window.location.href =
+                    res.data.event.external_registration_link;
+                },
+              });
+            } else if (res.data.event.start_in_event_activity) {
+              setButtonState({
+                text: 'Start Activity',
+                loading: false,
+                disabled: false,
+                onClick: () => {
+                  window.location.href = res.data.event.in_event_activity;
+                },
+              });
+            } else {
+              setButtonState({
+                text: 'Event is Ongoing',
+                loading: false,
+                disabled: true,
+                onClick: () => {},
+              });
+            }
+          }
+        });
+    };
+    if (id) fetchEvent(id);
+  }, [id, register]);
 
   if (loading && event == null) {
     return <Loader />;
