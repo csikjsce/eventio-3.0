@@ -68,13 +68,15 @@ model Events {
   state_history              STATE[]
   updated_at                 DateTime          @updatedAt
   banner_url                 String
-  logo_image__url             String
+  logo_image__url            String
   event_page_image_url       String
   parent                     Events?           @relation("EventToEvent", fields: [parent_id], references: [id])
   parent_id                  Int?
   children                   Events[]          @relation("EventToEvent")
   is_feedback_enabled        Boolean           @default(false)
   is_only_somaiya            Boolean           @default(true)
+  in_event_activity          String?
+  start_in_event_activity    Boolean?
   attendance_type            ATTENDANCE_TYPE?
   registration_type          REGISTRATION_TYPE @default(ONPLATFORM)
   external_registration_link String?

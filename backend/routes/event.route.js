@@ -158,9 +158,7 @@ router.post(protected + "/get/:id", authCheck, async (req, res) => {
             dates: event.dates,
             venue: event.venue,
             organizer: event.organizer,
-            council_type: event.council_type,
-            is_active: event.is_active,
-            is_deleted: event.is_deleted,
+            state: event.state,
             name: event.name,
             Participant: event.Participant.length == 0 ? false : true,
         };
