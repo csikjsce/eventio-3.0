@@ -9,7 +9,7 @@ const tagHighlights: { [key: string]: string } = {
 export default function EventCard({ event }: { event: EventData }) {
   return (
     <Link
-      className="flex flex-row gap-4 justify-around bg-card-light dark:bg-card-dark rounded-lg p-2 h-32 shadow-md mb-2 ml-2"
+      className="flex flex-row gap-4 justify-around bg-card-light dark:bg-card-dark rounded-lg p-2 h-32 shadow-md mb-2 mx-1.5"
       to={'/event-details/' + event.id}
     >
       {/* Event Image */}
