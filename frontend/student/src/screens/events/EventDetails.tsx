@@ -295,7 +295,7 @@ export default function EventDetails() {
                       : ''
                   }
                 />
-                <IconText Icon={User} line1="100" line2="Participants" />
+                <IconText Icon={User} line1="500" line2="Participants" />
               </div>
               <hr className="border-1 border-gray-1" />
             </div>
