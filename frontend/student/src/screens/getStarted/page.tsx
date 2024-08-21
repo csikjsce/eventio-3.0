@@ -11,6 +11,7 @@ import { useUserData } from '../../hooks/useUserData';
 import Loader from '../../components/Loader';
 import { Alert } from '@material-tailwind/react';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 type errorType = {
   message?: string;
 };
