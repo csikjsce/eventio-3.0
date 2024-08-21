@@ -120,7 +120,7 @@ model User {
   gender             GENDER?
   interests          String[]
   name               String
-  phone_number       String?            
+  phone_number       String?            @unique
   photo_url          String
   roll_number        String?            
   year               Int?
