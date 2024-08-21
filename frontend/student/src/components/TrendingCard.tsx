@@ -36,7 +36,9 @@ export default function TrendingCard({ event }: { event: EventData }) {
               {event.name}
             </p>
             <p className="font-fira text-xs text-foreground-light dark:text-foreground-dark">
-              {new Date(event.created_at).toLocaleDateString()}
+              {event.dates
+                .map((dateString) => new Date(dateString).toLocaleDateString())
+                .join(', ')}
             </p>
           </div>
         </div>
