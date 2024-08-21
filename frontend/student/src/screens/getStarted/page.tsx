@@ -48,11 +48,22 @@ export default function GetStarted() {
 
   const onSubmit = async () => {
     const formValues = methods.getValues();
+    const user = useUser.userContext.userData;
+
+    if (!user || !user.id) {
+      setSnackbarMessage('User ID not found.');
+      setSnackbarVisible(true);
+      setTimeout(() => setSnackbarVisible(false), 3000); // Hide after 3 seconds
+      return;
+    }
+
     const submissionData = {
       ...formValues,
       degree: 'B.tech',
       college: 'KJSCE',
+      id: user.id,
     };
+
     try {
       const response = await axiosCall(
         'POST',
