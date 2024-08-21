@@ -9,10 +9,18 @@ import { PersonalDetailsSchema, personalDetailsSchema } from './validation';
 import { axiosCall } from '../../utils/api';
 import { useUserData } from '../../hooks/useUserData';
 import Loader from '../../components/Loader';
+import { Alert } from '@material-tailwind/react';
+
+type errorType = {
+  message?: string;
+};
 
 export default function GetStarted() {
   const [loading, setLoading] = useState(true);
+  const [snackbarVisible, setSnackbarVisible] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
   const useUser = useUserData();
+
   useEffect(() => {
     useUser.fetch().then((user) => {
       if (user && (user.phone_number != null || user.roll_number != null)) {
@@ -37,8 +45,6 @@ export default function GetStarted() {
     },
   });
 
-  // Retrieve form values using getValues
-
   const onSubmit = async () => {
     const formValues = methods.getValues();
     const submissionData = {
@@ -55,11 +61,16 @@ export default function GetStarted() {
       );
       console.log('User profile updated:', response);
       setCurrentStep('AllDone');
-    } catch (error) {
-      console.error('Error updating user profile:', error);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: errorType | any) {
+      if (typeof error === 'object' && error !== null && 'message' in error) {
+        setSnackbarMessage(error.message);
+        setSnackbarVisible(true);
+        setTimeout(() => setSnackbarVisible(false), 3000); // Hide after 3 seconds
+      } else {
+        console.error('Error updating user profile:', String(error));
+      }
     }
-    // console.log(methods.getValues());
-    // setCurrentStep('AllDone');
   };
 
   return (
@@ -84,6 +95,16 @@ export default function GetStarted() {
             {currentStep === 'AllDone' && <AllDone />}
           </div>
         </FormProvider>
+      )}
+
+      {snackbarVisible && (
+        <Alert
+          className="fixed bottom-5 left-1/2 transform -translate-x-1/2"
+          color="red"
+          variant="filled"
+        >
+          {snackbarMessage}
+        </Alert>
       )}
     </>
   );
