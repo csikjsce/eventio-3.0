@@ -79,7 +79,7 @@ export default function Home() {
               <TrendingCard key={event.id} event={event} text="Ongoing"/>
             ))}
             {registrationOpen?.map((event) => (
-              <TrendingCard key={event.id} event={event} text="Registrations open"/>
+              <TrendingCard key={event.id} event={event} text="Registrations Open"/>
             ))}
             {ticketOpen?.map((event) => (
               <TrendingCard key={event.id} event={event} text="Tickets Released"/>

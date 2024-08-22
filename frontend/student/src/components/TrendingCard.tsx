@@ -22,7 +22,7 @@ export default function TrendingCard({ event, text }: { event: EventData, text: 
         className="w-full h-40 object-cover rounded-t-lg"
       />
       {/* Event details */}
-      <div className="p-2 pt-0 flex flex-row justify-between items-center">
+      <div className="pb-2 pl-2 pr-1 pt-0 flex flex-row justify-between items-center">
         <div className="flex flex-row gap-2 items-center">
           {/* Council picture and event name */}
           <img
@@ -31,7 +31,7 @@ export default function TrendingCard({ event, text }: { event: EventData, text: 
             referrerPolicy="no-referrer"
             className="w-10 h-10 aspect-square rounded-full object-cover border border-vitality-red"
           />
-          <div className="flex flex-col text-left">
+          <div className="text-left">
             <p className="font-fira font-semibold text-lg text-foreground-light dark:text-foreground-dark">
               {event.name}
             </p>
@@ -42,11 +42,9 @@ export default function TrendingCard({ event, text }: { event: EventData, text: 
             </p>
           </div>
         </div>
-        <div className="flex flex-col items-start">
-          <p className="text-sm font-fira  px-2 text-center text-foreground-light dark:text-foreground-dark">
-            {text}
-          </p>
-        </div>
+        <p className="text-xs text-wrap mx-0.5 font-fira text-center text-foreground-light dark:text-foreground-dark">
+          {text}
+        </p>
       </div>
     </div>
   );
