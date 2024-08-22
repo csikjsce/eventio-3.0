@@ -29,9 +29,7 @@ export default function CouncilCard({
             <p className="font-fira font-medium text-md sm:text-lg text-foreground-light dark:text-foreground-dark">
               {council.name}
             </p>
-            <p className="font-fira text-xs text-primary">
-              {council.name}
-            </p>
+            <p className="font-fira text-xs text-primary">{council.name}</p>
           </div>
         </div>
         <div className="flex flex-row gap-2 justify-start">

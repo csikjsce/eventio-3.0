@@ -22,7 +22,7 @@ interface EventData {
   organizer: {
     name: string;
     photo_url: string;
-  }
+  };
   organizer_id: number;
   parent_id: number | null;
   registration_type: string;
@@ -32,7 +32,7 @@ interface EventData {
   tags: string[];
   updated_at: string;
   venue: string;
-  Participant?: boolean
+  Participant?: boolean;
   in_event_activity?: string;
   start_in_event_activity?: boolean;
 }

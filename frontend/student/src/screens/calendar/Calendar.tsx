@@ -95,7 +95,10 @@ export default function Calendar() {
 
   return (
     <div className="flex flex-col p-4">
-      <Header name={user.userContext.userData?.name || ""} photo_url={user.userContext.userData?.photo_url || ""} />
+      <Header
+        name={user.userContext.userData?.name || ''}
+        photo_url={user.userContext.userData?.photo_url || ''}
+      />
       <div className="flex gap-10 sm:divide-x justify-center sm:w-1/2 h-full items-center sm:flex-row flex-col mt-10">
         <div className="w-full h-96 px-5">
           <div className="flex justify-between items-center">

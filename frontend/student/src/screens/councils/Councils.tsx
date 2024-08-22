@@ -11,7 +11,6 @@ import Loader from '../../components/Loader';
 import csiLogo from '../../assets/csiLogo.png';
 
 export default function Councils() {
-
   const [loading, setLoading] = useState(true);
 
   const user = useUserData();
@@ -38,10 +37,7 @@ export default function Councils() {
               photo_url={user.userContext.userData.photo_url}
             />
           )}
-        <SearchBar
-          Icon={SearchNormal1}
-          className = "mt-6"
-        />
+        <SearchBar Icon={SearchNormal1} className="mt-6" />
 
         <div className="flex flex-col gap-4 z-10">
           <p className="text-lg font-medium font-fira text-left text-foreground-light dark:text-foreground-dark">
