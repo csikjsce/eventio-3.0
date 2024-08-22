@@ -7,17 +7,20 @@ import {
   Location,
   Send2,
   User,
+  TickCircle,
 } from 'iconsax-react';
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import IconText from '../../components/IconText';
 import Loader from '../../components/Loader';
 import Passage from '../../components/Passage';
+import { Alert } from '@material-tailwind/react';
 
 export default function EventDetails() {
   const [event, setEvent] = useState<EventData | null>(null);
 
   const [loading, setLoading] = useState(true);
+  const [snackbarVisible, setSnackbarVisible] = useState(false);
 
   const [buttonState, setButtonState] = useState<{
     text: string;
@@ -58,6 +61,8 @@ export default function EventDetails() {
           disabled: true,
           onClick: () => {},
         });
+        setSnackbarVisible(true);
+        setTimeout(() => setSnackbarVisible(false), 3000); // Hide after 3 seconds
       })
       .catch(() => {
         setButtonState({
@@ -328,6 +333,16 @@ export default function EventDetails() {
             </Button>
           </div>
         </div>
+        {snackbarVisible && (
+          <Alert
+            className="fixed bottom-5 left-1/2 transform -translate-x-1/2 w-96"
+            color="green"
+            variant="filled"
+            icon={<TickCircle size="24" color="#57585A" />}
+          >
+            Registration Successful!!
+          </Alert>
+        )}
       </>
     );
 }

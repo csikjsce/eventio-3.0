@@ -26,7 +26,7 @@ export default function Login() {
   return (
     <div className="flex flex-col justify-center items-center h-screen gap-16 p-4">
       <div className="flex flex-col w-full h-44 items-center align-middle justify-end">
-        <img src={EventioLogo}  alt="Eventio" className="h-20 w-20"/>
+        <img src={EventioLogo} alt="Eventio" className="h-20 w-20" />
       </div>
       <div className="fiex justify-center items-center text-center">
         <p className="font-marcellus text-primary text-3xl">Eventio</p>
@@ -37,8 +37,16 @@ export default function Login() {
         size="lg"
         variant="outlined"
         color="blue-gray"
-        className="flex items-center gap-3" placeholder={undefined} onPointerEnterCapture={undefined} onPointerLeaveCapture={undefined}      >
-        <img src="https://docs.material-tailwind.com/icons/google.svg" alt="metamask" className="h-6 w-6" />
+        className="flex items-center gap-3"
+        placeholder={undefined}
+        onPointerEnterCapture={undefined}
+        onPointerLeaveCapture={undefined}
+      >
+        <img
+          src="https://docs.material-tailwind.com/icons/google.svg"
+          alt="metamask"
+          className="h-6 w-6"
+        />
         Continue with Google
       </Button>
     </div>
