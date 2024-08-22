@@ -26,7 +26,7 @@ export default function Councils() {
   }
 
   return (
-    <div className="flex flex-col p-4">
+    <div className="flex flex-col p-4 dark:bg-background-dark min-h-screen mb-8">
       <div className="flex flex-col gap-8">
         {/* main area */}
         {user.userContext.userData &&

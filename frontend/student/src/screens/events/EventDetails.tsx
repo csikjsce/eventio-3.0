@@ -188,7 +188,7 @@ export default function EventDetails() {
   } else
     return (
       <>
-        <div className="absolute top-0 left-0">
+        <div className="dark:bg-background-dark">
           <div
             className="w-screen aspect-square relative"
             style={{ backgroundImage: event?.event_page_image_url }}
