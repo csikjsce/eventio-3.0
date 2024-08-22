@@ -55,7 +55,7 @@ export default function Home() {
   }
 
   return (
-    <div className="flex flex-col p-4">
+    <div className="flex flex-col p-4 dark:bg-background-dark min-h-screen mb-8">
       <div className="flex flex-col">
         {/* main area */}
         {user.userContext.userData &&
@@ -87,11 +87,11 @@ export default function Home() {
           </div>
         </div>
         {upcomingEvents && upcomingEvents.length != 0 && (
-          <div className="flex flex-col mt- gap-4 z-10">
+          <div className="flex flex-col gap-4 z-10">
             <p className="text-lg font-medium font-fira text-left text-foreground-light dark:text-foreground-dark">
               Upcoming Events
             </p>
-            <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3 overflow-x-auto mb-12">
+            <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3 overflow-x-auto">
               {upcomingEvents?.map((event) => (
                 <EventCard key={event.id} event={event} />
               ))}
@@ -99,11 +99,11 @@ export default function Home() {
           </div>
         )}
         {registrationOpen && registrationOpen.length != 0 && (
-          <div className="flex flex-col mt- gap-4 z-10">
+          <div className="flex flex-col gap-4 z-10">
             <p className="text-lg font-medium font-fira text-left text-foreground-light dark:text-foreground-dark">
               Registration Open
             </p>
-            <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3 overflow-x-auto mb-12">
+            <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3 overflow-x-auto">
               {registrationOpen?.map((event) => (
                 <EventCard key={event.id} event={event} />
               ))}
@@ -111,11 +111,11 @@ export default function Home() {
           </div>
         )}
         {ticketOpen && ticketOpen.length != 0 && (
-          <div className="flex flex-col mt- gap-4 z-10">
+          <div className="flex flex-col gap-4 z-10">
             <p className="text-lg font-medium font-fira text-left text-foreground-light dark:text-foreground-dark">
               Registration Open
             </p>
-            <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3 overflow-x-auto mb-12">
+            <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3 overflow-x-auto">
               {ticketOpen?.map((event) => (
                 <EventCard key={event.id} event={event} />
               ))}
