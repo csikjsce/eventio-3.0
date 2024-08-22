@@ -3,6 +3,7 @@ import React from 'react';
 import Quote from '../../components/Quote';
 import { useFormContext } from 'react-hook-form';
 import { PersonalDetailsSchema } from './validation'; // Ensure this is correctly imported
+import { Spinner } from '@material-tailwind/react';
 
 interface Props {
   setCurrentStep: React.Dispatch<React.SetStateAction<string>>;
@@ -23,11 +24,14 @@ export default function Interest({ setCurrentStep, onSubmit }: Props) {
     setValue('interests', updatedChips);
   };
 
+  const [continueLoading, setContinueLoading] = React.useState(false);
+
   const handleClickBack = () => {
     setCurrentStep('EducationalDetails');
   };
 
   const handleClickForward = () => {
+    setContinueLoading(true);
     onSubmit(); // Trigger the final form submission
   };
 
@@ -96,10 +100,18 @@ export default function Interest({ setCurrentStep, onSubmit }: Props) {
             Back
           </Typography>
           <button
-            className="btn btn-primary border-2 border-red-500 p-2 rounded-full text-red-500"
+            className={`btn btn-primary border-2 p-2 rounded-full ${continueLoading ? 'text-red-300 border-red-300' : 'text-red-500 border-red-500'}`}
             onClick={handleClickForward}
+            disabled={continueLoading}
           >
-            Continue
+            {continueLoading ? (
+              <Spinner
+                onPointerEnterCapture={undefined}
+                onPointerLeaveCapture={undefined}
+                color="red"
+                scale={2}
+              />
+            ) : 'Continue'}
           </button>
         </div>
       </div>
