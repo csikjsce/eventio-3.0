@@ -17,7 +17,7 @@ export const branchOptions: { [key: string]: string[] } = {
     'Computer Engineering',
     'Computer And Communication',
     'Information Technology',
-    'Artificial Intelligence and Data Science',
+    'Artificial Intelligence And Data Science',
     'Mechanical',
     'Electronics And Telecommunications',
     'Electronics And Computers',
