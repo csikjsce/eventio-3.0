@@ -3,6 +3,8 @@
 
 const withMT = require("@material-tailwind/react/utils/withMT");
 module.exports = withMT({
+  
+  darkmode: 'selector',
 
   content: [
     "./index.html",

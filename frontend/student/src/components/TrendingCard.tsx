@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 
-export default function TrendingCard({ event }: { event: EventData }) {
+export default function TrendingCard({ event, text }: { event: EventData, text: string }) {
   const navigate = useNavigate();
 
   const handleClick = () => {
@@ -43,8 +43,8 @@ export default function TrendingCard({ event }: { event: EventData }) {
           </div>
         </div>
         <div className="flex flex-col items-start">
-          <p className="text-sm font-fira text-foreground-light dark:text-foreground-dark">
-            Register Now
+          <p className="text-sm font-fira  px-2 text-center text-foreground-light dark:text-foreground-dark">
+            {text}
           </p>
         </div>
       </div>
