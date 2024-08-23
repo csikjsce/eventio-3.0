@@ -15,7 +15,7 @@ function App() {
 
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth > 720) {
+      if (window.innerWidth > window.innerHeight) {
         setIsMobile(true);
       } else {
         setIsMobile(false);
@@ -30,9 +30,9 @@ function App() {
     return <Loader />;
   } else if (isMobile) {
     return (
-      <div className="flex flex-col h-screen justify-center items-center gap-8">
+      <div className="flex flex-col h-screen justify-center items-center gap-8 dark:bg-background-dark">
         <p className="font-poppins text-3xl text-primary ">Mobile Required</p>
-        <p className="font-poppins text-xl text-foreground-light">
+        <p className="font-poppins text-xl text-foreground-light dark:text-foreground-dark">
           Please use a mobile device and install the app to continue.
         </p>
       </div>
@@ -40,26 +40,28 @@ function App() {
   }
 
   return (
-    <Routes>
-      {indexRoutes.map((prop, key) =>
-        prop.routeType ? (
-          <Route
-            path={prop.path}
-            key={key}
-            element={
-              <ConditionalRoute
-                routeType={prop.routeType as 'protected' | 'login'}
-              >
-                {prop.component}
-              </ConditionalRoute>
-            }
-          />
-        ) : (
-          <Route path={prop.path} key={key} element={prop.component} />
-        ),
-      )}
-      {/* <Route path="/404" element={<TechnicalError  />} /> */}
-    </Routes>
+    <div className="dark:bg-background-dark">
+      <Routes>
+        {indexRoutes.map((prop, key) =>
+          prop.routeType ? (
+            <Route
+              path={prop.path}
+              key={key}
+              element={
+                <ConditionalRoute
+                  routeType={prop.routeType as 'protected' | 'login'}
+                >
+                  {prop.component}
+                </ConditionalRoute>
+              }
+            />
+          ) : (
+            <Route path={prop.path} key={key} element={prop.component} />
+          ),
+        )}
+        {/* <Route path="/404" element={<TechnicalError  />} /> */}
+      </Routes>
+    </div>
   );
 }
 

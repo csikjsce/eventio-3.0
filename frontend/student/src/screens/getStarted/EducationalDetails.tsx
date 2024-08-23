@@ -48,8 +48,7 @@ export default function EducationalDetails({ setCurrentStep }: Props) {
       <div className="font-fira">
         <Typography
           variant="h4"
-          color="black"
-          className="mb-4 font-bold"
+          className="mb-4 font-bold text-foreground-light dark:text-foreground-dark"
           placeholder={undefined}
           onPointerEnterCapture={undefined}
           onPointerLeaveCapture={undefined}
@@ -58,8 +57,7 @@ export default function EducationalDetails({ setCurrentStep }: Props) {
         </Typography>
         <Typography
           variant="h5"
-          color="black"
-          className="mb-4"
+          className="mb-4 text-foreground-light dark:text-foreground-dark"
           placeholder={undefined}
           onPointerEnterCapture={undefined}
           onPointerLeaveCapture={undefined}
@@ -74,6 +72,7 @@ export default function EducationalDetails({ setCurrentStep }: Props) {
             placeholder={undefined}
             onPointerEnterCapture={undefined}
             onPointerLeaveCapture={undefined}
+            color="blue"
           >
             <Option value="2025">2025</Option>
             <Option value="2026">2026</Option>
@@ -92,6 +91,7 @@ export default function EducationalDetails({ setCurrentStep }: Props) {
             placeholder={undefined}
             onPointerEnterCapture={undefined}
             onPointerLeaveCapture={undefined}
+            color="blue"
           >
             {availableBranchs.map((branch, index) => (
               <Option key={index} value={branch.replace(/ /g, '_')}>
