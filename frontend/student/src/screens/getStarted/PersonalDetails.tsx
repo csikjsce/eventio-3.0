@@ -27,13 +27,21 @@ export default function PersonalDetails({ setCurrentStep }: Props) {
     setValue('gender', value as 'male' | 'female');
   };
 
+  const [darkMode, setDarkMode] = React.useState(
+    window.matchMedia('(prefers-color-scheme: dark)').matches,
+  );
+  window
+    .matchMedia('(prefers-color-scheme: dark)')
+    .addEventListener('change', (event) => {
+      setDarkMode(event.matches);
+    });
+
   return (
     <div className="flex flex-col justify-between min-h-screen p-6 ">
       <form onSubmit={handleSubmit(onSubmit)} className="font-fira">
         <Typography
           variant="h4"
-          color="black"
-          className="mb-4 font-bold font-fira"
+          className="mb-4 font-bold font-fira text-foreground-light dark:text-foreground-dark"
           placeholder={undefined}
           onPointerEnterCapture={undefined}
           onPointerLeaveCapture={undefined}
@@ -42,8 +50,7 @@ export default function PersonalDetails({ setCurrentStep }: Props) {
         </Typography>
         <Typography
           variant="h5"
-          color="black"
-          className="mb-4 font-fira"
+          className="mb-4 font-fira text-foreground-light dark:text-foreground-dark"
           placeholder={undefined}
           onPointerEnterCapture={undefined}
           onPointerLeaveCapture={undefined}
@@ -57,7 +64,8 @@ export default function PersonalDetails({ setCurrentStep }: Props) {
               onPointerLeaveCapture={undefined}
               crossOrigin={undefined}
               {...register('phone_number')}
-              className="min-h-10 border border-black"
+              className="min-h-10"
+              color={darkMode ? 'white' : undefined}
               label="Mobile Number"
               type="number"
             />
@@ -72,7 +80,8 @@ export default function PersonalDetails({ setCurrentStep }: Props) {
               onPointerLeaveCapture={undefined}
               crossOrigin={undefined}
               {...register('roll_number')}
-              className="min-h-min border border-black"
+              className="min-h-min"
+              color={darkMode ? 'white' : undefined}
               label="Student Id"
               type="number"
             />
@@ -84,12 +93,13 @@ export default function PersonalDetails({ setCurrentStep }: Props) {
           <div>
             <Select
               label="Select Gender"
-              className=""
+              className="dark:bg-background-dark"
               onChange={(e) => handleGenderChange(e as unknown as string)}
               value={getValues('gender')} // Use getValues instead of watch
               placeholder={undefined}
               onPointerEnterCapture={undefined}
               onPointerLeaveCapture={undefined}
+              color="blue"
             >
               <Option value="MALE">Male</Option>
               <Option value="FEMALE">Female</Option>

@@ -40,26 +40,28 @@ function App() {
   }
 
   return (
-    <Routes>
-      {indexRoutes.map((prop, key) =>
-        prop.routeType ? (
-          <Route
-            path={prop.path}
-            key={key}
-            element={
-              <ConditionalRoute
-                routeType={prop.routeType as 'protected' | 'login'}
-              >
-                {prop.component}
-              </ConditionalRoute>
-            }
-          />
-        ) : (
-          <Route path={prop.path} key={key} element={prop.component} />
-        ),
-      )}
-      {/* <Route path="/404" element={<TechnicalError  />} /> */}
-    </Routes>
+    <div className="dark:bg-background-dark">
+      <Routes>
+        {indexRoutes.map((prop, key) =>
+          prop.routeType ? (
+            <Route
+              path={prop.path}
+              key={key}
+              element={
+                <ConditionalRoute
+                  routeType={prop.routeType as 'protected' | 'login'}
+                >
+                  {prop.component}
+                </ConditionalRoute>
+              }
+            />
+          ) : (
+            <Route path={prop.path} key={key} element={prop.component} />
+          ),
+        )}
+        {/* <Route path="/404" element={<TechnicalError  />} /> */}
+      </Routes>
+    </div>
   );
 }
 

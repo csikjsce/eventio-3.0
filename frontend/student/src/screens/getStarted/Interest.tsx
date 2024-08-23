@@ -51,8 +51,7 @@ export default function Interest({ setCurrentStep, onSubmit }: Props) {
       <div>
         <Typography
           variant="h4"
-          color="black"
-          className="mb-4 font-bold"
+          className="mb-4 font-bold text-foreground-light dark:text-foreground-dark"
           placeholder={undefined}
           onPointerEnterCapture={undefined}
           onPointerLeaveCapture={undefined}
@@ -61,8 +60,7 @@ export default function Interest({ setCurrentStep, onSubmit }: Props) {
         </Typography>
         <Typography
           variant="h5"
-          color="black"
-          className="mb-4 "
+          className="mb-4 text-foreground-light dark:text-foreground-dark"
           placeholder={undefined}
           onPointerEnterCapture={undefined}
           onPointerLeaveCapture={undefined}
@@ -111,7 +109,9 @@ export default function Interest({ setCurrentStep, onSubmit }: Props) {
                 color="red"
                 scale={2}
               />
-            ) : 'Continue'}
+            ) : (
+              'Continue'
+            )}
           </button>
         </div>
       </div>
