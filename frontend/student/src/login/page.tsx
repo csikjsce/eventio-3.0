@@ -24,19 +24,21 @@ export default function Login() {
   }, []);
 
   return (
-    <div className="flex flex-col justify-center items-center h-screen gap-16 p-4">
+    <div className="flex flex-col justify-center items-center h-screen gap-16 p-4 dark:bg-background-dark">
       <div className="flex flex-col w-full h-44 items-center align-middle justify-end">
         <img src={EventioLogo} alt="Eventio" className="h-20 w-20" />
       </div>
       <div className="fiex justify-center items-center text-center">
         <p className="font-marcellus text-primary text-3xl">Eventio</p>
-        <p className="text-sm">By CSI-KJSCE</p>
+        <p className="text-sm text-foreground-light dark:text-foreground-dark">
+          By CSI-KJSCE
+        </p>
       </div>
       <Button
         onClick={login}
         size="lg"
         variant="outlined"
-        color="blue-gray"
+        color="light-blue"
         className="flex items-center gap-3"
         placeholder={undefined}
         onPointerEnterCapture={undefined}
