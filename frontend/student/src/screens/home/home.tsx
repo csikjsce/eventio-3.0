@@ -73,16 +73,16 @@ export default function Home() {
           </p>
           <div className="overflow-x-auto flex gap-4 pb-6 px-4 -mx-4">
             {upcomingEvents?.map((event) => (
-              <TrendingCard key={event.id} event={event} />
+              <TrendingCard key={event.id} event={event} text="Coming Soon"/>
             ))}
             {ongoingEvents?.map((event) => (
-              <TrendingCard key={event.id} event={event} />
+              <TrendingCard key={event.id} event={event} text="Ongoing"/>
             ))}
             {registrationOpen?.map((event) => (
-              <TrendingCard key={event.id} event={event} />
+              <TrendingCard key={event.id} event={event} text="Registrations Open"/>
             ))}
             {ticketOpen?.map((event) => (
-              <TrendingCard key={event.id} event={event} />
+              <TrendingCard key={event.id} event={event} text="Tickets Released"/>
             ))}
           </div>
         </div>
