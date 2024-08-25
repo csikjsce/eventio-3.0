@@ -7,6 +7,7 @@ import GetStarted from '../screens/getStarted/page';
 import Home from '../screens/home/home';
 import Logout from '../screens/logout/page';
 import Profile from '../screens/profile/Profile';
+import Ticket from '../screens/ticket/tickets';
 
 const indexRoutes = [
   {
@@ -63,7 +64,8 @@ const indexRoutes = [
   {
     path: '/ticket/:id',
     name: 'Ticket',
-    component: <h1>Ticket</h1>,
+    component: <Ticket />,
+    routeType: 'protected',
   },
   {
     path: '/contact-us',
