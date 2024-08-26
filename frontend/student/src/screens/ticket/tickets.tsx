@@ -1,21 +1,36 @@
 import { ArrowLeft } from 'iconsax-react';
 import { useContext, useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { UserDataContext } from '../../contexts/userContext';
-import axios from 'axios';
 import { axiosCall } from '../../utils/api';
 
 export default function Ticket() {
-  const { id } = useParams();
   const navigate = useNavigate();
-  console.log(id);
   const userContext = useContext(UserDataContext);
-  const userId = userContext?.userData?.id;
-  console.log('User ID from Context:', userId);
+  const userData = userContext?.userData;
+  const [eventData, setEventData] = useState<EventData>();
 
   const handleClose = () => {
     navigate('/');
   };
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const response = await axiosCall('POST', '/event/p/get', true);
+        console.log(response);
+        if (response.events) {
+          console.log(response.events.REGISTRATION_OPEN);
+          setEventData(response.events.REGISTRATION_OPEN[0]);
+        }
+      } catch (error) {
+        console.error('Error fetching events:', error);
+      }
+    };
+
+    fetchEvents();
+  }, []);
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-center bg-cover h-screen relative">
       <div className="absolute top-6 left-5 z-20  ">
@@ -34,14 +49,16 @@ export default function Ticket() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center my-1">
                     <img
-                      src="https://i.pinimg.com/736x/10/f3/16/10f316b80d8d4e972f8c59f1ec20c407.jpg"
-                      alt="Event"
+                      src={eventData?.banner_url}
+                      alt="User"
+                      className="h-96 w-full object-cover rounded-lg"
                     />
                   </div>
                 </div>
                 <div className="flex flex-col py-2">
-                  <span className="text-m">Abhiyantriki</span>
-                  <div className="font-semibold">By KJSCE Student Council</div>
+                  <span className="text-2xl font-bold">{eventData?.name}</span>
+                  <div className="">{eventData?.description}</div>
+                  <div className="font-semibold">By CSI KJSCE</div>
                 </div>
                 <div className="border-dashed border-gray-500 border-b-2 my-5 pt-5">
                   <div className="absolute rounded-full w-6 h-6 bg-white -mt-2 -left-2"></div>
@@ -50,9 +67,13 @@ export default function Ticket() {
                 <div className="flex items-center mb-5 p-2 text-sm">
                   <div className="flex flex-col">
                     <span className="text-sm">Name</span>
-                    <div className="font-semibold">Kunal Chaturvedi</div>
+                    <div className="font-semibold">
+                      {userData?.name || 'Unknown'}
+                    </div>
                     <span className="text-sm mt-2">College</span>
-                    <div className="font-semibold">Kunal Chaturvedi</div>
+                    <div className="font-semibold">
+                      {userData?.college || 'Unknown College'}
+                    </div>
                   </div>
                 </div>
 
