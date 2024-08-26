@@ -38,7 +38,7 @@ export default function Ticket() {
           onClick={handleClose}
           className="text-gray-700 text-xl font-bold rounded-full p-2"
         >
-          <ArrowLeft size={24} color="black" />
+          <ArrowLeft size={24} color="white" />
         </button>
       </div>
       <div className="max-w-md w-full mx-auto z-10 bg-white h-screen relative">
