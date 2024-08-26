@@ -32,7 +32,9 @@ interface EventData {
   tags: string[];
   updated_at: string;
   venue: string;
-  Participant?: boolean;
+  Participant: false | {
+    attended: boolean
+  };
   in_event_activity?: string;
   start_in_event_activity?: boolean;
 }

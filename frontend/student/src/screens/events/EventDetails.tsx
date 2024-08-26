@@ -10,7 +10,7 @@ import {
   TickCircle,
 } from 'iconsax-react';
 import { useCallback, useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import IconText from '../../components/IconText';
 import Loader from '../../components/Loader';
 import Passage from '../../components/Passage';
@@ -78,6 +78,7 @@ export default function EventDetails() {
         });
       });
   }, [id]);
+  const navigate = useNavigate()
   useEffect(() => {
     const fetchEvent = async (id: string) => {
       axios
@@ -93,7 +94,7 @@ export default function EventDetails() {
           setEvent(res.data.event);
           setLoading(false);
           if (res.data.event.state == 'REGISTRATION_OPEN') {
-            if (res.data.event.Participant == true) {
+            if (res.data.event.Participant) {
               setButtonState({
                 text: 'Registered',
                 loading: false,
@@ -109,7 +110,7 @@ export default function EventDetails() {
               });
             }
           } else if (res.data.event.state == 'REGISTRATION_CLOSED') {
-            if (res.data.event.Participant == true) {
+            if (res.data.event.Participant) {
               setButtonState({
                 text: 'Already registered',
                 loading: false,
@@ -125,13 +126,25 @@ export default function EventDetails() {
               });
             }
           } else if (res.data.event.state == 'TICKET_OPEN') {
-            if (res.data.event.Participant == true) {
-              setButtonState({
-                text: 'View Ticket',
-                loading: false,
-                disabled: false,
-                onClick: () => {},
-              });
+            if (res.data.event.Participant) {
+              if (res.data.event.Participant.attended){
+                setButtonState({
+                  text: 'View Ticket',
+                  loading: false,
+                  disabled: false,
+                  onClick: () => {
+                    navigate("/ticket/"+res.data.event.id)
+                  },
+                });
+              }
+              else {
+                setButtonState({
+                  text: 'Event is full',
+                  loading: false,
+                  disabled: true,
+                  onClick: () => {},
+                });
+              }
             } else {
               setButtonState({
                 text: 'Not registered for this event',
@@ -186,7 +199,7 @@ export default function EventDetails() {
         });
     };
     if (id) fetchEvent(id);
-  }, [id, register]);
+  }, [id, navigate, register]);
 
   if (loading && event == null) {
     return <Loader />;

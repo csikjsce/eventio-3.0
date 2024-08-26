@@ -135,6 +135,9 @@ router.post(protected + "/get/:id", authCheck, async (req, res) => {
                     where: {
                         user_id: req.user.id,
                     },
+                    select: {
+                        attended: true,
+                    },
                 },
             },
         });
@@ -160,7 +163,10 @@ router.post(protected + "/get/:id", authCheck, async (req, res) => {
             organizer: event.organizer,
             state: event.state,
             name: event.name,
-            Participant: event.Participant.length == 0 ? false : true,
+            Participant:
+                event.Participant.length == 0 ? false : event.Participant[0],
+            start_in_event_activity: event.start_in_event_activity,
+            in_event_activity: event.in_event_activity,
         };
         res.json({ error: false, event: eventResponse });
     } catch (err) {
