@@ -3,7 +3,7 @@ export default function Passage({
   content,
 }: {
   title: string;
-  content: string;
+  content: string | JSX.Element;
 }) {
   return (
     <div className="flex flex-col gap-2 items-start text-left">
