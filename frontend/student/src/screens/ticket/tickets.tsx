@@ -20,8 +20,8 @@ export default function Ticket() {
         const response = await axiosCall('POST', '/event/p/get', true);
         console.log(response);
         if (response.events) {
-          console.log(response.events.REGISTRATION_OPEN);
-          setEventData(response.events.REGISTRATION_OPEN[0]);
+          console.log(response.events.TICKET_OPEN);
+          setEventData(response.events.TICKET_OPEN[0]);
         }
       } catch (error) {
         console.error('Error fetching events:', error);

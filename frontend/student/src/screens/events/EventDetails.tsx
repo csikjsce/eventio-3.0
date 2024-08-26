@@ -22,10 +22,14 @@ export default function EventDetails() {
   const [loading, setLoading] = useState(true);
   const [snackbarVisible, setSnackbarVisible] = useState(false);
 
-  const [darkMode, setDarkMode] = useState(window.matchMedia('(prefers-color-scheme: dark)').matches);
-  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
-    setDarkMode(event.matches);
-  });
+  const [darkMode, setDarkMode] = useState(
+    window.matchMedia('(prefers-color-scheme: dark)').matches,
+  );
+  window
+    .matchMedia('(prefers-color-scheme: dark)')
+    .addEventListener('change', (event) => {
+      setDarkMode(event.matches);
+    });
 
   const [buttonState, setButtonState] = useState<{
     text: string;
@@ -78,7 +82,7 @@ export default function EventDetails() {
         });
       });
   }, [id]);
-  const navigate = useNavigate()
+  const navigate = useNavigate();
   useEffect(() => {
     const fetchEvent = async (id: string) => {
       axios
@@ -127,17 +131,16 @@ export default function EventDetails() {
             }
           } else if (res.data.event.state == 'TICKET_OPEN') {
             if (res.data.event.Participant) {
-              if (res.data.event.Participant.attended){
+              if (res.data.event.Participant.attended) {
                 setButtonState({
                   text: 'View Ticket',
                   loading: false,
                   disabled: false,
                   onClick: () => {
-                    navigate("/ticket/"+res.data.event.id)
+                    navigate('/ticket/' + res.data.event.id);
                   },
                 });
-              }
-              else {
+              } else {
                 setButtonState({
                   text: 'Event is full',
                   loading: false,
@@ -220,7 +223,7 @@ export default function EventDetails() {
               to=".."
               className={`absolute top-0 left-0 mt-6 ml-6 h-11 w-11 bg-background-light dark:bg-background-dark rounded-full shadow-sm ${darkMode ? 'shadow-white/50' : 'shadow-primary'} flex items-center justify-center`}
             >
-              <ArrowLeft size={24} color={darkMode ? "#FFFFFF" : "#B61F2D"} />
+              <ArrowLeft size={24} color={darkMode ? '#FFFFFF' : '#B61F2D'} />
             </Link>
             <div className="absolute -bottom-5 right-0 flex justify-end gap-3 mr-6">
               <Send2
