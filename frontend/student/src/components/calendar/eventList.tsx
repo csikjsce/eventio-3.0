@@ -1,23 +1,28 @@
+import dayjs, { Dayjs } from 'dayjs';
 import Event from './event';
-import { EventType } from '../../types/EventType';
 
 type Props = {
-  events: EventType[];
-  date: number;
+  events: EventData[];
+  date: Dayjs;
 };
 
 const EventList = ({ events, date }: Props) => {
-  console.log(date);
   return (
     <div className="pb-20 ">
       {events.map((event, index) => (
         <Event
           key={index}
-          council={event.council}
+          council={event.organizer.name}
           date={date}
-          title={event.title}
-          type={event.type}
-          startTime={event.startTime}
+          title={event.name}
+          image={event.banner_url}
+          id={event.id}
+          startTime={dayjs(events[0].dates.find((d) => date.isSame(d, 'day')))
+            .toDate()
+            .toLocaleTimeString('en-US', {
+              hour: '2-digit',
+              minute: '2-digit',
+            })}
         />
       ))}
     </div>
