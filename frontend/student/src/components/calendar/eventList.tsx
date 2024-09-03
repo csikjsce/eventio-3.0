@@ -17,12 +17,9 @@ const EventList = ({ events, date }: Props) => {
           title={event.name}
           image={event.banner_url}
           id={event.id}
-          startTime={dayjs(events[0].dates.find((d) => date.isSame(d, 'day')))
-            .toDate()
-            .toLocaleTimeString('en-US', {
-              hour: '2-digit',
-              minute: '2-digit',
-            })}
+          startTime={dayjs(
+            event.dates.find((d) => date.isSame(d, 'day')),
+          ).format('hh:mm A')}
         />
       ))}
     </div>
