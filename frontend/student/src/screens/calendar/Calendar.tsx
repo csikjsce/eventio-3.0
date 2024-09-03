@@ -1,4 +1,4 @@
-import dayjs from 'dayjs';
+import dayjs, { Dayjs } from 'dayjs';
 import FooterNav from '../../components/FooterNav';
 import { useEffect, useState } from 'react';
 import { generateDate, months } from '../../utils/calendar';
@@ -71,8 +71,31 @@ export default function Calendar() {
 
   const user = useUserData();
 
+  const dateClassName = (
+    currentMonth: boolean,
+    date: Dayjs,
+    today?: boolean,
+  ) => {
+    let className =
+      'h-10 w-10 rounded-full grid place-content-center hover:bg-black hover:text-white hover:dark:bg-white hover:dark:text-black transition-all cursor-pointer select-none';
+    if (today) {
+      className += ' bg-primary text-white dark:bg-primary dark:text-white';
+      return className;
+    }
+    if (selectDate.isSame(date, 'day')) {
+      className += ' bg-black text-white dark:bg-white dark:text-black';
+    } else {
+      if (currentMonth) {
+        className += ' text-black dark:text-white';
+      } else {
+        className += ' text-gray-1 dark:text-gray-400';
+      }
+    }
+    return className;
+  };
+
   return (
-    <div className="flex flex-col p-4">
+    <div className="flex flex-col p-4 dark:bg-background-dark min-h-screen mb-8">
       <Header
         name={user.userContext.userData?.name || ''}
         photo_url={user.userContext.userData?.photo_url || ''}
@@ -136,12 +159,7 @@ export default function Calendar() {
                   >
                     <div className="p-2 text-center h-14 grid place-content-center text-sm border-t">
                       <div
-                        className={`
-                          ${currentMonth ? 'text-foreground-light dark:text-foreground-dark' : 'text-gray-400'}
-                          ${selectDate.isSame(date, 'day') ? 'bg-black text-white dark:bg-white dark:text-black' : ''}
-                          ${today ? 'bg-red-600 text-white dark:bg-red-600 dark:text-white' : ''}
-                          h-10 w-10 rounded-full grid place-content-center hover:bg-black hover:text-white hover:dark:bg-white hover:dark:text-black transition-all cursor-pointer select-none
-                        `}
+                        className={dateClassName(currentMonth, date, today)}
                         onClick={() => setSelectDate(date)}
                       >
                         {date.date()}
@@ -157,7 +175,7 @@ export default function Calendar() {
             <h1 className="font-semibold text-foreground-light dark:text-foreground-dark">
               {getEventsForDate(selectDate).length !== 0
                 ? `Schedule for ${selectDate.format('MMMM D, YYYY')}`
-                : 'No events on this date'}
+                : `No events on ${selectDate.format('MMMM D, YYYY')}`}
             </h1>
 
             <EventList

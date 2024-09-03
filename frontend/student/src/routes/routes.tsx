@@ -43,6 +43,7 @@ const indexRoutes = [
     path: '/calendar',
     name: 'Calendar',
     component: <Calendar />,
+    routeType: 'protected',
   },
   {
     path: '/council-details/:id',
