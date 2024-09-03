@@ -1,4 +1,10 @@
-import { Home, Icon as IconType, People, ProfileCircle } from 'iconsax-react';
+import {
+  Calendar,
+  Home,
+  Icon as IconType,
+  People,
+  ProfileCircle,
+} from 'iconsax-react';
 
 import { NavLink } from 'react-router-dom';
 
@@ -34,7 +40,7 @@ export default function FooterNav() {
   return (
     <div className="h-20 fixed bottom-0 left-0 w-full flex flex-row justify-around pt-3 z-10 bg-background-light dark:bg-background-dark shadow-2xl">
       <NavbarItem Icon={Home} text="Home" to="/" />
-      {/* <NavbarItem Icon={Calendar} text="Calendar" to="/calendar" />  */}
+      <NavbarItem Icon={Calendar} text="Calendar" to="/calendar" />
       <NavbarItem Icon={People} text="Councils" to="/councils" />
       <NavbarItem Icon={ProfileCircle} text="Profile" to="/profile" />
     </div>
