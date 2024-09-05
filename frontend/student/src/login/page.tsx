@@ -1,8 +1,10 @@
 import { Button } from '@material-tailwind/react';
 import { useEffect } from 'react';
 import EventioLogo from '../assets/EventioLogo.svg';
+import { useNavigate } from 'react-router-dom';
 
 export default function Login() {
+  const navigate = useNavigate();
   // Function to initiate the Google login process
   const login = () => {
     window.open(
@@ -20,6 +22,7 @@ export default function Login() {
       localStorage.setItem('accessToken', accessTokenParam);
       localStorage.setItem('refreshToken', refreshTokenParam);
       window.history.replaceState(null, '', window.location.pathname);
+      navigate('/');
     }
   }, []);
 

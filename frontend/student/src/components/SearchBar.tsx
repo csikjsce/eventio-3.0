@@ -8,11 +8,14 @@ export default function SearchBar({
   Icon: IconType;
   className?: string;
 }) {
-
-  const [darkMode, setDarkMode] = useState(window.matchMedia('(prefers-color-scheme: dark)').matches);
-  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
-    setDarkMode(event.matches);
-  });
+  const [darkMode, setDarkMode] = useState(
+    window.matchMedia('(prefers-color-scheme: dark)').matches,
+  );
+  window
+    .matchMedia('(prefers-color-scheme: dark)')
+    .addEventListener('change', (event) => {
+      setDarkMode(event.matches);
+    });
 
   return (
     <div
@@ -23,7 +26,11 @@ export default function SearchBar({
     >
       {Icon && (
         <div className="">
-          <Icon aria-label="Search Icon" className="w-5 h-5" color={darkMode ? '#FFFFFF' : '#231F20'}/>
+          <Icon
+            aria-label="Search Icon"
+            className="w-5 h-5"
+            color={darkMode ? '#FFFFFF' : '#231F20'}
+          />
         </div>
       )}
       <input

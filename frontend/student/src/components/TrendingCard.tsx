@@ -1,6 +1,12 @@
 import { useNavigate } from 'react-router-dom';
 
-export default function TrendingCard({ event, text }: { event: EventData, text: string }) {
+export default function TrendingCard({
+  event,
+  text,
+}: {
+  event: EventData;
+  text: string;
+}) {
   const navigate = useNavigate();
 
   const handleClick = () => {

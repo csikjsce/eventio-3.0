@@ -1,17 +1,11 @@
-import { useContext, useState, useEffect } from 'react';
-import { Route, Routes } from 'react-router-dom';
-import indexRoutes from './routes/routes';
-import { UserDataContext } from './contexts/userContext';
-import ConditionalRoute from './routes/conditionalRoute';
+import { useState, useEffect } from 'react';
+import { RouterProvider } from 'react-router-dom';
+import router from './routes/router';
 
 import Loader from './components/Loader';
 
 function App() {
   const [isMobile, setIsMobile] = useState<boolean | null>(null);
-  const [user, setUser] = useState<User | null>(null);
-  const userContext = useContext(UserDataContext);
-  userContext.userData = user;
-  userContext.setUserData = setUser;
 
   useEffect(() => {
     const handleResize = () => {
@@ -39,30 +33,7 @@ function App() {
     );
   }
 
-  return (
-    <div className="dark:bg-background-dark">
-      <Routes>
-        {indexRoutes.map((prop, key) =>
-          prop.routeType ? (
-            <Route
-              path={prop.path}
-              key={key}
-              element={
-                <ConditionalRoute
-                  routeType={prop.routeType as 'protected' | 'login'}
-                >
-                  {prop.component}
-                </ConditionalRoute>
-              }
-            />
-          ) : (
-            <Route path={prop.path} key={key} element={prop.component} />
-          ),
-        )}
-        {/* <Route path="/404" element={<TechnicalError  />} /> */}
-      </Routes>
-    </div>
-  );
+  return <RouterProvider router={router} />;
 }
 
 export default App;

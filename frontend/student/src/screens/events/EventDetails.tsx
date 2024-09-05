@@ -325,11 +325,21 @@ export default function EventDetails() {
               </div>
               <hr className="border-1 border-gray-1" />
             </div>
-            {event?.start_in_event_activity && <Passage
+            {event?.start_in_event_activity && (
+              <Passage
                 title="Event Activity"
-                content={<a href={event?.in_event_activity} className='text-blue-600'>{event?.in_event_activity}</a>|| ''}
+                content={
+                  (
+                    <a
+                      href={event?.in_event_activity}
+                      className="text-blue-600"
+                    >
+                      {event?.in_event_activity}
+                    </a>
+                  ) || ''
+                }
               />
-            }
+            )}
             <Passage
               title="About the Event"
               content={event?.long_description || ''}
