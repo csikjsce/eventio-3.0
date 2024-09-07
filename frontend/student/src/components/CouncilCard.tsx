@@ -29,13 +29,15 @@ export default function CouncilCard({
             <p className="font-fira font-medium text-md sm:text-lg text-foreground-light dark:text-foreground-dark">
               {council.name}
             </p>
-            <p className="font-fira text-xs text-primary">{council.name}</p>
+            <p className="font-fira text-xs text-vitality-red">
+              {council.name}
+            </p>
           </div>
         </div>
         <div className="flex flex-row gap-2 justify-start">
           <div className="flex flex-row gap-1">
             <Call color="#57585A" size="16" /> {/* TODO: use Tailwind theme */}
-            <p className="font-fira text-xs text-gray-1">
+            <p className="font-fira text-xs text-gray-1 dark:text-gray-300">
               +91 {council.phoneNumber}
             </p>
           </div>

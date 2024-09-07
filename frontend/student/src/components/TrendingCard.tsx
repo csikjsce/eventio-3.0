@@ -18,7 +18,7 @@ export default function TrendingCard({
   };
   return (
     <div
-      className="min-w-[97%] flex flex-col mr-1 gap-2 bg-card-light dark:bg-card-dark rounded-b-lg cursor-pointer shadow-lg"
+      className="min-w-[97%] flex flex-col gap-2 bg-card-light dark:bg-card-dark rounded-b-lg cursor-pointer shadow-lg"
       onClick={handleClick}
     >
       {/* Event picture */}

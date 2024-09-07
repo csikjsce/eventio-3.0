@@ -43,7 +43,7 @@ export default function Home() {
           <p className="text-lg font-medium font-fira text-left text-foreground-light dark:text-foreground-dark">
             Upcoming Events
           </p>
-          <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3 overflow-x-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3 overflow-x-auto -mx-1">
             {events?.UPCOMING?.map((event) => (
               <EventCard key={event.id} event={event} />
             ))}
@@ -55,7 +55,7 @@ export default function Home() {
           <p className="text-lg font-medium font-fira text-left text-foreground-light dark:text-foreground-dark">
             Registration Open
           </p>
-          <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3 overflow-x-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3 overflow-x-auto -mx-1">
             {events?.REGISTRATION_OPEN?.map((event) => (
               <EventCard key={event.id} event={event} />
             ))}
@@ -67,7 +67,7 @@ export default function Home() {
           <p className="text-lg font-medium font-fira text-left text-foreground-light dark:text-foreground-dark">
             Tickets Released
           </p>
-          <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3 overflow-x-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3 overflow-x-auto -mx-1">
             {events?.TICKET_OPEN?.map((event) => (
               <EventCard key={event.id} event={event} />
             ))}
