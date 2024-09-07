@@ -5,6 +5,7 @@ import EventsDataContext from '../contexts/EventsDataContext';
 import { useNavigate, Outlet } from 'react-router-dom';
 
 import { axiosCall } from '../utils/api';
+import axios from 'axios';
 
 export default function Protected() {
   const [events, setEvents] = useState<Events | null>(null);
@@ -27,14 +28,17 @@ export default function Protected() {
           ) {
             navigate('/getting-started');
           }
+          return { status: 200 };
         } else {
           setUserData(null);
+          return { status: 400 };
         }
       } catch (err) {
-        navigate('/logout');
-        if ((err as {status: number, error: string}).status !== 401) {
-          console.error(err);
+        if ((err as { status: number; error: string }).status === 401) {
+          return { status: 401 };
         }
+        console.error(err);
+        return { status: 400 };
       }
     };
     const fetchEvents = async () => {
@@ -55,13 +59,33 @@ export default function Protected() {
     };
 
     const handler = async () => {
-      await fetchUser();
+      const resp = await fetchUser();
+      if (resp.status === 401) {
+        const refreshToken = localStorage.getItem('refreshToken');
+        if (!refreshToken) {
+          navigate('/logout');
+        } else {
+          try {
+            const response = await axios.request({
+              baseURL: import.meta.env.VITE_APP_SERVER_ADDRESS,
+              url: '/api/v1' + `/auth/refresh-token`,
+              method: 'POST',
+              data: {
+                refreshToken,
+              },
+            });
+            localStorage.setItem('accessToken', response.data.accessToken);
+            await fetchUser();
+          } catch {
+            navigate('/logout');
+          }
+        }
+      }
       await fetchEvents();
     };
 
     handler();
   }, []);
-
 
   return (
     <UserDataContext.Provider value={{ userData, setUserData }}>

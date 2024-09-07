@@ -23,12 +23,12 @@ router.get(
         const accessToken = jwt.sign(
             { user_id: user.id },
             process.env.JWT_SECRET,
-            { expiresIn: process.env.AT_EXPIRATION }
+            { expiresIn: process.env.AT_EXPIRATION },
         );
         const refreshToken = jwt.sign(
             { user_id: user.id },
             process.env.JWT_SECRET,
-            { expiresIn: process.env.RT_EXPIRATION }
+            { expiresIn: process.env.RT_EXPIRATION },
         );
 
         prisma.user
@@ -44,9 +44,9 @@ router.get(
         res.redirect(
             `${
                 process.env.CLIENT_URL + process.env.FRONTEND_REDIRECT_PATH
-            }?accessToken=${accessToken}&refreshToken=${refreshToken}`
+            }?accessToken=${accessToken}&refreshToken=${refreshToken}`,
         );
-    }
+    },
 );
 
 router.post("/refresh-token", async (req, res) => {
@@ -61,7 +61,7 @@ router.post("/refresh-token", async (req, res) => {
     try {
         const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET);
         const user = await prisma.user.findUnique({
-            where: { id: decoded.user_id },
+            where: { google_id: decoded.user_id },
         });
 
         if (!user || user.refresh_token !== refreshToken) {
@@ -71,9 +71,9 @@ router.post("/refresh-token", async (req, res) => {
         }
 
         const accessToken = jwt.sign(
-            { user_id: user.id },
+            { user_id: user.google_id },
             process.env.JWT_SECRET,
-            { expiresIn: process.env.AT_EXPIRATION }
+            { expiresIn: process.env.AT_EXPIRATION },
         );
         res.json({ accessToken });
     } catch (error) {
