@@ -73,7 +73,7 @@ export default function Calendar() {
       if (currentMonth) {
         className += ' text-black dark:text-white';
       } else {
-        className += ' text-gray-1 dark:text-gray-400';
+        className += ' text-mute dark:text-gray-400';
       }
     }
     return className;
@@ -83,7 +83,7 @@ export default function Calendar() {
     <div className="flex gap-10 sm:divide-x justify-center sm:w-1/2 h-full items-center sm:flex-row flex-col mt-10">
       <div className="w-full h-full px-5">
         <div className="flex justify-between items-center">
-          <h1 className="select-none font-semibold text-foreground-light dark:text-foreground-dark">
+          <h1 className="select-none font-semibold text-foreground ">
             {months[today.month()]}, {today.year()}
           </h1>
           <div className="flex gap-5 items-center">
@@ -96,7 +96,7 @@ export default function Calendar() {
             />
 
             <h1
-              className="cursor-pointer hover:scale-105 transition-all text-foreground-light dark:text-foreground-dark"
+              className="cursor-pointer hover:scale-105 transition-all text-foreground "
               onClick={() => {
                 setToday(currentDate);
                 setSelectDate(currentDate);
@@ -150,7 +150,7 @@ export default function Calendar() {
           )}
         </div>
         <div className="w-full max-w-sm mt-6">
-          <h1 className="font-semibold text-foreground-light dark:text-foreground-dark">
+          <h1 className="font-semibold text-foreground ">
             {getEventsForDate(selectDate).length !== 0
               ? `Schedule for ${selectDate.format('MMMM D, YYYY')}`
               : `No events on ${selectDate.format('MMMM D, YYYY')}`}

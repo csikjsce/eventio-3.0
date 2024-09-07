@@ -18,7 +18,7 @@ export default function TrendingCard({
   };
   return (
     <div
-      className="min-w-[97%] flex flex-col gap-2 bg-card-light dark:bg-card-dark rounded-b-lg cursor-pointer shadow-lg"
+      className="min-w-[97%] flex flex-col gap-2 bg-card  rounded-b-lg cursor-pointer shadow-lg"
       onClick={handleClick}
     >
       {/* Event picture */}
@@ -35,20 +35,20 @@ export default function TrendingCard({
             src={event.organizer.photo_url}
             alt="Event Logo"
             referrerPolicy="no-referrer"
-            className="w-10 h-10 aspect-square rounded-full object-cover border border-vitality-red"
+            className="w-10 h-10 aspect-square rounded-full object-cover border border-vitality"
           />
           <div className="text-left">
-            <p className="font-fira font-semibold text-lg text-foreground-light dark:text-foreground-dark">
+            <p className="font-fira font-semibold text-lg text-foreground ">
               {event.name}
             </p>
-            <p className="font-fira text-xs text-foreground-light dark:text-foreground-dark">
+            <p className="font-fira text-xs text-foreground ">
               {event.dates
                 .map((dateString) => new Date(dateString).toLocaleDateString())
                 .join(', ')}
             </p>
           </div>
         </div>
-        <p className="text-xs text-wrap mx-0.5 font-fira text-center text-foreground-light dark:text-foreground-dark">
+        <p className="text-xs text-wrap mx-0.5 font-fira text-center text-foreground ">
           {text}
         </p>
       </div>

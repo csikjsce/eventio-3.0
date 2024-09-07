@@ -41,7 +41,7 @@ export default function PersonalDetails({ setCurrentStep }: Props) {
       <form onSubmit={handleSubmit(onSubmit)} className="font-fira">
         <Typography
           variant="h4"
-          className="mb-4 font-bold font-fira text-foreground-light dark:text-foreground-dark"
+          className="mb-4 font-bold font-fira text-foreground "
           placeholder={undefined}
           onPointerEnterCapture={undefined}
           onPointerLeaveCapture={undefined}
@@ -50,7 +50,7 @@ export default function PersonalDetails({ setCurrentStep }: Props) {
         </Typography>
         <Typography
           variant="h5"
-          className="mb-4 font-fira text-foreground-light dark:text-foreground-dark"
+          className="mb-4 font-fira text-foreground "
           placeholder={undefined}
           onPointerEnterCapture={undefined}
           onPointerLeaveCapture={undefined}
@@ -93,7 +93,7 @@ export default function PersonalDetails({ setCurrentStep }: Props) {
           <div>
             <Select
               label="Select Gender"
-              className="dark:bg-background-dark"
+              className="dark:bg-background"
               onChange={(e) => handleGenderChange(e as unknown as string)}
               value={getValues('gender')} // Use getValues instead of watch
               placeholder={undefined}

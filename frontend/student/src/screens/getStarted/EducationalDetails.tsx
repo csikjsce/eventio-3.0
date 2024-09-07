@@ -48,7 +48,7 @@ export default function EducationalDetails({ setCurrentStep }: Props) {
       <div className="font-fira">
         <Typography
           variant="h4"
-          className="mb-4 font-bold text-foreground-light dark:text-foreground-dark"
+          className="mb-4 font-bold text-foreground "
           placeholder={undefined}
           onPointerEnterCapture={undefined}
           onPointerLeaveCapture={undefined}
@@ -57,7 +57,7 @@ export default function EducationalDetails({ setCurrentStep }: Props) {
         </Typography>
         <Typography
           variant="h5"
-          className="mb-4 text-foreground-light dark:text-foreground-dark"
+          className="mb-4 text-foreground "
           placeholder={undefined}
           onPointerEnterCapture={undefined}
           onPointerLeaveCapture={undefined}

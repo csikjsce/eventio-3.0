@@ -24,16 +24,13 @@ function ProfileItem({
   title: string;
   to: string;
 }) {
-
   return (
     <Link to={to} className="flex flex-row items-center justify-between">
       <div className="flex flex-row items-center gap-2">
-        <Icon size="24" className='stroke-current text-foreground-light dark:text-foreground-dark' />
-        <p className="font-fira text-lg text-foreground-light dark:text-foreground-dark">
-          {title}
-        </p>
+        <Icon size="24" className="stroke-current text-foreground " />
+        <p className="font-fira text-lg text-foreground ">{title}</p>
       </div>
-      <ArrowRight2 size="24" className='stroke-current text-foreground-light dark:text-foreground-dark' />
+      <ArrowRight2 size="24" className="stroke-current text-foreground " />
     </Link>
   );
 }
@@ -53,8 +50,8 @@ export default function Profile() {
         <Loader />
       ) : (
         <>
-          <div className="flex flex-col gap-8 items-center p-4 dark:bg-background-dark min-h-screen">
-            <p className="font-fira font-semibold text-lg text-foreground-light dark:text-foreground-dark">
+          <div className="flex flex-col gap-8 items-center p-4  min-h-screen">
+            <p className="font-fira font-semibold text-lg text-foreground ">
               My Profile
             </p>
             <div className="flex flex-col gap-3 items-center">
@@ -63,7 +60,7 @@ export default function Profile() {
                 alt="profile"
                 className="w-28 h-28 object-cover rounded-full"
               />
-              <p className="font-marcellus text-2xl text-foreground-light dark:text-foreground-dark">
+              <p className="font-marcellus text-2xl text-foreground ">
                 {userData?.name}
               </p>
             </div>

@@ -94,7 +94,7 @@ export default function GetStarted() {
         <Loader />
       ) : (
         <FormProvider {...methods}>
-          <div className="dark:bg-background-dark">
+          <div className="">
             {currentStep === 'PersonalDetails' && (
               <PersonalDetails setCurrentStep={setCurrentStep} />
             )}

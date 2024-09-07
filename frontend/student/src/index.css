@@ -2,3 +2,37 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  @media (prefers-color-scheme: light) {
+    :root {
+      --color-foreground: 35 31 32;
+      --color-background: 255 255 255;
+      --color-card: 243 243 243;
+      --color-mute: 87 88 90;
+      --color-primary: 182 31 45;
+      --color-vitality: 238 29 35;
+    }
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-foreground: 255 255 255;
+      --color-background: 35 31 32;
+      --color-card: 52 52 52;
+      --color-mute: 135 135 135;
+      --color-primary: 182 31 45;
+      --color-vitality: 238 29 35;
+    }
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    background: #fff;
+  }
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    background: #231f20;
+  }
+}

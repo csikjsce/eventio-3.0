@@ -12,7 +12,7 @@ export default function Home() {
     <div className="flex flex-col">
       {/* <SearchBar Icon={SearchNormal1} className="mt-6" /> */}
       <div className="flex flex-col mt-6 gap-4 z-10">
-        <p className="text-lg font-medium font-fira text-left text-foreground-light dark:text-foreground-dark">
+        <p className="text-lg font-medium font-fira text-left text-foreground ">
           Trending Events
         </p>
         <div className="overflow-x-auto flex gap-4 pb-6 px-4 -mx-4">
@@ -40,7 +40,7 @@ export default function Home() {
       </div>
       {events?.UPCOMING && events?.UPCOMING.length != 0 && (
         <div className="flex flex-col gap-4 z-10">
-          <p className="text-lg font-medium font-fira text-left text-foreground-light dark:text-foreground-dark">
+          <p className="text-lg font-medium font-fira text-left text-foreground ">
             Upcoming Events
           </p>
           <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3 overflow-x-auto -mx-1">
@@ -52,7 +52,7 @@ export default function Home() {
       )}
       {events?.REGISTRATION_OPEN && events?.REGISTRATION_OPEN.length != 0 && (
         <div className="flex flex-col gap-4 z-10">
-          <p className="text-lg font-medium font-fira text-left text-foreground-light dark:text-foreground-dark">
+          <p className="text-lg font-medium font-fira text-left text-foreground ">
             Registration Open
           </p>
           <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3 overflow-x-auto -mx-1">
@@ -64,7 +64,7 @@ export default function Home() {
       )}
       {events?.TICKET_OPEN && events?.TICKET_OPEN.length != 0 && (
         <div className="flex flex-col gap-4 z-10">
-          <p className="text-lg font-medium font-fira text-left text-foreground-light dark:text-foreground-dark">
+          <p className="text-lg font-medium font-fira text-left text-foreground ">
             Tickets Released
           </p>
           <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3 overflow-x-auto -mx-1">
