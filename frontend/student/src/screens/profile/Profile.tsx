@@ -24,24 +24,16 @@ function ProfileItem({
   title: string;
   to: string;
 }) {
-  const [darkMode, setDarkMode] = useState(
-    window.matchMedia('(prefers-color-scheme: dark)').matches,
-  );
-  window
-    .matchMedia('(prefers-color-scheme: dark)')
-    .addEventListener('change', (event) => {
-      setDarkMode(event.matches);
-    });
 
   return (
     <Link to={to} className="flex flex-row items-center justify-between">
       <div className="flex flex-row items-center gap-2">
-        <Icon size="24" color={darkMode ? '#FFFFFF' : '#231F20'} />
+        <Icon size="24" className='stroke-current text-foreground-light dark:text-foreground-dark' />
         <p className="font-fira text-lg text-foreground-light dark:text-foreground-dark">
           {title}
         </p>
       </div>
-      <ArrowRight2 size="24" color={darkMode ? '#FFFFFF' : '#231F20'} />
+      <ArrowRight2 size="24" className='stroke-current text-foreground-light dark:text-foreground-dark' />
     </Link>
   );
 }

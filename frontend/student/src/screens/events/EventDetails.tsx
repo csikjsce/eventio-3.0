@@ -22,15 +22,6 @@ export default function EventDetails() {
   const [loading, setLoading] = useState(true);
   const [snackbarVisible, setSnackbarVisible] = useState(false);
 
-  const [darkMode, setDarkMode] = useState(
-    window.matchMedia('(prefers-color-scheme: dark)').matches,
-  );
-  window
-    .matchMedia('(prefers-color-scheme: dark)')
-    .addEventListener('change', (event) => {
-      setDarkMode(event.matches);
-    });
-
   const [buttonState, setButtonState] = useState<{
     text: string;
     loading: boolean;
@@ -221,9 +212,9 @@ export default function EventDetails() {
             />
             <Link
               to=".."
-              className={`absolute top-0 left-0 mt-6 ml-6 h-11 w-11 bg-background-light dark:bg-background-dark rounded-full shadow-sm ${darkMode ? 'shadow-white/50' : 'shadow-primary'} flex items-center justify-center`}
+              className="absolute top-0 left-0 mt-6 ml-6 h-11 w-11 bg-background-light dark:bg-background-dark rounded-full shadow-sm dark:shadow-white/50 shadow-primary flex items-center justify-center"
             >
-              <ArrowLeft size={24} color={darkMode ? '#FFFFFF' : '#B61F2D'} />
+              <ArrowLeft size={24} className='stroke-current text-primary dark:text-foreground-dark' />
             </Link>
             <div className="absolute -bottom-5 right-0 flex justify-end gap-3 mr-6">
               <Send2
