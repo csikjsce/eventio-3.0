@@ -1,4 +1,3 @@
-import { Button, Spinner } from '@material-tailwind/react';
 import axios from 'axios';
 import {
   ArrowLeft,
@@ -14,7 +13,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import IconText from '../../components/IconText';
 import Loader from '../../components/Loader';
 import Passage from '../../components/Passage';
-import { Alert } from '@material-tailwind/react';
+import Spinner from '../../components/Spinner';
 
 export default function EventDetails() {
   const [event, setEvent] = useState<EventData | null>(null);
@@ -338,37 +337,23 @@ export default function EventDetails() {
           </div>
 
           <div className="fixed bottom-0 left-0 w-screen p-4 bg-background">
-            <Button
-              className="rounded-full bg-primary text-center flex flex-row items-center justify-center gap-2"
-              fullWidth
-              placeholder={buttonState.text}
-              onPointerEnterCapture={undefined}
-              onPointerLeaveCapture={undefined}
+            <button
+              className="w-full rounded-full bg-primary text-center flex flex-row items-center justify-center gap-2 h-12"
               disabled={buttonState.disabled}
               onClick={buttonState.onClick}
             >
-              {buttonState.loading && (
-                <Spinner
-                  scale={2}
-                  onPointerEnterCapture={undefined}
-                  onPointerLeaveCapture={undefined}
-                />
-              )}
-              <h2 className="font-fira normal-case text-lg">
+              {buttonState.loading && <Spinner />}
+              <h2 className="font-fira normal-case text-lg text-white">
                 {buttonState.text}
               </h2>
-            </Button>
+            </button>
           </div>
         </div>
         {snackbarVisible && (
-          <Alert
-            className="fixed bottom-5 left-1/2 transform -translate-x-1/2 w-96"
-            color="green"
-            variant="filled"
-            icon={<TickCircle size="24" color="#57585A" />}
-          >
+          <div className="fixed bottom-5 left-1/2 transform -translate-x-1/2 w-96 bg-green-400 text-white p-4 rounded-md z-40 flex gap-4">
+            <TickCircle size="24" color="#57585A" />
             Registration Successful!!
-          </Alert>
+          </div>
         )}
       </>
     );

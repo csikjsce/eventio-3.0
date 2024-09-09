@@ -39,14 +39,14 @@ export default function EventCard({ event }: { event: EventData }) {
         {/* Date and Location */}
         <div className="flex flex-col gap-2 items-start justify-end">
           <div className="flex flex-row items-center gap-1">
-            <Calendar color="#57585A" size="16" />
-            <p className="font-fira text-xs text-mute dark:text-gray-300">
+            <Calendar className="stroke-current text-vitality" size="20" />
+            <p className="font-fira text-sm text-mute dark:text-gray-300">
               {event.dates[0] && new Date(event.dates[0]).toDateString()}
             </p>
           </div>
           <div className="flex flex-row items-center gap-1">
-            <Location color="#57585A" size="16" />
-            <p className="font-fira text-xs text-mute dark:text-gray-300">
+            <Location className="stroke-current text-vitality" size="20" />
+            <p className="font-fira text-sm text-mute dark:text-gray-300">
               {event.venue}
             </p>
           </div>

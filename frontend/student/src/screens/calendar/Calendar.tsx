@@ -5,7 +5,6 @@ import { generateDate, months } from '../../utils/calendar';
 import { ArrowSquareLeft, ArrowSquareRight } from 'iconsax-react';
 
 import EventList from '../../components/calendar/eventList';
-import { Tooltip } from '@material-tailwind/react';
 
 import EventsDataContext from '../../contexts/EventsDataContext';
 
@@ -62,7 +61,7 @@ export default function Calendar() {
     today?: boolean,
   ) => {
     let className =
-      'h-10 w-10 rounded-full grid place-content-center hover:bg-black hover:text-white hover:dark:bg-white hover:dark:text-black transition-all cursor-pointer select-none';
+      'h-10 w-10 rounded-full grid place-content-center hover:bg-black hover:text-white hover:dark:bg-white hover:dark:text-black transition-all cursor-pointer select-none peer relative';
     if (today) {
       className += ' bg-primary text-white dark:bg-primary dark:text-white';
       return className;
@@ -131,20 +130,18 @@ export default function Calendar() {
               const eventCount = eventsForDate.length;
 
               return (
-                <Tooltip
-                  key={index}
-                  content={`${eventCount} event${eventCount !== 1 ? 's' : ''}`}
-                >
-                  <div className="p-2 text-center h-14 grid place-content-center text-sm border-t">
+                <div key={index}>
+                  <div className="p-2 text-center h-14 grid place-content-center text-sm border-t relative">
                     <div
                       className={dateClassName(currentMonth, date, today)}
                       onClick={() => setSelectDate(date)}
                     >
                       {date.date()}
                     </div>
+                    <span className="absolute hidden peer-hover:flex justify-center items-center align-middle transition-all mx-auto mb-8 -translate-y-8 left-1/2 -translate-x-1/2 w-20 h-8 z-40 px-1 text-sm text-center rounded-md bg-foreground text-background cursor-default select-none">{`${eventCount} event${eventCount !== 1 ? 's' : ''}`}</span>
                     {renderEventIndicators(date)}
                   </div>
-                </Tooltip>
+                </div>
               );
             },
           )}

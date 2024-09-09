@@ -9,7 +9,6 @@ import { PersonalDetailsSchema, personalDetailsSchema } from './validation';
 import { axiosCall } from '../../utils/api';
 import { UserDataContext } from '../../contexts/userContext';
 import Loader from '../../components/Loader';
-import { Alert } from '@material-tailwind/react';
 import { useNavigate } from 'react-router-dom';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -44,7 +43,7 @@ export default function GetStarted() {
     context: { currentStep },
     defaultValues: {
       roll_number: '',
-      gender: 'male',
+      gender: 'Male',
       interests: [],
     },
   });
@@ -113,13 +112,9 @@ export default function GetStarted() {
       )}
 
       {snackbarVisible && (
-        <Alert
-          className="fixed bottom-5 left-1/2 transform -translate-x-1/2"
-          color="red"
-          variant="filled"
-        >
+        <div className="fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-primary text-white p-4 rounded-md z-40">
           {snackbarMessage}
-        </Alert>
+        </div>
       )}
     </>
   );

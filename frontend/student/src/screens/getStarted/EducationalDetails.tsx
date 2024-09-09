@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { Option, Select, Typography } from '@material-tailwind/react';
 import Quote from '../../components/Quote';
 import { branchOptions } from '../../constants/values';
 import { useFormContext } from 'react-hook-form';
@@ -46,77 +45,56 @@ export default function EducationalDetails({ setCurrentStep }: Props) {
   return (
     <div className="flex flex-col justify-between min-h-screen p-6">
       <div className="font-fira">
-        <Typography
-          variant="h4"
-          className="mb-4 font-bold text-foreground "
-          placeholder={undefined}
-          onPointerEnterCapture={undefined}
-          onPointerLeaveCapture={undefined}
-        >
+        <p className="mb-4 text-2xl font-bold text-foreground ">
           Educational Details
-        </Typography>
-        <Typography
-          variant="h5"
-          className="mb-4 text-foreground "
-          placeholder={undefined}
-          onPointerEnterCapture={undefined}
-          onPointerLeaveCapture={undefined}
-        >
+        </p>
+        <p className="mb-4 text-xl text-foreground ">
           Fill out your Educational details
-        </Typography>
+        </p>
         <div className="mb-6 flex flex-col gap-4">
-          <Select
-            label="Select Graduation Year"
-            onChange={(value) => handleYearChange(value as string)}
-            value={getValues('year')?.toString() || ''}
-            placeholder={undefined}
-            onPointerEnterCapture={undefined}
-            onPointerLeaveCapture={undefined}
-            color="blue"
+          <select
+            onChange={(e) => handleYearChange(e.target.value)}
+            className="min-h-10 w-full max-w-80 rounded-xl px-4 bg-card outline outline-1 text-foreground"
           >
-            <Option value="2025">2025</Option>
-            <Option value="2026">2026</Option>
-            <Option value="2027">2027</Option>
-            <Option value="2028">2028</Option>
-          </Select>
+            <option disabled selected>
+              Select Graduation Year
+            </option>
+            <option value="2025">2025</option>
+            <option value="2026">2026</option>
+            <option value="2027">2027</option>
+            <option value="2028">2028</option>
+          </select>
           {errors.year && (
             <p className="text-red-500">{errors.year?.message}</p>
           )}
 
-          <Select
-            label="Select Branch"
+          <select
             disabled={!selectedYear}
-            onChange={(value) => handleBranchChange(value!)}
-            value={getValues('branch')}
-            placeholder={undefined}
-            onPointerEnterCapture={undefined}
-            onPointerLeaveCapture={undefined}
-            color="blue"
+            onChange={(e) => handleBranchChange(e.target.value!)}
+            className="min-h-10 w-full max-w-80 rounded-xl px-4 bg-card outline outline-1 text-foreground"
           >
+            <option disabled selected>
+              Select Branch
+            </option>
             {availableBranchs.map((branch, index) => (
-              <Option key={index} value={branch.replace(/ /g, '_')}>
+              <option key={index} value={branch.replace(/ /g, '_')}>
                 {branch}
-              </Option>
+              </option>
             ))}
-          </Select>
+          </select>
           {errors.branch && (
             <p className="text-red-500">{errors.branch?.message}</p>
           )}
         </div>
         <div className="flex justify-between">
-          <Typography
-            className="cursor-pointer ml-2"
-            variant="paragraph"
-            color="gray"
+          <p
+            className="cursor-pointer ml-2 bg-mute rounded-full px-4 py-3 text-center text-white"
             onClick={handleClickBack}
-            placeholder={undefined}
-            onPointerEnterCapture={undefined}
-            onPointerLeaveCapture={undefined}
           >
             Back
-          </Typography>
+          </p>
           <button
-            className="btn btn-primary border-2 border-red-500 p-2 rounded-full text-red-500"
+            className="btn btn-primary border-2 border-vitality p-2 rounded-full text-vitality"
             onClick={handleSubmit(onSubmit)}
           >
             Continue
