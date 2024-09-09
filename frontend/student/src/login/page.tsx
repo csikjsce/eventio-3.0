@@ -36,8 +36,7 @@ export default function Login() {
       </div>
       <button
         onClick={login}
-        color="light-blue"
-        className="flex items-center gap-3 w-24"
+        className="flex items-center gap-3 p-4 outline outline-sky-500 rounded-xl text-sky-500 text-xl font-bold"
       >
         <img
           src="https://docs.material-tailwind.com/icons/google.svg"
