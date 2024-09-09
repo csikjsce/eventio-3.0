@@ -24,9 +24,9 @@ function App() {
     return <Loader />;
   } else if (isMobile) {
     return (
-      <div className="flex flex-col h-screen justify-center items-center gap-8 dark:bg-background-dark">
+      <div className="flex flex-col h-screen justify-center items-center gap-8">
         <p className="font-poppins text-3xl text-primary ">Mobile Required</p>
-        <p className="font-poppins text-xl text-foreground-light dark:text-foreground-dark">
+        <p className="font-poppins text-xl text-foreground ">
           Please use a mobile device and install the app to continue.
         </p>
       </div>

@@ -1,5 +1,4 @@
 import React from 'react';
-import { Input, Option, Select, Typography } from '@material-tailwind/react';
 import Quote from '../../components/Quote';
 import { useFormContext } from 'react-hook-form';
 import { PersonalDetailsSchema } from './validation'; // Ensure this is correctly imported
@@ -14,7 +13,6 @@ export default function PersonalDetails({ setCurrentStep }: Props) {
     handleSubmit,
     formState: { errors },
     setValue,
-    getValues, // Use getValues instead of watch
   } = useFormContext<PersonalDetailsSchema>(); // Use the correct schema type
 
   console.log(errors);
@@ -24,49 +22,24 @@ export default function PersonalDetails({ setCurrentStep }: Props) {
   };
 
   const handleGenderChange = (value: string) => {
-    setValue('gender', value as 'male' | 'female');
+    setValue('gender', value);
   };
-
-  const [darkMode, setDarkMode] = React.useState(
-    window.matchMedia('(prefers-color-scheme: dark)').matches,
-  );
-  window
-    .matchMedia('(prefers-color-scheme: dark)')
-    .addEventListener('change', (event) => {
-      setDarkMode(event.matches);
-    });
 
   return (
     <div className="flex flex-col justify-between min-h-screen p-6 ">
       <form onSubmit={handleSubmit(onSubmit)} className="font-fira">
-        <Typography
-          variant="h4"
-          className="mb-4 font-bold font-fira text-foreground-light dark:text-foreground-dark"
-          placeholder={undefined}
-          onPointerEnterCapture={undefined}
-          onPointerLeaveCapture={undefined}
-        >
+        <p className="mb-4 text-2xl font-bold font-fira text-foreground ">
           Personal Details
-        </Typography>
-        <Typography
-          variant="h5"
-          className="mb-4 font-fira text-foreground-light dark:text-foreground-dark"
-          placeholder={undefined}
-          onPointerEnterCapture={undefined}
-          onPointerLeaveCapture={undefined}
-        >
+        </p>
+        <p className="mb-4 text-xl font-fira text-foreground ">
           Fill out your personal details
-        </Typography>
+        </p>
         <div className="mb-6 space-y-6">
           <div>
-            <Input
-              onPointerEnterCapture={undefined}
-              onPointerLeaveCapture={undefined}
-              crossOrigin={undefined}
+            <input
               {...register('phone_number')}
-              className="min-h-10"
-              color={darkMode ? 'white' : undefined}
-              label="Mobile Number"
+              className="min-h-10 w-full max-w-80 rounded-xl px-4 outline outline-1 bg-card text-foreground"
+              placeholder="Mobile Number"
               type="number"
             />
             {errors.phone_number && (
@@ -75,14 +48,10 @@ export default function PersonalDetails({ setCurrentStep }: Props) {
           </div>
 
           <div>
-            <Input
-              onPointerEnterCapture={undefined}
-              onPointerLeaveCapture={undefined}
-              crossOrigin={undefined}
+            <input
               {...register('roll_number')}
-              className="min-h-min"
-              color={darkMode ? 'white' : undefined}
-              label="Student Id"
+              className="min-h-10 w-full max-w-80 rounded-xl px-4 outline outline-1 bg-card text-foreground"
+              placeholder="Student Id"
               type="number"
             />
             {errors.roll_number && (
@@ -91,28 +60,26 @@ export default function PersonalDetails({ setCurrentStep }: Props) {
           </div>
 
           <div>
-            <Select
-              label="Select Gender"
-              className="dark:bg-background-dark"
-              onChange={(e) => handleGenderChange(e as unknown as string)}
-              value={getValues('gender')} // Use getValues instead of watch
-              placeholder={undefined}
-              onPointerEnterCapture={undefined}
-              onPointerLeaveCapture={undefined}
+            <select
+              className="min-h-10 w-full max-w-80 rounded-xl px-4 outline outline-1 bg-card text-foreground"
+              onChange={(e) => handleGenderChange(e.target.value as string)}
+              //value={getValues('gender')} // Use getValues instead of watch
               color="blue"
+              defaultValue="Select Gender"
             >
-              <Option value="MALE">Male</Option>
-              <Option value="FEMALE">Female</Option>
-            </Select>
+              <option disabled>Select Gender</option>
+              <option value="MALE">Male</option>
+              <option value="FEMALE">Female</option>
+            </select>
             {errors.gender && (
-              <p className="text-red-500">{errors.gender?.message}</p>
+              <p className="text-red-500">{errors.gender?.message as string}</p>
             )}
           </div>
         </div>
         <div className="flex justify-end">
           <button
             type="submit"
-            className="btn btn-primary border-2 border-red-500 p-2 rounded-full text-red-500"
+            className="btn btn-primary border-2 border-vitality p-2 rounded-full text-vitality"
           >
             Continue
           </button>

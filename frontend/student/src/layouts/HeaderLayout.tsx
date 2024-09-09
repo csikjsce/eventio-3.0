@@ -7,7 +7,7 @@ export default function HeaderLayout() {
   const { userData } = useContext(UserDataContext);
 
   return (
-    <div className="min-h-screen p-4 dark:bg-background-dark mb-8">
+    <div className="min-h-screen p-4  mb-16">
       <Header name={userData?.name} photo_url={userData?.photo_url} />
       <Outlet />
     </div>

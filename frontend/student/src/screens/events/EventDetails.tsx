@@ -1,4 +1,3 @@
-import { Button, Spinner } from '@material-tailwind/react';
 import axios from 'axios';
 import {
   ArrowLeft,
@@ -14,22 +13,13 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import IconText from '../../components/IconText';
 import Loader from '../../components/Loader';
 import Passage from '../../components/Passage';
-import { Alert } from '@material-tailwind/react';
+import Spinner from '../../components/Spinner';
 
 export default function EventDetails() {
   const [event, setEvent] = useState<EventData | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [snackbarVisible, setSnackbarVisible] = useState(false);
-
-  const [darkMode, setDarkMode] = useState(
-    window.matchMedia('(prefers-color-scheme: dark)').matches,
-  );
-  window
-    .matchMedia('(prefers-color-scheme: dark)')
-    .addEventListener('change', (event) => {
-      setDarkMode(event.matches);
-    });
 
   const [buttonState, setButtonState] = useState<{
     text: string;
@@ -209,7 +199,7 @@ export default function EventDetails() {
   } else
     return (
       <>
-        <div className="dark:bg-background-dark">
+        <div className="">
           <div
             className="w-screen aspect-square relative"
             style={{ backgroundImage: event?.event_page_image_url }}
@@ -221,9 +211,9 @@ export default function EventDetails() {
             />
             <Link
               to=".."
-              className={`absolute top-0 left-0 mt-6 ml-6 h-11 w-11 bg-background-light dark:bg-background-dark rounded-full shadow-sm ${darkMode ? 'shadow-white/50' : 'shadow-primary'} flex items-center justify-center`}
+              className="absolute top-0 left-0 mt-6 ml-6 h-11 w-11 bg-background rounded-full shadow-sm dark:shadow-white/50 shadow-primary flex items-center justify-center"
             >
-              <ArrowLeft size={24} color={darkMode ? '#FFFFFF' : '#B61F2D'} />
+              <ArrowLeft size={24} className="stroke-current text-primary " />
             </Link>
             <div className="absolute -bottom-5 right-0 flex justify-end gap-3 mr-6">
               <Send2
@@ -273,12 +263,12 @@ export default function EventDetails() {
               />
             </div>
           </div>
-          <div className="flex flex-col p-8 gap-8 mb-20 text-foreground-dark dark:text-background-dark">
+          <div className="flex flex-col p-8 gap-8 mb-20 text-foreground">
             <div className="flex flex-col gap-1.5 items-start">
-              <p className="font-fira text-foreground-light dark:text-foreground-dark text-2xl text-left">
+              <p className="font-fira text-foreground  text-2xl text-left">
                 {event?.name}
               </p>
-              <p className="font-fira text-gray-1 text-sm">
+              <p className="font-fira text-mute text-sm">
                 {event?.dates[0] &&
                   new Date(event?.dates[0]).toDateString().slice(0, -5)}{' '}
                 at{' '}
@@ -290,7 +280,7 @@ export default function EventDetails() {
               </p>
             </div>
             <div className="h-28 flex flex-col justify-between">
-              <hr className="border-1 border-gray-1" />
+              <hr className="border-1 border-mute" />
               <div className="flex flex-row justify-between">
                 <IconText
                   Icon={Calendar2}
@@ -323,7 +313,7 @@ export default function EventDetails() {
                 />
                 <IconText Icon={User} line1="500" line2="Participants" />
               </div>
-              <hr className="border-1 border-gray-1" />
+              <hr className="border-1 border-mute" />
             </div>
             {event?.start_in_event_activity && (
               <Passage
@@ -346,38 +336,24 @@ export default function EventDetails() {
             />
           </div>
 
-          <div className="fixed bottom-0 left-0 w-screen p-4 bg-background-light dark:bg-background-dark">
-            <Button
-              className="rounded-full bg-primary text-center flex flex-row items-center justify-center gap-2"
-              fullWidth
-              placeholder={buttonState.text}
-              onPointerEnterCapture={undefined}
-              onPointerLeaveCapture={undefined}
+          <div className="fixed bottom-0 left-0 w-screen p-4 bg-background">
+            <button
+              className="w-full rounded-full bg-primary text-center flex flex-row items-center justify-center gap-2 h-12"
               disabled={buttonState.disabled}
               onClick={buttonState.onClick}
             >
-              {buttonState.loading && (
-                <Spinner
-                  scale={2}
-                  onPointerEnterCapture={undefined}
-                  onPointerLeaveCapture={undefined}
-                />
-              )}
-              <h2 className="font-fira normal-case text-lg">
+              {buttonState.loading && <Spinner />}
+              <h2 className="font-fira normal-case text-lg text-white">
                 {buttonState.text}
               </h2>
-            </Button>
+            </button>
           </div>
         </div>
         {snackbarVisible && (
-          <Alert
-            className="fixed bottom-5 left-1/2 transform -translate-x-1/2 w-96"
-            color="green"
-            variant="filled"
-            icon={<TickCircle size="24" color="#57585A" />}
-          >
+          <div className="fixed bottom-5 left-1/2 transform -translate-x-1/2 w-96 bg-green-400 text-white p-4 rounded-md z-40 flex gap-4">
+            <TickCircle size="24" color="#57585A" />
             Registration Successful!!
-          </Alert>
+          </div>
         )}
       </>
     );

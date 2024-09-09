@@ -18,10 +18,8 @@ export default function Header({
         />
       </Link>
       <div className="flex flex-col text-left">
-        <p className="font-marcellus text-gray-1">Namaste</p>
-        <p className="font-marcellus text-xl text-foreground-light dark:text-foreground-dark">
-          {name}
-        </p>
+        <p className="font-marcellus text-mute">Namaste</p>
+        <p className="font-marcellus text-xl text-foreground ">{name}</p>
       </div>
     </div>
   );
