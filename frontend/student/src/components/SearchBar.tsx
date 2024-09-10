@@ -1,5 +1,4 @@
 import { Icon as IconType } from 'iconsax-react';
-import { useState } from 'react';
 
 export default function SearchBar({
   Icon,
@@ -8,12 +7,6 @@ export default function SearchBar({
   Icon: IconType;
   className?: string;
 }) {
-
-  const [darkMode, setDarkMode] = useState(window.matchMedia('(prefers-color-scheme: dark)').matches);
-  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
-    setDarkMode(event.matches);
-  });
-
   return (
     <div
       className={
@@ -23,12 +16,15 @@ export default function SearchBar({
     >
       {Icon && (
         <div className="">
-          <Icon aria-label="Search Icon" className="w-5 h-5" color={darkMode ? '#FFFFFF' : '#231F20'}/>
+          <Icon
+            aria-label="Search Icon"
+            className="w-5 h-5 stroke-current text-foreground "
+          />
         </div>
       )}
       <input
         placeholder={'What event are you looking for...'}
-        className="border-0 outline-none w-full h-10 dark:bg-background-dark"
+        className="border-0 outline-none w-full h-10 dark:bg-background"
         type="text"
       />
     </div>

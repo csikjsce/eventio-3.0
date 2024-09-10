@@ -19,6 +19,17 @@ export const generateDate = (
     });
   }
 
+  if (firstDateOfMonth.day() === 0) {
+    // if first day of month is sunday
+    const lastDateOfLastMonth = firstDateOfMonth.subtract(1, 'day');
+    for (let i = 0; i < 7; i++) {
+      arrayOfDate.push({
+        currentMonth: false,
+        date: lastDateOfLastMonth.day(i),
+      });
+    }
+  }
+
   // generate current date
   for (let i = firstDateOfMonth.date(); i <= lastDateOfMonth.date(); i++) {
     arrayOfDate.push({
