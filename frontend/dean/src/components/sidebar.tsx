@@ -32,7 +32,7 @@ const MenuItem = ({
 );
 
 export default function Sidebar() {
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+   
     const menuItems = [
         {
             icon: Gift,
@@ -48,17 +48,7 @@ export default function Sidebar() {
 
     return (
         <>
-            <button
-                className="md:hidden fixed top-4 left-4 z-50 p-2 bg-[#b61f2d] text-black rounded-full focus:outline-none"
-                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            >
-                <Grid3 size="24" />
-            </button>
-            <div
-                className={`fixed top-0 left-0 h-full w-64 bg-[#f3f3f3] rounded-2xl px-9 py-14 transform transition-transform duration-300 ease-in-out z-40 ${
-                    isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-                } md:translate-x-0 md:static md:h-[96vh]`}
-            >
+            <div className="h-[96vh] w-74 bg-[#f3f3f3] rounded-2xl px-9 py-14 my-auto">
                 <nav className="flex h-full flex-col justify-between">
                     <div>
                         <header className="flex justify-between gap-3.5 whitespace-nowrap">
@@ -98,12 +88,6 @@ export default function Sidebar() {
                     </footer>
                 </nav>
             </div>
-            {isSidebarOpen && (
-                <div
-                    className="fixed inset-0 bg-black opacity-50 z-30 md:hidden"
-                    onClick={() => setIsSidebarOpen(false)}
-                ></div>
-            )}
         </>
     );
 }
