@@ -48,10 +48,10 @@ export default function Sidebar() {
 
     return (
         <>
-            <div className="h-[96vh] w-74 bg-[#f3f3f3] rounded-2xl px-9 py-14 my-auto">
-                <nav className="flex h-full flex-col justify-between">
+            <div className="h-[96vh] w-74 bg-[#f3f3f3] rounded-2xl px-9 py-14 my-auto absolute">
+                <nav className="flex  flex-col justify-between">
                     <div>
-                        <header className="flex justify-between gap-3.5 whitespace-nowrap">
+                        <header className="flex  justify-between gap-3.5 whitespace-nowrap">
                             <img
                                 loading="lazy"
                                 src={Eventio}
@@ -67,7 +67,7 @@ export default function Sidebar() {
                                 </h2>
                             </div>
                         </header>
-                        <div className="my-10 flex flex-col gap-10">
+                        <div className="my-16 flex flex-col gap-10">
                             {menuItems.map((item, index) => (
                                 <MenuItem
                                     key={index}
@@ -78,16 +78,18 @@ export default function Sidebar() {
                                 </MenuItem>
                             ))}
                             <div className="font-poppins flex items-center gap-4 whitespace-nowrap text-gray-600">
-                                <PopoverCustomAnimation />
+                                
                             </div>
                         </div>
                     </div>
-                    <footer className="flex items-center gap-4 text-gray-600 pb-12">
+                    <footer className="flex gap-4 mt-72 text-gray-600 pb-12">
                         <Logout size="26" variant="Bold" />
                         <div className="font-poppins">Logout</div>
                     </footer>
                 </nav>
             </div>
+
+            
         </>
     );
 }

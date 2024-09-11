@@ -3,7 +3,7 @@ import EventBg from "../assets/EventBg.svg"
 
 const EventHeader = () => {
     return (
-        <div className="w-3/4">
+        <div className="w-3/4 ml-3">
             <div
                 style={{
                     display: "flex",
@@ -18,15 +18,15 @@ const EventHeader = () => {
                     alt="Event Background"
                     style={{
                         width: "100%",
-                        position: "absolute",
+                        position: "relative",
                         top: 0,
                         left: 0,
                     }}
                 />
-                <div
-                className='px-10 py-6'
+                <p
+                    className="mb-4 ml-8"
                     style={{
-                        position: "relative",
+                        position: "absolute",
                         color: "white",
                         fontSize: "40px", // Adjusted to make it a bit smaller
                         fontFamily: "serif",
@@ -35,7 +35,7 @@ const EventHeader = () => {
                     }}
                 >
                     Event List
-                </div>
+                </p>
             </div>
         </div>
     );     
