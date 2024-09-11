@@ -2,6 +2,7 @@ import { useState } from "react";
 import React from "react";
 import Sidebar from "./components/sidebar";
 import EventRoute from "./screens/home/event";
+import Calander from "./screens/home/calander";
 import "./App.css";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 
@@ -13,6 +14,7 @@ function App() {
                     <Sidebar />
                     <Routes>
                         <Route path="/events" element={<EventRoute />} />
+                        <Route path="/calendar" element={<Calander />} />
                     </Routes>
                 </div>
             </div>
