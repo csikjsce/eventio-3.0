@@ -1,7 +1,6 @@
 import React from "react";
-import EventHead from '../components/EventHeader'
-import Cards from '../components/Cards'
-
+import EventHead from "../../components/EventHeader";
+import Cards from "../../components/Cards";
 
 const event = () => {
     return (

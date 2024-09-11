@@ -3,7 +3,7 @@ import EventBg from "../assets/EventBg.svg"
 
 const EventHeader = () => {
     return (
-        <div className="w-3/4 ml-3">
+        <div className="w-3/4 ml-7">
             <div
                 style={{
                     display: "flex",

@@ -1,18 +1,10 @@
-import { useState } from "react";
+import React from "react";
 import { NavLink } from "react-router-dom";
-import { Grid3, Gift, Calendar, Logout, Icon as IconType } from "iconsax-react";
+import { Gift, Calendar, Logout } from "iconsax-react";
 import Eventio from "../assets/Eventio.svg";
 import PopoverCustomAnimation from "../components/popoverbutton";
 
-const MenuItem = ({
-    Icon,
-    href,
-    children,
-}: {
-    Icon: IconType;
-    href: string;
-    children: string;
-}) => (
+const MenuItem = ({ Icon, href, children }) => (
     <NavLink to={href} className="hover:cursor-pointer hover:drop-shadow-xl">
         {({ isActive }) => (
             <div
@@ -32,62 +24,51 @@ const MenuItem = ({
 );
 
 export default function Sidebar() {
-   
     const menuItems = [
-        {
-            icon: Gift,
-            text: "Events",
-            href: "/events",
-        },
-        {
-            icon: Calendar,
-            text: "Calendar",
-            href: "/calendar",
-        },
+        { icon: Gift, text: "Events", href: "/events" },
+        { icon: Calendar, text: "Calendar", href: "/calendar" },
     ];
 
     return (
-        <>
-            <div className="h-[96vh] w-74 bg-[#f3f3f3] rounded-2xl px-9 py-14 my-auto absolute">
-                <nav className="flex  flex-col justify-between">
-                    <div>
-                        <header className="flex  justify-between gap-3.5 whitespace-nowrap">
-                            <img
-                                loading="lazy"
-                                src={Eventio}
-                                alt="Eventio logo"
-                                className="my-auto aspect-[0.93] w-[39px]"
-                            />
-                            <div className="grow justify-center">
-                                <h1 className="text-red font-marcellus text-center text-3xl">
-                                    Eventio
-                                </h1>
-                                <h2 className="text-md text-center font-fira italic">
-                                    By CSI-KJSCE
-                                </h2>
-                            </div>
-                        </header>
-                        <div className="my-16 flex flex-col gap-10">
-                            {menuItems.map((item, index) => (
-                                <MenuItem
-                                    key={index}
-                                    Icon={item.icon}
-                                    href={item.href}
-                                >
-                                    {item.text}
-                                </MenuItem>
-                            ))}
-                            <div className="font-poppins flex items-center gap-4 whitespace-nowrap text-gray-600">
-                                
-                            </div>
+        <div className="fixed top-1/2 left-0 h-[96%] ml-6 w-74 bg-[#f3f3f3] rounded-2xl px-9 py-14 overflow-y-auto transform -translate-y-1/2">
+            <nav className="flex flex-col h-full justify-between">
+                <div>
+                    <header className="flex justify-between gap-3.5 whitespace-nowrap">
+                        <img
+                            loading="lazy"
+                            src={Eventio}
+                            alt="Eventio logo"
+                            className="my-auto aspect-[0.93] w-[39px]"
+                        />
+                        <div className="grow justify-center">
+                            <h1 className="text-red font-marcellus text-center text-3xl">
+                                Eventio
+                            </h1>
+                            <h2 className="text-md text-center font-fira italic">
+                                By CSI-KJSCE
+                            </h2>
+                        </div>
+                    </header>
+                    <div className="my-16 flex flex-col gap-10">
+                        {menuItems.map((item, index) => (
+                            <MenuItem
+                                key={index}
+                                Icon={item.icon}
+                                href={item.href}
+                            >
+                                {item.text}
+                            </MenuItem>
+                        ))}
+                        <div className="font-poppins flex items-center gap-4 whitespace-nowrap text-gray-600">
+                            {/* Add your PopoverCustomAnimation component here if needed */}
                         </div>
                     </div>
-                    <footer className="flex gap-4 mt-72 text-gray-600 pb-12">
-                        <Logout size="26" variant="Bold" />
-                        <div className="font-poppins">Logout</div>
-                    </footer>
-                </nav>
-            </div>
-        </>
+                </div>
+                <footer className="flex gap-4 text-gray-600 mt-auto pb-12">
+                    <Logout size="26" variant="Bold" />
+                    <div className="font-poppins">Logout</div>
+                </footer>
+            </nav>
+        </div>
     );
 }
