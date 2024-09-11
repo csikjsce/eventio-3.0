@@ -6,7 +6,7 @@ import Cards from '../components/Cards'
 const event = () => {
     return (
         <div className="pl-60">
-            <div className=" ">
+            <div>
                 <EventHead />
                 <Cards />
             </div>
