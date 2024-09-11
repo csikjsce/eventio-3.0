@@ -10,7 +10,7 @@ function App() {
 
   return (
       <Router>
-          <div className=" p-4 flex flex-row gap-4  ">
+          <div className="p-4 flex flex-row gap-4">
               <div>
                   <Sidebar />
                   <Routes>

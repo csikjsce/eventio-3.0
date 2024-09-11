@@ -88,8 +88,6 @@ export default function Sidebar() {
                     </footer>
                 </nav>
             </div>
-
-            
         </>
     );
 }
