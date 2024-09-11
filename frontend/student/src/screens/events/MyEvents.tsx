@@ -33,20 +33,20 @@ export default function MyEvents() {
         {/* <div className="flex flex-col gap-8 ">
           <Header />
           <div className="flex flex-col gap-4 z-10">
-            <p className="text-lg py-7 font-small font-fira text-left text-foreground-light dark:text-foreground-dark">
+            <p className="text-lg py-7 font-small font-fira text-left text-foreground ">
               <span className="inline-block align-middle">
                 <ArrowLeft />
               </span>
               <span className="inline-block align-middle">My Events</span>
             </p>
-            <p className="text-lg py-2 font-small font-fira text-left text-foreground-light dark:text-foreground-dark">
+            <p className="text-lg py-2 font-small font-fira text-left text-foreground ">
               Upcoming Events
             </p>
             <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3 overflow-x-auto mb-12 overflow-y">
               <EventCard event={event} />
               <EventCard event={event} />
             </div>
-            <p className="text-lg font-small font-fira text-left text-foreground-light dark:text-foreground-dark">
+            <p className="text-lg font-small font-fira text-left text-foreground ">
               Previous Events
             </p>
             <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3 overflow-x-auto mb-12 overflow-y">

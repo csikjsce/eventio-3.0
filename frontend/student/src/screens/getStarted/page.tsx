@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
 import PersonalDetails from './PersonalDetails';
 import EducationalDetails from './EducationalDetails';
@@ -7,9 +7,9 @@ import AllDone from './AllDone';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { PersonalDetailsSchema, personalDetailsSchema } from './validation';
 import { axiosCall } from '../../utils/api';
-import { useUserData } from '../../hooks/useUserData';
+import { UserDataContext } from '../../contexts/userContext';
 import Loader from '../../components/Loader';
-import { Alert } from '@material-tailwind/react';
+import { useNavigate } from 'react-router-dom';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 type errorType = {
@@ -20,17 +20,19 @@ export default function GetStarted() {
   const [loading, setLoading] = useState(true);
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
-  const useUser = useUserData();
+  const { userData } = useContext(UserDataContext);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    useUser.fetch().then((user) => {
-      if (user && (user.phone_number != null || user.roll_number != null)) {
-        window.location.href = '/';
-      } else {
-        setLoading(false);
-      }
-    });
-  }, [useUser]);
+    if (
+      userData &&
+      (userData.phone_number != null || userData.roll_number != null)
+    ) {
+      navigate('/');
+    } else {
+      setLoading(false);
+    }
+  }, [userData]);
 
   const [currentStep, setCurrentStep] =
     React.useState<string>('PersonalDetails');
@@ -41,14 +43,14 @@ export default function GetStarted() {
     context: { currentStep },
     defaultValues: {
       roll_number: '',
-      gender: 'male',
+      gender: 'Male',
       interests: [],
     },
   });
 
   const onSubmit = async () => {
     const formValues = methods.getValues();
-    const user = useUser.userContext.userData;
+    const user = userData;
 
     if (!user || !user.id) {
       setSnackbarMessage('User ID not found.');
@@ -91,7 +93,7 @@ export default function GetStarted() {
         <Loader />
       ) : (
         <FormProvider {...methods}>
-          <div>
+          <div className="">
             {currentStep === 'PersonalDetails' && (
               <PersonalDetails setCurrentStep={setCurrentStep} />
             )}
@@ -110,13 +112,9 @@ export default function GetStarted() {
       )}
 
       {snackbarVisible && (
-        <Alert
-          className="fixed bottom-5 left-1/2 transform -translate-x-1/2"
-          color="red"
-          variant="filled"
-        >
+        <div className="fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-primary text-white p-4 rounded-md z-40">
           {snackbarMessage}
-        </Alert>
+        </div>
       )}
     </>
   );

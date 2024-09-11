@@ -1,7 +1,8 @@
+import { Navigate } from 'react-router-dom';
+
 const Logout = () => {
   localStorage.clear();
-  window.location.href = '/login';
-  return <></>;
+  return <Navigate to="/login" />;
 };
 
 export default Logout;

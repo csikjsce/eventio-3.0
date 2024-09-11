@@ -12,7 +12,6 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
-    "@material-tailwind/react": "^2.1.9",
     "axios": "^1.7.3",
     "dayjs": "^1.11.12",
     "iconsax-react": "^0.0.8",

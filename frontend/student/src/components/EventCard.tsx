@@ -9,7 +9,7 @@ const tagHighlights: { [key: string]: string } = {
 export default function EventCard({ event }: { event: EventData }) {
   return (
     <Link
-      className="flex flex-row gap-4 justify-around bg-card-light dark:bg-card-dark rounded-lg p-2 h-32 shadow-md mb-2 ml-2"
+      className="flex flex-row gap-4 justify-around bg-card  rounded-lg p-2 shadow-md mb-2 mx-1"
       to={'/event-details/' + event.id}
     >
       {/* Event Image */}
@@ -17,7 +17,7 @@ export default function EventCard({ event }: { event: EventData }) {
       <img
         src={event.logo_image__url}
         alt={`${event.name} event`}
-        className="h-full sm:h-full my-auto aspect-square object-cover rounded-lg"
+        className="h-full max-h-24 my-auto aspect-square object-cover rounded-lg"
       />
       <div className="flex flex-col flex-1 max-w-96 gap-2 justify-around">
         {/* Council Image and Event Name */}
@@ -25,28 +25,28 @@ export default function EventCard({ event }: { event: EventData }) {
           <img
             src={event.organizer.photo_url}
             alt={`${event.organizer.name} council`}
-            className="w-8 h-8 aspect-square rounded-full object-cover border border-vitality-red"
+            className="w-8 h-8 aspect-square rounded-full object-cover border border-vitality"
           />
           <div className="flex flex-col flex-1 text-left">
-            <p className="font-fira font-medium text-md sm:text-lg text-foreground-light dark:text-foreground-dark">
+            <p className="font-fira font-medium text-md sm:text-lg text-foreground ">
               {event.name}
             </p>
-            <p className="font-fira text-xs text-vitality-red">
+            <p className="font-fira text-xs text-vitality">
               By {event.organizer.name}
             </p>
           </div>
         </div>
         {/* Date and Location */}
-        <div className="flex flex-row gap-4 items-center">
+        <div className="flex flex-col gap-2 items-start justify-end">
           <div className="flex flex-row items-center gap-1">
-            <Calendar color="#57585A" size="16" />
-            <p className="font-fira text-xs text-gray-500 dark:text-gray-300">
+            <Calendar className="stroke-current text-vitality" size="20" />
+            <p className="font-fira text-sm text-mute dark:text-gray-300">
               {event.dates[0] && new Date(event.dates[0]).toDateString()}
             </p>
           </div>
           <div className="flex flex-row items-center gap-1">
-            <Location color="#57585A" size="16" />
-            <p className="font-fira text-xs text-gray-500 dark:text-gray-300">
+            <Location className="stroke-current text-vitality" size="20" />
+            <p className="font-fira text-sm text-mute dark:text-gray-300">
               {event.venue}
             </p>
           </div>

@@ -10,7 +10,7 @@ function SplashScreen() {
       <div>
         <img src={logo} alt="Logo" className="logo" />
         <div>
-          <h1 className="text-4xl font-bold font-marcellus text-vitality-red">
+          <h1 className="text-4xl font-bold font-marcellus text-vitality">
             Eventio
           </h1>
           <p className="text-gray-600 text-xl italic font-fira">By CSI-KJSCE</p>
