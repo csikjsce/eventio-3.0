@@ -5,7 +5,7 @@ export default function SIdebarLayout() {
     return (
         <div className="flex">
             <Sidebar />
-            <div className="ml-[16.66vw]">
+            <div className="w-screen pl-[16.66vw]">
                 <Outlet />
             </div>
         </div>

@@ -18,8 +18,9 @@ export const newEventSchema = yup.object({
     long_description: yup
         .string()
         .trim()
+        .min(50, "Long description must be at least 50 characters")
         .max(5000, "Long description can be at most 5000 characters")
-        .notRequired(),
+        .required("Long description is required"),
 
     tag_line: yup
         .string()
@@ -109,20 +110,19 @@ export const newEventSchema = yup.object({
     banner_url: yup
         .string()
         .trim()
-        .url("Must be a valid URL")
-        .required("Banner URL is required"),
+        .url("Must be a valid URL").notRequired(),
 
     logo_image_url: yup
         .string()
         .trim()
         .url("Must be a valid URL")
-        .required("Logo image URL is required"),
+        .notRequired(),
 
     event_page_image_url: yup
         .string()
         .trim()
         .url("Must be a valid URL")
-        .notRequired(),
+        .required("Event page image URL is required"),
 
     is_feedback_enabled: yup.boolean().default(false).notRequired(),
 
