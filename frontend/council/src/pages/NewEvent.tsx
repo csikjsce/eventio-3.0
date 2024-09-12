@@ -32,11 +32,11 @@ export default function NewEvent() {
 
 
     function getDates(start: Date | null, end: Date | null) {
-        var dateArray = new Array();
+        const dateArray: Date[] = [];
         if (start === null || end === null) {
             return dateArray;
         }
-        var currentDate = start;
+        const currentDate = start;
         while (currentDate <= end) {
             dateArray.push(new Date (currentDate));
             currentDate.setDate(currentDate.getDate() + 1);
