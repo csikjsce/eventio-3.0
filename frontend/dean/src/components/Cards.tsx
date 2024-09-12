@@ -62,7 +62,7 @@ const Cards = () => {
                         </ul>
                         <p className="mt-4 break-words whitespace-normal overflow-hidden">
                             Et vitae blandit facilisi magna
-                            lacusklaj;lsdkjfa;lskdjf;alskdjf;alskdjf;alksdj;laksjdf;lksdjhfas;ldkfj;alskdjf;alskdjf;laskjdf;lksdjf
+                            lacusklaj;lsdkjfa;lskdjf;alskdjf;aasdasdasdasdas
                         </p>
                         <div className="flex flex-row gap-7 justify-start mt-6">
                             <button
