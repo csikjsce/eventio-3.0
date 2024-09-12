@@ -1,165 +1,158 @@
-import * as yup from "yup";
+import * as yup from 'yup';
 
 export const newEventSchema = yup.object({
-    name: yup
-        .string()
-        .trim()
-        .min(3, "Event name must be at least 3 characters")
-        .max(100, "Event name can be at most 100 characters")
-        .required("Event name is required"),
+  name: yup
+    .string()
+    .trim()
+    .min(3, 'Event name must be at least 3 characters')
+    .max(100, 'Event name can be at most 100 characters')
+    .required('Event name is required'),
 
-    description: yup
-        .string()
-        .trim()
-        .min(10, "Description must be at least 10 characters")
-        .max(1000, "Description can be at most 1000 characters")
-        .required("Description is required"),
+  description: yup
+    .string()
+    .trim()
+    .min(10, 'Description must be at least 10 characters')
+    .max(1000, 'Description can be at most 1000 characters')
+    .required('Description is required'),
 
-    long_description: yup
-        .string()
-        .trim()
-        .min(50, "Long description must be at least 50 characters")
-        .max(5000, "Long description can be at most 5000 characters")
-        .required("Long description is required"),
+  long_description: yup
+    .string()
+    .trim()
+    .min(50, 'Long description must be at least 50 characters')
+    .max(5000, 'Long description can be at most 5000 characters')
+    .required('Long description is required'),
 
-    tag_line: yup
-        .string()
-        .trim()
-        .max(255, "Tagline can be at most 255 characters")
-        .notRequired(),
+  tag_line: yup
+    .string()
+    .trim()
+    .max(255, 'Tagline can be at most 255 characters')
+    .notRequired(),
 
-    fee: yup
-        .number()
-        .min(0, "Fee cannot be negative")
-        .required("Fee is required"),
+  fee: yup
+    .number()
+    .min(0, 'Fee cannot be negative')
+    .required('Fee is required'),
 
-    event_type: yup
-        .string()
-        .oneOf(
-            ["COMPETETION", "WORKSHOP", "SPEAKER_SESSION", "ONLINE", "FEST"],
-            "Invalid event type",
-        )
-        .required("Event type is required"),
+  event_type: yup
+    .string()
+    .oneOf(
+      ['COMPETETION', 'WORKSHOP', 'SPEAKER_SESSION', 'ONLINE', 'FEST'],
+      'Invalid event type',
+    )
+    .required('Event type is required'),
 
-    online_event_link: yup
-        .string()
-        .url("Must be a valid URL")
-        .when("event_type", (event_type, schema) => {
-            const eventTypeValue = Array.isArray(event_type)
-                ? event_type[0]
-                : event_type;
-            if (eventTypeValue === "ONLINE") {
-                return schema.required(
-                    "Online event link is required for online events",
-                );
-            }
-            return schema.notRequired();
-        }),
+  online_event_link: yup
+    .string()
+    .url('Must be a valid URL')
+    .when('event_type', (event_type, schema) => {
+      const eventTypeValue = Array.isArray(event_type)
+        ? event_type[0]
+        : event_type;
+      if (eventTypeValue === 'ONLINE') {
+        return schema.required(
+          'Online event link is required for online events',
+        );
+      }
+      return schema.notRequired();
+    }),
 
-    dates: yup
-        .array()
-        .of(
-            yup
-                .date()
-                .min(new Date(), "Event date must be in the future")
-                .required("Each date must be valid"),
-        )
-        .min(1, "At least one event date is required")
-        .required("Event dates are required"),
+  dates: yup
+    .array()
+    .of(
+      yup
+        .date()
+        .min(new Date(), 'Event date must be in the future')
+        .required('Each date must be valid'),
+    )
+    .min(1, 'At least one event date is required')
+    .required('Event dates are required'),
 
-    venue: yup
-        .string()
-        .trim()
-        .when("event_type", (event_type, schema) => {
-            const eventTypeValue = Array.isArray(event_type)
-                ? event_type[0]
-                : event_type;
-            if (eventTypeValue === "ONLINE") {
-                return schema.notRequired();
-            }
-            return schema.required("Venue is required");
-        }),
+  venue: yup
+    .string()
+    .trim()
+    .when('event_type', (event_type, schema) => {
+      const eventTypeValue = Array.isArray(event_type)
+        ? event_type[0]
+        : event_type;
+      if (eventTypeValue === 'ONLINE') {
+        return schema.notRequired();
+      }
+      return schema.required('Venue is required');
+    }),
 
-    tags: yup
-        .array()
-        .of(yup.string().trim())
-        .min(1, "At least one tag is required")
-        .max(10, "You can add up to 10 tags"),
+  tags: yup
+    .array()
+    .of(yup.string().trim())
+    .min(1, 'At least one tag is required')
+    .max(10, 'You can add up to 10 tags'),
 
-    state: yup
-        .string()
-        .oneOf(
-            [
-                "DRAFT",
-                "APPLIED_FOR_APPROVAL",
-                "UNLISTED",
-                "UPCOMING",
-                "REGISTRATION_OPEN",
-                "REGISTRATION_CLOSED",
-                "TICKET_OPEN",
-                "TICKET_CLOSED",
-                "ONGOING",
-                "COMPLETED",
-                "PRIVATE",
-            ],
-            "Invalid state",
-        )
-        .default("DRAFT")
-        .required("State is required"),
+  state: yup
+    .string()
+    .oneOf(
+      [
+        'DRAFT',
+        'APPLIED_FOR_APPROVAL',
+        'UNLISTED',
+        'UPCOMING',
+        'REGISTRATION_OPEN',
+        'REGISTRATION_CLOSED',
+        'TICKET_OPEN',
+        'TICKET_CLOSED',
+        'ONGOING',
+        'COMPLETED',
+        'PRIVATE',
+      ],
+      'Invalid state',
+    )
+    .default('DRAFT')
+    .required('State is required'),
 
-    banner_url: yup
-        .string()
-        .trim()
-        .url("Must be a valid URL").notRequired(),
+  banner_url: yup.string().trim().url('Must be a valid URL').notRequired(),
 
-    logo_image_url: yup
-        .string()
-        .trim()
-        .url("Must be a valid URL")
-        .notRequired(),
+  logo_image_url: yup.string().trim().url('Must be a valid URL').notRequired(),
 
-    event_page_image_url: yup
-        .string()
-        .trim()
-        .url("Must be a valid URL")
-        .required("Event page image URL is required"),
+  event_page_image_url: yup
+    .string()
+    .trim()
+    .url('Must be a valid URL')
+    .required('Event page image URL is required'),
 
-    is_feedback_enabled: yup.boolean().default(false).notRequired(),
+  is_feedback_enabled: yup.boolean().default(false).notRequired(),
 
-    is_only_somaiya: yup
-        .boolean()
-        .default(true)
-        .required("This field is required"),
+  is_only_somaiya: yup
+    .boolean()
+    .default(true)
+    .required('This field is required'),
 
-    in_event_activity: yup.string().nullable().trim().notRequired(),
+  in_event_activity: yup.string().nullable().trim().notRequired(),
 
-    start_in_event_activity: yup.boolean().nullable().notRequired(),
+  start_in_event_activity: yup.boolean().nullable().notRequired(),
 
-    attendance_type: yup.string().oneOf(["TICKET", "BLE"]).nullable(),
+  attendance_type: yup.string().oneOf(['TICKET', 'BLE']).nullable(),
 
-    registration_type: yup
-        .string()
-        .oneOf(["EXTERNAL", "ONPLATFORM"], "Invalid registration type")
-        .default("ONPLATFORM")
-        .required("Registration type is required"),
+  registration_type: yup
+    .string()
+    .oneOf(['EXTERNAL', 'ONPLATFORM'], 'Invalid registration type')
+    .default('ONPLATFORM')
+    .required('Registration type is required'),
 
-    external_registration_link: yup
-        .string()
-        .trim()
-        .url("Must be a valid URL")
-        .when("registration_type", (registration_type, schema) => {
-            const registration_typeValue = Array.isArray(registration_type)
-                ? registration_type[0]
-                : registration_type;
-            if (registration_typeValue === "EXTERNAL") {
-                return schema.required(
-                    "External registration link is required for EXTERNAL registration type",
-                );
-            }
-            return schema.notRequired();
-        }),
+  external_registration_link: yup
+    .string()
+    .trim()
+    .url('Must be a valid URL')
+    .when('registration_type', (registration_type, schema) => {
+      const registration_typeValue = Array.isArray(registration_type)
+        ? registration_type[0]
+        : registration_type;
+      if (registration_typeValue === 'EXTERNAL') {
+        return schema.required(
+          'External registration link is required for EXTERNAL registration type',
+        );
+      }
+      return schema.notRequired();
+    }),
 
-    is_ticket_feature_enabled: yup.boolean().default(true).notRequired(),
+  is_ticket_feature_enabled: yup.boolean().default(true).notRequired(),
 });
 
 export type NewEventSchema = yup.InferType<typeof newEventSchema>;
