@@ -1,129 +1,79 @@
-import { useEffect, useState } from 'react';
+import { useContext } from 'react';
 import EventCard from '../../components/EventCard';
-import FooterNav from '../../components/FooterNav';
-import Header from '../../components/Header';
-// import { SearchNormal1 } from 'iconsax-react';
-// import SearchBar from '../../components/SearchBar';
+
 import TrendingCard from '../../components/TrendingCard';
 
-import { useUserData } from '../../hooks/useUserData';
-import Loader from '../../components/Loader';
-import { axiosCall } from '../../utils/api';
+import EventsDataContext from '../../contexts/EventsDataContext';
 
 export default function Home() {
-  const [upcomingEvents, setUpcomingEvents] = useState<EventData[]>([]);
-  const [registrationOpen, setRegistrationOpen] = useState<EventData[]>([]);
-  const [, setRegistrationClose] = useState<EventData[]>([]);
-  const [ticketOpen, setTicketOpen] = useState<EventData[]>();
-  const [, setTicketClose] = useState<EventData[]>();
-  const [ongoingEvents, setOngoingEvents] = useState<EventData[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadingE, setLoadingE] = useState(true);
-
-  useEffect(() => {
-    const fetchEvents = async () => {
-      try {
-        const response = await axiosCall('POST', '/event/p/get', true);
-        console.log(response);
-        if (response.events) {
-          setUpcomingEvents(response.events.UPCOMING);
-          setRegistrationOpen(response.events.REGISTRATION_OPEN);
-          setRegistrationClose(response.events.REGISTRATION_CLOSED);
-          setTicketOpen(response.events.TICKET_OPEN);
-          setTicketClose(response.events.TICKET_CLOSED);
-          setOngoingEvents(response.events.ONGOING);
-          setLoadingE(false);
-        }
-      } catch (error) {
-        console.error('Error fetching events:', error);
-      }
-    };
-
-    fetchEvents();
-  }, []);
-
-  const user = useUserData();
-
-  useEffect(() => {
-    if (user.userContext.userData) {
-      setLoading(false);
-    }
-  }, [user.userContext.userData]);
-
-  if (loading || loadingE) {
-    return <Loader />;
-  }
+  const { events } = useContext(EventsDataContext);
 
   return (
-    <div className="flex flex-col p-4 dark:bg-background-dark min-h-screen mb-8">
-      <div className="flex flex-col">
-        {/* main area */}
-        {user.userContext.userData &&
-          user.userContext.userData.name &&
-          user.userContext.userData.photo_url && (
-            <Header
-              name={user.userContext.userData.name}
-              photo_url={user.userContext.userData.photo_url}
+    <div className="flex flex-col">
+      {/* <SearchBar Icon={SearchNormal1} className="mt-6" /> */}
+      <div className="flex flex-col mt-6 gap-4 z-10">
+        <p className="text-lg font-medium font-fira text-left text-foreground ">
+          Trending Events
+        </p>
+        <div className="overflow-x-auto flex gap-4 pb-6 px-4 -mx-4">
+          {events?.UPCOMING?.map((event) => (
+            <TrendingCard key={event.id} event={event} text="Coming Soon" />
+          ))}
+          {events?.ONGOING?.map((event) => (
+            <TrendingCard key={event.id} event={event} text="Ongoing" />
+          ))}
+          {events?.REGISTRATION_OPEN?.map((event) => (
+            <TrendingCard
+              key={event.id}
+              event={event}
+              text="Registrations Open"
             />
-          )}
-        {/* <SearchBar Icon={SearchNormal1} className="mt-6" /> */}
-        <div className="flex flex-col mt-6 gap-4 z-10">
-          <p className="text-lg font-medium font-fira text-left text-foreground-light dark:text-foreground-dark">
-            Trending Events
+          ))}
+          {events?.TICKET_OPEN?.map((event) => (
+            <TrendingCard
+              key={event.id}
+              event={event}
+              text="Tickets Released"
+            />
+          ))}
+        </div>
+      </div>
+      {events?.UPCOMING && events?.UPCOMING.length != 0 && (
+        <div className="flex flex-col gap-4 z-10">
+          <p className="text-lg font-medium font-fira text-left text-foreground ">
+            Upcoming Events
           </p>
-          <div className="overflow-x-auto flex gap-4 pb-6 px-4 -mx-4">
-            {upcomingEvents?.map((event) => (
-              <TrendingCard key={event.id} event={event} text="Coming Soon"/>
-            ))}
-            {ongoingEvents?.map((event) => (
-              <TrendingCard key={event.id} event={event} text="Ongoing"/>
-            ))}
-            {registrationOpen?.map((event) => (
-              <TrendingCard key={event.id} event={event} text="Registrations Open"/>
-            ))}
-            {ticketOpen?.map((event) => (
-              <TrendingCard key={event.id} event={event} text="Tickets Released"/>
+          <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3 overflow-x-auto -mx-1">
+            {events?.UPCOMING?.map((event) => (
+              <EventCard key={event.id} event={event} />
             ))}
           </div>
         </div>
-        {upcomingEvents && upcomingEvents.length != 0 && (
-          <div className="flex flex-col gap-4 z-10">
-            <p className="text-lg font-medium font-fira text-left text-foreground-light dark:text-foreground-dark">
-              Upcoming Events
-            </p>
-            <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3 overflow-x-auto">
-              {upcomingEvents?.map((event) => (
-                <EventCard key={event.id} event={event} />
-              ))}
-            </div>
+      )}
+      {events?.REGISTRATION_OPEN && events?.REGISTRATION_OPEN.length != 0 && (
+        <div className="flex flex-col gap-4 z-10">
+          <p className="text-lg font-medium font-fira text-left text-foreground ">
+            Registration Open
+          </p>
+          <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3 overflow-x-auto -mx-1">
+            {events?.REGISTRATION_OPEN?.map((event) => (
+              <EventCard key={event.id} event={event} />
+            ))}
           </div>
-        )}
-        {registrationOpen && registrationOpen.length != 0 && (
-          <div className="flex flex-col gap-4 z-10">
-            <p className="text-lg font-medium font-fira text-left text-foreground-light dark:text-foreground-dark">
-              Registration Open
-            </p>
-            <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3 overflow-x-auto">
-              {registrationOpen?.map((event) => (
-                <EventCard key={event.id} event={event} />
-              ))}
-            </div>
+        </div>
+      )}
+      {events?.TICKET_OPEN && events?.TICKET_OPEN.length != 0 && (
+        <div className="flex flex-col gap-4 z-10">
+          <p className="text-lg font-medium font-fira text-left text-foreground ">
+            Tickets Released
+          </p>
+          <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3 overflow-x-auto -mx-1">
+            {events?.TICKET_OPEN?.map((event) => (
+              <EventCard key={event.id} event={event} />
+            ))}
           </div>
-        )}
-        {ticketOpen && ticketOpen.length != 0 && (
-          <div className="flex flex-col gap-4 z-10">
-            <p className="text-lg font-medium font-fira text-left text-foreground-light dark:text-foreground-dark">
-              Registration Open
-            </p>
-            <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3 overflow-x-auto">
-              {ticketOpen?.map((event) => (
-                <EventCard key={event.id} event={event} />
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-      <FooterNav />
+        </div>
+      )}
     </div>
   );
 }

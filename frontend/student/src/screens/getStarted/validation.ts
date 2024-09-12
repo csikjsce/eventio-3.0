@@ -9,7 +9,10 @@ export const personalDetailsSchema = (currentStep: string) =>
 
     roll_number: yup.string(),
 
-    gender: yup.string().required('Gender is required'),
+    gender: yup
+      .string()
+      .is(['MALE', 'FEMALE'], 'Gender is required.')
+      .required('Gender is required'),
 
     year: yup
       .number()
