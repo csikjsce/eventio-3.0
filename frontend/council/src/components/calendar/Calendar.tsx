@@ -79,83 +79,92 @@ export default function Calendar() {
   };
 
   return (
-    <div className="flex gap-10 sm:divide-x justify-center  h-full items-center sm:flex-row flex-col mt-10">
-      <div className="w-full h-full px-5">
-        <div className="flex justify-between items-center">
-          <h1 className="select-none font-semibold text-foreground ">
-            {months[today.month()]}, {today.year()}
-          </h1>
-          <div className="flex gap-5 items-center">
-            <ArrowSquareLeft
-              size="32"
-              className="text-primary"
-              onClick={() => {
-                setToday(today.month(today.month() - 1));
-              }}
-            />
+      <div className="flex gap-10 sm:divide-x justify-center  h-full items-center sm:flex-row flex-col mt-10">
+          <div className="w-full h-full px-5">
+              <div className="flex justify-between items-center">
+                  <div className="flex gap-5 items-center">
+                      <ArrowSquareLeft
+                          size="32"
+                          className="text-primary"
+                          onClick={() => {
+                              setToday(today.month(today.month() - 1));
+                          }}
+                      />
 
-            <h1
-              className="cursor-pointer hover:scale-105 transition-all text-foreground "
-              onClick={() => {
-                setToday(currentDate);
-                setSelectDate(currentDate);
-              }}
-            >
-              Today
-            </h1>
-            <ArrowSquareRight
-              size="32"
-              className="text-primary"
-              onClick={() => {
-                setToday(today.month(today.month() + 1));
-              }}
-            />
-          </div>
-        </div>
-        <div className="grid grid-cols-7">
-          {days.map((day, index) => (
-            <h1
-              key={index}
-              className="text-sm text-center h-14 w-14 grid place-content-center text-gray-500 select-none"
-            >
-              {day}
-            </h1>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-7">
-          {generateDate(today.month(), today.year()).map(
-            ({ date, currentMonth, today }, index) => {
-              const eventsForDate = getEventsForDate(date);
-              const eventCount = eventsForDate.length;
-
-              return (
-                <div key={index}>
-                  <div className="p-2 text-center h-14 grid place-content-center text-sm border-t relative">
-                    <div
-                      className={dateClassName(currentMonth, date, today)}
-                      onClick={() => setSelectDate(date)}
-                    >
-                      {date.date()}
-                    </div>
-                    <span className="absolute hidden peer-hover:flex justify-center items-center align-middle transition-all mx-auto mb-8 -translate-y-8 left-1/2 -translate-x-1/2 w-20 h-8 z-40 px-1 text-sm text-center rounded-md bg-foreground text-background cursor-default select-none">{`${eventCount} event${eventCount !== 1 ? 's' : ''}`}</span>
-                    {renderEventIndicators(date)}
+                      <h1 className="cursor-pointer hover:scale-105 transition-all text-foreground ">
+                          {months[today.month()]}, {today.year()}
+                      </h1>
+                      <ArrowSquareRight
+                          size="32"
+                          className="text-primary"
+                          onClick={() => {
+                              setToday(today.month(today.month() + 1));
+                          }}
+                      />
                   </div>
-                </div>
-              );
-            },
-          )}
-        </div>
-        </div>
-        <div className="w-full max-w-sm p-6">
-          <h1 className="font-semibold text-foreground ">
-            {getEventsForDate(selectDate).length !== 0
-              ? `Schedule for ${selectDate.format('MMMM D, YYYY')}`
-              : `No events on ${selectDate.format('MMMM D, YYYY')}`}
-          </h1>
+                  <div
+                      className="select-none mr-2 hover:scale-105 font-semibold text-foreground "
+                      onClick={() => {
+                          setToday(currentDate);
+                          setSelectDate(currentDate);
+                      }}
+                  >
+                      Today
+                  </div>
+              </div>
+              <div className="grid grid-cols-7">
+                  {days.map((day, index) => (
+                      <h1
+                          key={index}
+                          className="text-sm text-center h-14 w-14 grid place-content-center text-gray-500 select-none"
+                      >
+                          {day}
+                      </h1>
+                  ))}
+              </div>
 
-          <EventList events={getEventsForDate(selectDate)} date={selectDate} />
-        </div>
-    </div>
+              <div className="grid grid-cols-7">
+                  {generateDate(today.month(), today.year()).map(
+                      ({ date, currentMonth, today }, index) => {
+                          const eventsForDate = getEventsForDate(date);
+                          const eventCount = eventsForDate.length;
+
+                          return (
+                              <div key={index}>
+                                  <div className="p-2 text-center h-14 grid place-content-center text-sm border-t relative">
+                                      <div
+                                          className={dateClassName(
+                                              currentMonth,
+                                              date,
+                                              today
+                                          )}
+                                          onClick={() => setSelectDate(date)}
+                                      >
+                                          {date.date()}
+                                      </div>
+                                      <span className="absolute hidden peer-hover:flex justify-center items-center align-middle transition-all mx-auto mb-8 -translate-y-8 left-1/2 -translate-x-1/2 w-20 h-8 z-40 px-1 text-sm text-center rounded-md bg-foreground text-background cursor-default select-none">{`${eventCount} event${
+                                          eventCount !== 1 ? "s" : ""
+                                      }`}</span>
+                                      {renderEventIndicators(date)}
+                                  </div>
+                              </div>
+                          );
+                      }
+                  )}
+              </div>
+          </div>
+          <div className="w-full max-w-sm p-6">
+              <h1 className="font-semibold text-foreground ">
+                  {getEventsForDate(selectDate).length !== 0
+                      ? `Schedule for ${selectDate.format("MMMM D, YYYY")}`
+                      : `No events on ${selectDate.format("MMMM D, YYYY")}`}
+              </h1>
+
+              <EventList
+                  events={getEventsForDate(selectDate)}
+                  date={selectDate}
+              />
+          </div>
+      </div>
   );
 }
