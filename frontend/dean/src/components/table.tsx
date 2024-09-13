@@ -52,6 +52,7 @@ const people = [
 export default function Example() {
     return (
         <div>
+            
             <ul
                 role="list"
                 className="divide-y ml-20 mt-9 scale-110 divide-gray-300"
@@ -129,17 +130,20 @@ export default function Example() {
                             </div>
                         </div>
                         <div className="flex flex-row gap-4">
-                            <a className="rounded-full bg-white px-2.5 py-1  text-xs font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-green-300 ">
-                                <CheckIcon className="h-5 w-5 " />
+                            <a className="group relative flex items-center rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-green-300 transition-all duration-300 ease-in-out overflow-hidden">
+                                <CheckIcon className="h-5 w-5" />
+                                <span className="absolute left-12 opacity-0 group-hover:opacity-100 group-hover:left-10 transition-all duration-300 ease-in-out whitespace-nowrap">
+                                    Approve
+                                </span>
                             </a>
-                            <a className="rounded-full bg-white px-2.5 py-1   text-xs font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-red-300">
+                            <a className="group relative flex items-center rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-red-300 transition-all duration-300 ease-in-out overflow-hidden">
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
                                     fill="none"
                                     viewBox="0 0 24 24"
                                     strokeWidth={1.5}
                                     stroke="currentColor"
-                                    className="size-6"
+                                    className="h-5 w-5"
                                 >
                                     <path
                                         strokeLinecap="round"
@@ -147,6 +151,9 @@ export default function Example() {
                                         d="M6 18 18 6M6 6l12 12"
                                     />
                                 </svg>
+                                <span className="absolute left-12 opacity-0 group-hover:opacity-100 group-hover:left-10 transition-all duration-300 ease-in-out whitespace-nowrap">
+                                    Reject
+                                </span>
                             </a>
                         </div>
                     </li>
