@@ -26,7 +26,7 @@ export const newEventSchema = yup.object({
     .string()
     .trim()
     .max(255, 'Tagline can be at most 255 characters')
-    .notRequired(),
+    .required('Tagline is required'),
 
   fee: yup
     .number()
@@ -82,9 +82,22 @@ export const newEventSchema = yup.object({
 
   tags: yup
     .array()
-    .of(yup.string().trim())
-    .min(1, 'At least one tag is required')
-    .max(10, 'You can add up to 10 tags'),
+    .transform((value: string | undefined) =>
+      value && typeof value === 'string'
+        ? value
+            .split(',')
+            .map((tag) => tag.trim())
+            .filter(Boolean)
+        : [],
+    )
+    .test(
+      'is-valid-array',
+      'Tags must be between 0 and 5 items',
+      function (value) {
+        return Array.isArray(value) && value.length >= 0 && value.length <= 5;
+      },
+    )
+    .required('Maximum 5 tags are allowed'),
 
   state: yup
     .string()
@@ -107,7 +120,11 @@ export const newEventSchema = yup.object({
     .default('DRAFT')
     .required('State is required'),
 
-  banner_url: yup.string().trim().url('Must be a valid URL').notRequired(),
+  banner_url: yup
+    .string()
+    .trim()
+    .url('Must be a valid URL')
+    .required('Banner URL is required'),
 
   logo_image_url: yup.string().trim().url('Must be a valid URL').notRequired(),
 
@@ -153,6 +170,16 @@ export const newEventSchema = yup.object({
     }),
 
   is_ticket_feature_enabled: yup.boolean().default(true).notRequired(),
+
+  ma_ppt: yup
+    .number()
+    .min(1, 'Max Paricipants cannot be less than 1')
+    .required('Max Paricipants required'),
+
+  min_ppt: yup
+    .number()
+    .min(1, 'Min Paricipants cannot be less than 1')
+    .required('Min Paricipants required'),
 });
 
 export type NewEventSchema = yup.InferType<typeof newEventSchema>;

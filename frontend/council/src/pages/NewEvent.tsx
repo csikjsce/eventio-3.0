@@ -3,19 +3,27 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import { NewEventSchema, newEventSchema } from '../utils/validation';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import axios from 'axios';
 import Spinner from '../components/Spinner';
-import { useNavigate } from 'react-router-dom';
+import Loader from '../components/Loader';
+import { useNavigate, useParams } from 'react-router-dom';
 
 export default function NewEvent() {
   const navigate = useNavigate();
+  const { id } = useParams();
+  const [event, setEvent] = useState<NewEventSchema | null>(null);
 
   const methods = useForm<NewEventSchema>({
     resolver: yupResolver(newEventSchema),
     defaultValues: {
       fee: 0,
       is_ticket_feature_enabled: false,
+      ma_ppt: 1,
+      min_ppt: 1,
+      is_feedback_enabled: false,
+      is_only_somaiya: true,
+      registration_type: 'ONPLATFORM',
     },
   });
 
@@ -30,10 +38,46 @@ export default function NewEvent() {
   // States for date inputs
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [endDate, setEndDate] = useState<Date | undefined>();
+  const [isMultipleDates, setIsMultipleDates] = useState(false);
+  const [isTeamEvent, setIsTeamEvent] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    if (id) {
+      axios
+        .request({
+          baseURL: import.meta.env.VITE_APP_SERVER_ADDRESS,
+          url: '/api/v1' + `/event/p/get/${id}`,
+          method: 'POST',
+          headers: {
+            Authorization: 'Bearer ' + localStorage.getItem('accessToken'),
+          },
+        })
+        .then((response) => {
+          setEvent(response.data.event);
+          console.log(response.data.event);
+          methods.reset(response.data.event);
+          setStartDate(new Date(response.data.event.dates[0]));
+          if (response.data.event.dates.length > 1) {
+            setEndDate(
+              new Date(
+                response.data.event.dates[response.data.event.dates.length - 1],
+              ),
+            );
+            setIsMultipleDates(true);
+          }
+          if (response.data.event.ma_ppt > 1) {
+            setIsTeamEvent(true);
+          } else {
+            setValue('ma_ppt', 1);
+            setValue('min_ppt', 1);
+          }
+        });
+    }
+  }, []);
 
   function getDates(start: Date | null, end: Date | null) {
     const dateArray: Date[] = [];
@@ -48,14 +92,34 @@ export default function NewEvent() {
     return dateArray;
   }
 
+  useEffect(() => {
+    if (!startDate) {
+      return;
+    }
+    if (!isMultipleDates) {
+      setValue('dates', [startDate]);
+      return;
+    }
+    const dates = getDates(startDate, endDate || startDate);
+    setValue('dates', dates);
+  }, [startDate, endDate]);
+
+  useEffect(() => {
+    if (!isTeamEvent) {
+      setValue('ma_ppt', 1);
+      setValue('min_ppt', 1);
+      return;
+    }
+  }, [isTeamEvent]);
+
   const onSubmit = async (data: NewEventSchema) => {
-    data.banner_url = data.event_page_image_url;
     data.logo_image_url = data.event_page_image_url;
     console.log(data);
     try {
       setLoading(true);
+      const endpoint = id ? `/event/p/update/${id}` : '/event/p/create';
       const response = await axios.post(
-        'http://localhost:8000/api/v1/event/p/create',
+        import.meta.env.VITE_APP_SERVER_ADDRESS + '/api/v1' + endpoint,
         data,
         {
           headers: {
@@ -64,43 +128,27 @@ export default function NewEvent() {
           },
         },
       );
-      setLoading(false);
       console.log(response.data);
       setSuccess(true);
-      setShowAlert(true);
-      setTimeout(() => {
-        setShowAlert(false);
-        navigate('/');
-      }, 2000);
     } catch (error) {
       console.error(error);
+      setSuccess(false);
     }
+    setLoading(false);
+    setShowAlert(true);
+    setTimeout(() => {
+      setShowAlert(false);
+      navigate('/');
+    }, 2000);
+
   };
 
   const eventType = watch('event_type');
+  const isExternal = watch('registration_type') === 'EXTERNAL';
 
-  // const dates = watch("dates");
-
-  // function getStartDate() {
-  //     const dates = getValues("dates");
-  //     if (!dates || dates.length === 0) {
-  //         return undefined;
-  //     }
-  //     return dates[0];
-  // }
-
-  // function getEndDate() {
-  //     const dates = getValues("dates");
-  //     if (!dates || dates.length === 0) {
-  //         return undefined;
-  //     }
-  //     return dates[dates.length - 1];
-  // }
-
-  // useEffect(() => {
-  //     console.log(dates);
-  // }, [dates]);
-  // useEffect(() => {console.log(startDate, endDate)}, [startDate, endDate]);
+  if (id && !event) {
+    return <Loader />;
+  }
 
   return (
     <FormProvider {...methods}>
@@ -154,28 +202,46 @@ export default function NewEvent() {
             <p className="text-red-500">{errors.long_description?.message}</p>
           </div>
 
+          {/* Date Picker (Single or Range) */}
           <div>
-            <label className="block text-foreground">Event Dates</label>
+            <label className="block text-foreground">
+              {isMultipleDates ? 'Start Date' : 'Event Date'}
+            </label>
             <DatePicker
-              // selected={startDate}
-              onChange={(date) => {
-                if (Array.isArray(date)) {
-                  const [start, end] = date;
-                  console.log(start, end);
-                  setStartDate(start || undefined);
-                  setEndDate(end || undefined);
-                  const dates = getDates(start, end);
-                  setValue('dates', dates); // Set both start and end dates in form
-                  // setStartDate(dates[0]);
-                }
-              }}
-              startDate={startDate}
-              endDate={endDate}
-              selectsRange
+              selected={startDate}
+              showTimeSelect
+              onChange={(date) => setStartDate(date as Date)}
               className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
-              placeholderText="Select event date range"
+              placeholderText="Select event date"
             />
             <p className="text-red-500">{errors.dates?.message}</p>
+          </div>
+
+          {/* End Date (Only if multiple dates are allowed) */}
+          {isMultipleDates && (
+            <div>
+              <label className="block text-foreground">End Date</label>
+              <DatePicker
+                selected={endDate}
+                showTimeSelect
+                onChange={(date) => setEndDate(date as Date)}
+                className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
+                placeholderText="Select end date"
+                // disabled={!isMultipleDates}
+              />
+              <p className="text-red-500">{errors.dates?.message}</p>
+            </div>
+          )}
+
+          {/* Checkbox for multiple dates */}
+          <div className="col-span-2 select-none">
+            <label className="text-foreground max-w-56 flex items-center gap-2 select-none hover:cursor-pointer">
+              <input
+                type="checkbox"
+                onChange={() => setIsMultipleDates(!isMultipleDates)}
+              />
+              This is a multi-day event
+            </label>
           </div>
 
           {/* Event Type */}
@@ -219,7 +285,9 @@ export default function NewEvent() {
 
           {/* Event Page Image URL */}
           <div>
-            <label className="block text-foreground">Image URL</label>
+            <label className="block text-foreground">
+              Events Page Image URL
+            </label>
             <input
               className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
               {...register('event_page_image_url')}
@@ -229,6 +297,55 @@ export default function NewEvent() {
               {errors.event_page_image_url?.message}
             </p>
           </div>
+
+          {/* Banner Image URL */}
+          <div>
+            <label className="block text-foreground">Banner Image URL</label>
+            <input
+              className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
+              {...register('banner_url')}
+              placeholder="Enter image URL"
+            />
+            <p className="text-red-500">{errors.banner_url?.message}</p>
+          </div>
+
+          {/* Checkbox for team event */}
+          <div className="col-span-2">
+            <label className="text-foreground max-w-44 flex items-center gap-2 select-none hover:cursor-pointer">
+              <input
+                type="checkbox"
+                onChange={() => setIsTeamEvent(!isTeamEvent)}
+              />
+              Is this a team event?
+            </label>
+          </div>
+
+          {isTeamEvent && (
+            <>
+              <div>
+                <label className="block text-foreground">
+                  Maximum Particiapants per Team
+                </label>
+                <input
+                  className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
+                  {...register('ma_ppt')}
+                  placeholder="Maximum Participants per Team"
+                />
+                <p className="text-red-500">{errors.ma_ppt?.message}</p>
+              </div>
+              <div>
+                <label className="block text-foreground">
+                  Minimum Particiapants per Team
+                </label>
+                <input
+                  className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
+                  {...register('min_ppt')}
+                  placeholder="Minimum Participants per Team"
+                />
+                <p className="text-red-500">{errors.min_ppt?.message}</p>
+              </div>
+            </>
+          )}
 
           {/* Fee */}
           <div>
@@ -241,12 +358,118 @@ export default function NewEvent() {
             <p className="text-red-500">{errors.fee?.message}</p>
           </div>
 
+          {/* Tags */}
+          <div>
+            <label className="block text-foreground">Tags</label>
+            <input
+              className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
+              {...register('tags')}
+              placeholder="Tech, Coding, Fun"
+            />
+            <p className="text-red-500">{errors.tags?.message}</p>
+          </div>
+
+          {/* Checkbox for feedback */}
+          <div>
+            <label className="text-foreground flex items-center gap-2 select-none hover:cursor-pointer">
+              <input type="checkbox" {...register('is_feedback_enabled')} />
+              Enable Feedback
+            </label>
+          </div>
+
+          {/* Checkbox for somaiya only */}
+          <div>
+            <label className="text-foreground flex items-center gap-2 select-none hover:cursor-pointer">
+              <input type="checkbox" {...register('is_only_somaiya')} />
+              This a Somaiya-only Event
+            </label>
+          </div>
+
+          {/* Event Type */}
+          <div>
+            <label className="block text-foreground">Registration Type</label>
+            <select
+              className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
+              {...register('registration_type')}
+            >
+              <option value="ONPLATFORM">On-Platform</option>
+              <option value="EXTERNAL">External</option>
+            </select>
+            <p className="text-red-500">{errors.registration_type?.message}</p>
+          </div>
+
+          {/* External Registration Link */}
+          {isExternal ? (
+            <div>
+              <label className="block text-foreground">
+                External Registration Link
+              </label>
+              <input
+                className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
+                {...register('external_registration_link')}
+                placeholder="Enter external registration link"
+              />
+              <p className="text-red-500">
+                {errors.external_registration_link?.message}
+              </p>
+            </div>
+          ) : (
+            <div>
+              <label className="block text-foreground">Enable Tickets</label>
+              <select
+                className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
+                onChange={(e) =>
+                  setValue(
+                    'is_ticket_feature_enabled',
+                    e.target.value === 'YES',
+                  )
+                }
+              >
+                <option value="No">No</option>
+                <option value="YES">Yes</option>
+              </select>
+              <p className="text-red-500">
+                {errors.is_ticket_feature_enabled?.message}
+              </p>
+            </div>
+          )}
+
+          {/* In-Event Activity */}
+          <div>
+            <label className="block text-foreground">In-Event Activity</label>
+            <input
+              className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
+              {...register('in_event_activity')}
+              placeholder="In event activity link"
+            />
+            <p className="text-red-500">{errors.in_event_activity?.message}</p>
+          </div>
+
+          {/* Checkbox for start in-event activity */}
+          <div>
+            <label className="block text-foreground">
+              Start In Event Activity
+            </label>
+            <select
+              className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
+              onChange={(e) =>
+                setValue('start_in_event_activity', e.target.value === 'YES')
+              }
+            >
+              <option value="No">No</option>
+              <option value="YES">Yes</option>
+            </select>
+            <p className="text-red-500">
+              {errors.start_in_event_activity?.message}
+            </p>
+          </div>
+
           {/* Submit Button */}
           <button
             type="submit"
             className={`text-white px-4 py-2 rounded-md col-span-2 flex items-center justify-center ${loading ? 'bg-primary/50 disabled:' : 'bg-primary'}`}
           >
-            {loading ? <Spinner /> : 'Create Event'}
+            {loading ? <Spinner /> : event ? 'Update Event' : 'Create Event'}
           </button>
         </form>
         {showAlert && (
@@ -254,7 +477,7 @@ export default function NewEvent() {
             className={`absolute bottom-2 left-1/2 transform -translate-x-1/2 translate-y-5 w-96 p-2 rounded-md text-center ${success ? 'bg-green-100 text-green-500' : 'bg-red-100 text-red-500'}`}
           >
             {success
-              ? 'Event created successfully!'
+              ? event ? 'Event updated successfully!' : 'Event created successfully!'
               : 'Failed to create event!'}
           </div>
         )}

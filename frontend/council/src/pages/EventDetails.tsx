@@ -11,7 +11,6 @@ import {
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import Loader from '../components/Loader';
-import Spinner from '../components/Spinner';
 
 import { Icon as IconType } from 'iconsax-react';
 
@@ -54,26 +53,9 @@ export default function EventDetails() {
   const [loading, setLoading] = useState(true);
   const [snackbarVisible, setSnackbarVisible] = useState(false);
 
-  const [buttonState, setButtonState] = useState<{
-    text: string;
-    loading: boolean;
-    disabled: boolean;
-    onClick: () => void;
-  }>({
-    text: 'Loading...',
-    loading: true,
-    disabled: true,
-    onClick: () => {},
-  });
 
   const { id } = useParams();
   const register = useCallback(() => {
-    setButtonState({
-      text: 'Registering',
-      loading: true,
-      disabled: true,
-      onClick: () => {},
-    });
     axios
       .request({
         baseURL: import.meta.env.VITE_APP_SERVER_ADDRESS,
@@ -87,22 +69,10 @@ export default function EventDetails() {
         },
       })
       .then(() => {
-        setButtonState({
-          text: 'Registered',
-          loading: false,
-          disabled: true,
-          onClick: () => {},
-        });
         setSnackbarVisible(true);
         setTimeout(() => setSnackbarVisible(false), 3000); // Hide after 3 seconds
       })
       .catch(() => {
-        setButtonState({
-          text: 'Register',
-          loading: false,
-          disabled: false,
-          onClick: register,
-        });
       });
   }, [id]);
   const navigate = useNavigate();
@@ -120,109 +90,8 @@ export default function EventDetails() {
         .then((res) => {
           setEvent(res.data.event);
           setLoading(false);
-          if (res.data.event.state == 'REGISTRATION_OPEN') {
-            if (res.data.event.Participant) {
-              setButtonState({
-                text: 'Registered',
-                loading: false,
-                disabled: true,
-                onClick: () => {},
-              });
-            } else {
-              setButtonState({
-                text: 'Register',
-                loading: false,
-                disabled: false,
-                onClick: register,
-              });
-            }
-          } else if (res.data.event.state == 'REGISTRATION_CLOSED') {
-            if (res.data.event.Participant) {
-              setButtonState({
-                text: 'Already registered',
-                loading: false,
-                disabled: true,
-                onClick: () => {},
-              });
-            } else {
-              setButtonState({
-                text: 'Registration Closed',
-                loading: false,
-                disabled: true,
-                onClick: () => {},
-              });
-            }
-          } else if (res.data.event.state == 'TICKET_OPEN') {
-            if (res.data.event.Participant) {
-              if (res.data.event.Participant.attended) {
-                setButtonState({
-                  text: 'View Ticket',
-                  loading: false,
-                  disabled: false,
-                  onClick: () => {
-                    navigate('/ticket/' + res.data.event.id);
-                  },
-                });
-              } else {
-                setButtonState({
-                  text: 'Event is full',
-                  loading: false,
-                  disabled: true,
-                  onClick: () => {},
-                });
-              }
-            } else {
-              setButtonState({
-                text: 'Not registered for this event',
-                loading: false,
-                disabled: true,
-                onClick: () => {},
-              });
-            }
-          } else if (res.data.event.state == 'TICKET_CLOSED') {
-            setButtonState({
-              text: 'Entry closed',
-              loading: false,
-              disabled: true,
-              onClick: () => {},
-            });
-          } else if (res.data.event.state == 'UPCOMING') {
-            setButtonState({
-              text: 'Registrations Opening Soon',
-              loading: false,
-              disabled: true,
-              onClick: () => {},
-            });
-          } else if (res.data.event.state == 'ONGOING') {
-            if (res.data.event.registration_type == 'EXTERNAL') {
-              setButtonState({
-                text: 'Register',
-                loading: false,
-                disabled: false,
-                onClick: () => {
-                  window.location.href =
-                    res.data.event.external_registration_link;
-                },
-              });
-            } else if (res.data.event.start_in_event_activity) {
-              setButtonState({
-                text: 'Start Activity',
-                loading: false,
-                disabled: false,
-                onClick: () => {
-                  window.location.href = res.data.event.in_event_activity;
-                },
-              });
-            } else {
-              setButtonState({
-                text: 'Event is Ongoing',
-                loading: false,
-                disabled: true,
-                onClick: () => {},
-              });
-            }
-          }
-        });
+        }
+      )
     };
     if (id) fetchEvent(id);
   }, [id, navigate, register]);
@@ -232,7 +101,7 @@ export default function EventDetails() {
   } else
     return (
       <>
-        <div className="w-full max-w-sm mx-auto">
+        <div className="w-full max-w-sm mx-auto pb-4">
           <div
             className="aspect-square relative"
             style={{ backgroundImage: event?.event_page_image_url }}
@@ -369,18 +238,11 @@ export default function EventDetails() {
             />
           </div>
 
-          <div className="fixed bottom-0 left-0 w-screen p-4 bg-background">
-            <button
-              className="w-full max-w-sm mx-auto rounded-full bg-primary text-center flex flex-row items-center justify-center gap-2 h-12"
-              disabled={buttonState.disabled}
-              onClick={buttonState.onClick}
+            <Link to="./edit"
+              className="w-[90%] max-w-sm mx-auto rounded-full bg-primary text-center flex items-center justify-center gap-2 h-12 font-fira normal-case text-lg text-white"
             >
-              {buttonState.loading && <Spinner />}
-              <h2 className="font-fira normal-case text-lg text-white">
-                {buttonState.text}
-              </h2>
-            </button>
-          </div>
+                Edit
+            </Link>
         </div>
         {snackbarVisible && (
           <div className="fixed bottom-5 left-1/2 transform -translate-x-1/2 w-96 bg-green-400 text-white p-4 rounded-md z-40 flex gap-4">

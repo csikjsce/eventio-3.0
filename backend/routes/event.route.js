@@ -163,6 +163,7 @@ router.post(protected + "/get/:id", authCheck, async (req, res) => {
             organizer: event.organizer,
             state: event.state,
             name: event.name,
+            tag_line: event.tag_line,
             Participant:
                 event.Participant.length == 0 ? false : event.Participant[0],
             start_in_event_activity: event.start_in_event_activity,
@@ -298,6 +299,12 @@ router.post(
 
         let field = req.body;
 
+        field.logo_image__url = field.logo_image_url;
+        delete field.logo_image_url;
+
+        delete field.organizer;
+        delete field.Participant;
+
         if (field.dates && field.dates.length) {
             field.dates = field.dates.map((d) => new Date(d));
         }
@@ -313,6 +320,7 @@ router.post(
                 message: "Event updated successfully",
             });
         } catch (err) {
+            console.error(err);
             logger.error(err);
             return res.status(500).json({
                 error: true,

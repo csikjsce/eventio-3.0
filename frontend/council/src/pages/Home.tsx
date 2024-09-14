@@ -7,6 +7,15 @@ import { Link } from 'react-router-dom';
 export default function Home() {
   const { userData } = useContext(UserDataContext);
   const { eventsData } = useContext(EventsDataContext);
+  const events = [
+    ...(eventsData?.UPCOMING || []),
+    ...(eventsData?.ONGOING || []),
+    ...(eventsData?.REGISTRATION_OPEN || []),
+    ...(eventsData?.REGISTRATION_CLOSED || []),
+    ...(eventsData?.TICKET_OPEN || []),
+    ...(eventsData?.TICKET_CLOSED || []),
+    ...(eventsData?.ONGOING || []),
+  ];
   return (
     <div className="p-8 flex flex-col gap-6 overflow-y-auto">
       <div className="flex gap-3 text-foreground">
@@ -30,25 +39,7 @@ export default function Home() {
         </Link>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4">
-        {eventsData?.REGISTRATION_OPEN?.map((event) => (
-          <EventCard key={event.id} event={event} />
-        ))}
-        {eventsData?.REGISTRATION_OPEN?.map((event) => (
-          <EventCard key={event.id} event={event} />
-        ))}
-        {eventsData?.REGISTRATION_OPEN?.map((event) => (
-          <EventCard key={event.id} event={event} />
-        ))}
-        {eventsData?.REGISTRATION_OPEN?.map((event) => (
-          <EventCard key={event.id} event={event} />
-        ))}
-        {eventsData?.REGISTRATION_OPEN?.map((event) => (
-          <EventCard key={event.id} event={event} />
-        ))}
-        {eventsData?.REGISTRATION_OPEN?.map((event) => (
-          <EventCard key={event.id} event={event} />
-        ))}
-        {eventsData?.REGISTRATION_OPEN?.map((event) => (
+        {events.map((event) => (
           <EventCard key={event.id} event={event} />
         ))}
       </div>

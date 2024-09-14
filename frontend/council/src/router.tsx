@@ -21,7 +21,10 @@ const router = createBrowserRouter(
           <Route index Component={Home} />
           <Route path="calendar" Component={Home} />
           <Route path="new-event" Component={NewEvent} />
-          <Route path="event-details/:id" Component={EventDetails} />
+          <Route path="event-details/:id">
+            <Route index Component={EventDetails} />
+            <Route path="edit" Component={NewEvent} />
+          </Route>
         </Route>
       </Route>
       <Route path="login" Component={Login} />
