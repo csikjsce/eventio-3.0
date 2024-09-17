@@ -114,23 +114,23 @@ enum ROLE {
 model User {
   id                 Int                @id @default(autoincrement())
   email              String             @unique
-  google_id          String             @unique
+  google_id          String?            @unique
   degree             String?
   branch             BRANCH?
   gender             GENDER?
   interests          String[]
   name               String
   phone_number       String?            @unique
-  photo_url          String
-  roll_number        String?            
+  photo_url          String?
+  roll_number        String?
   year               Int?
   role               ROLE               @default(USER)
   about              String?
   college            String?
-  is_somaiya_student Boolean
+  is_somaiya_student Boolean?
   council_type       String?
   created_at         DateTime           @default(now())
-  updated_at         DateTime           @updatedAt
+  updated_at         DateTime?          @updatedAt
   refresh_token      String?            @unique
   Events             Events[]
   Participant        Participant[]

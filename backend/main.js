@@ -35,8 +35,15 @@ passport.use(
                 let email = profile.emails[0].value;
                 let is_somaiya_student = email.split("@")[1] == "somaiya.edu";
                 try {
-                    let user = await prisma.user.create({
-                        data: {
+                    let user = await prisma.user.upsert({
+                        where: { email: email },
+                        update: {
+                            google_id: profile.id,
+                            name: profile.displayName,
+                            photo_url: profile.photos[0].value,
+                            is_somaiya_student: is_somaiya_student,
+                        },
+                        create: {
                             google_id: profile.id,
                             email: email,
                             name: profile.displayName,
@@ -50,12 +57,12 @@ passport.use(
                     logger.error(err);
                     return done(
                         new Error("error fetching/creating user"),
-                        null
+                        null,
                     );
                 }
             }
-        }
-    )
+        },
+    ),
 );
 passport.serializeUser((user, done) => {
     done(null, user);
@@ -74,7 +81,7 @@ passport.deserializeUser(async (user, done) => {
 //middlewares
 app.use(passport.initialize());
 app.use(
-    session({ secret: "secretkey", resave: false, saveUninitialized: true })
+    session({ secret: "secretkey", resave: false, saveUninitialized: true }),
 );
 app.use(passport.session());
 app.use(httpLogger);
@@ -83,7 +90,7 @@ app.use(
     cors({
         origin: "*",
         credentials: true,
-    })
+    }),
 );
 
 // version
