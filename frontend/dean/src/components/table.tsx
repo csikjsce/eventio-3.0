@@ -76,7 +76,7 @@ export default function IntegratedTableModal() {
     };
 
     return (
-        <div>
+        <div className="flex">
             <ul
                 role="list"
                 className="divide-y ml-20 mt-9 scale-110 divide-gray-300"
@@ -181,12 +181,6 @@ export default function IntegratedTableModal() {
                     </li>
                 ))}
             </ul>
-            <a
-                href="#"
-                className="flex w-full items-center justify-center rounded-md bg-white px-3 ml-8 mt-5 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus-visible:outline-offset-0"
-            >
-                View all
-            </a>
 
             <Transition.Root show={open} as={Fragment}>
                 <Dialog as="div" className="relative z-10" onClose={setOpen}>

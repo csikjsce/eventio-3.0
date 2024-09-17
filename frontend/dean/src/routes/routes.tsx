@@ -19,7 +19,6 @@ const router = createBrowserRouter(
                 <Route Component={SidebarLayout}>
                     <Route index Component={EventRoute} />
                     <Route path="calendar" Component={Calander} />
-                    <Route path="event-details/:id"></Route>
                 </Route>
             </Route>
             <Route path="login" Component={Login} />

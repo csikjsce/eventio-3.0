@@ -46,7 +46,7 @@ export default function Sidebar() {
     ];
 
     return (
-        <div className="fixed top-1/2 left-0 h-[96%] ml-6 w-74 bg-[#f3f3f3] rounded-2xl px-9 py-14 overflow-y-auto transform -translate-y-1/2">
+        <div className="fixed top-1/2 left-0 h-[96%] bg-[#f3f3f3] ml-4 rounded-2xl px-9 py-14 overflow-y-auto transform -translate-y-1/2">
             <nav className="flex flex-col h-full justify-between">
                 <div>
                     <header className="flex justify-between gap-3.5 whitespace-nowrap">
