@@ -1,62 +1,24 @@
-import { useState, Fragment } from "react";
+import { useState, useContext, Fragment } from "react";
 import { CheckIcon } from "@heroicons/react/20/solid";
 import { Dialog, Transition } from "@headlessui/react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
-
-const people = [
-    {
-        name: "CSI KJSCE",
-        event: "Road to Programming",
-        venue: "Auditorium",
-        time: "7 - 9 pm",
-        description:
-            "RTP is the fuckoing sdsdfsdf s fs fs kdlkajlskdjhflkasjdhlk lakjsdh ",
-        fulldescription:
-            "RTP blkajdsblfkjablkjdsfblalakjsf laksjdbf alskjdfb alksdjfb alskdjfb alsdkjfb alskdjfb lkajsdfb laksjdfb aslkdjfb asldkfjb lakjbsdf alksjdf ",
-        imageUrl:
-            "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-        href: "#",
-    },
-    {
-        name: "Michael Foster",
-        email: "michael.foster@example.com",
-        imageUrl:
-            "https://images.unsplash.com/photo-1519244703995-f4e0f30006d5?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-        href: "#",
-    },
-    {
-        name: "Dries Vincent",
-        email: "dries.vincent@example.com",
-        imageUrl:
-            "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-        href: "#",
-    },
-    {
-        name: "Lindsay Walton",
-        email: "lindsay.walton@example.com",
-        imageUrl:
-            "https://images.unsplash.com/photo-1517841905240-472988babdf9?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-        href: "#",
-    },
-    {
-        name: "Courtney Henry",
-        email: "courtney.henry@example.com",
-        imageUrl:
-            "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-        href: "#",
-    },
-    {
-        name: "Tom Cook",
-        email: "tom.cook@example.com",
-        imageUrl:
-            "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-        href: "#",
-    },
-];
+import EventsDataContext from "../contexts/EventsDataContext";
 
 export default function IntegratedTableModal() {
+    const { eventsData } = useContext(EventsDataContext);
+    const events = [
+        ...(eventsData?.UPCOMING || []),
+        ...(eventsData?.ONGOING || []),
+        ...(eventsData?.REGISTRATION_OPEN || []),
+        ...(eventsData?.REGISTRATION_CLOSED || []),
+        ...(eventsData?.TICKET_OPEN || []),
+        ...(eventsData?.TICKET_CLOSED || []),
+        ...(eventsData?.ONGOING || []),
+    ];
+    console.log(eventsData);
+
     const [open, setOpen] = useState(false);
-    const [selectedPerson, setSelectedPerson] = useState(null);
+    const [selectedevent, setSelectedevent] = useState(null);
 
     const handleApprove = (e) => {
         e.stopPropagation();
@@ -70,8 +32,8 @@ export default function IntegratedTableModal() {
         console.log("Rejected");
     };
 
-    const openModal = (person) => {
-        setSelectedPerson(person);
+    const openModal = (event) => {
+        setSelectedevent(event);
         setOpen(true);
     };
 
@@ -81,11 +43,11 @@ export default function IntegratedTableModal() {
                 role="list"
                 className="divide-y ml-20 mt-9 scale-110 divide-gray-300"
             >
-                {people.map((person, index) => (
+                {events.map((event, index) => (
                     <li
                         key={index}
                         className="flex items-center justify-between gap-x-6 py-5 cursor-pointer"
-                        onClick={() => openModal(person)}
+                        onClick={() => openModal(event)}
                     >
                         <div
                             className="flex min-w-0 gap-x-4 "
@@ -94,16 +56,16 @@ export default function IntegratedTableModal() {
                             <div className="flex items-top">
                                 <img
                                     className="h-12 w-12 rounded-full bg-gray-50"
-                                    src={person.imageUrl}
+                                    src={event.organizer.photo_url}
                                     alt=""
                                 />
                             </div>
                             <div className="min-w-0 flex-auto">
                                 <p className="text-xl font-semibold leading-6 text-gray-900">
-                                    {person.name}
+                                    {event.organizer.name}
                                 </p>
                                 <p className="mt-1 truncate text-lg leading-5 text-gray-700">
-                                    {person.event}
+                                    {event.event}
                                 </p>
                                 <div className="flex flex-row gap-6">
                                     <p className="mt-2 -ml-1 flex flex-row truncate text-md leading-5 text-gray-700">
@@ -121,7 +83,14 @@ export default function IntegratedTableModal() {
                                                 d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
                                             />
                                         </svg>
-                                        {person.time}
+                                        {(event?.dates[0] &&
+                                            new Date(
+                                                event?.dates[0],
+                                            ).toLocaleTimeString("en-US", {
+                                                hour: "2-digit",
+                                                minute: "2-digit",
+                                            })) ||
+                                            ""}
                                     </p>
                                     <p className="mt-2 flex flex-row truncate text-md leading-5 text-gray-700">
                                         <svg
@@ -143,11 +112,11 @@ export default function IntegratedTableModal() {
                                                 d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z"
                                             />
                                         </svg>
-                                        {person.venue}
+                                        {event.venue}
                                     </p>
                                 </div>
                                 <p className="text-md mt-3 overflow-wrap break-word leading-5 text-gray-500">
-                                    {person.description}
+                                    {event.description}
                                 </p>
                             </div>
                         </div>
@@ -227,7 +196,10 @@ export default function IntegratedTableModal() {
                                         <div className="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
                                             <img
                                                 className=" scale-110 rounded-full bg-gray-50"
-                                                src={selectedPerson?.imageUrl}
+                                                src={
+                                                    selectedevent?.organizer
+                                                        .photo_url
+                                                }
                                                 alt=""
                                             />
                                         </div>
@@ -236,14 +208,14 @@ export default function IntegratedTableModal() {
                                                 as="h3"
                                                 className="text-lg font-semibold leading-6 text-gray-900"
                                             >
-                                                {selectedPerson
-                                                    ? selectedPerson.name
+                                                {selectedevent
+                                                    ? selectedevent.name
                                                     : "Event Details"}
                                             </Dialog.Title>
                                             <div className="mt-2">
                                                 <p className="text-md text-gray-500">
-                                                    {selectedPerson
-                                                        ? selectedPerson.fulldescription
+                                                    {selectedevent
+                                                        ? selectedevent.long_description
                                                         : "No description available."}
                                                 </p>
                                             </div>

@@ -8,12 +8,12 @@ import { axiosCall } from "../lib/api";
 import axios from "axios";
 
 export default function Protected() {
-    const [events, setEvents] = useState<Events | null>(null);
+    const [eventsData, setEventsData] = useState<Events | null>(null);
     const [userData, setUserData] = useState<User | null>(null);
 
     useEffect(() => {
-        console.log(events);
-    }, [events]);
+        console.log(eventsData);
+    }, [eventsData]);
 
     const navigate = useNavigate();
 
@@ -52,9 +52,9 @@ export default function Protected() {
                     throw new Error("error fetching");
                 }
                 if (response && response.events) {
-                    setEvents(response.events);
+                    setEventsData(response.events);
                 } else {
-                    setEvents(null);
+                    setEventsData(null);
                 }
             } catch (err) {
                 console.error(err);
@@ -96,7 +96,7 @@ export default function Protected() {
 
     return (
         <UserDataContext.Provider value={{ userData, setUserData }}>
-            <EventsDataContext.Provider value={{ events, setEvents }}>
+            <EventsDataContext.Provider value={{ eventsData, setEventsData }}>
                 <Outlet />
             </EventsDataContext.Provider>
         </UserDataContext.Provider>
