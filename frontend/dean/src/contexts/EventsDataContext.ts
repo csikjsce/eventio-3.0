@@ -1,9 +1,16 @@
 import { createContext } from "react";
-import { EventsDataContextInterface } from "../types/eventsDataContextInterface";
+import { Dispatch } from "react";
 
-const eventsData = {
-    events: null,
-    setEvents: null,
+interface EventsDataContextInterface {
+    eventsData: Events | null;
+    setEventsData: Dispatch<Events> | null;
+}
+
+const data = {
+    eventsData: null,
+    setEventsData: null,
 };
 
-e;
+const EventsDataContext = createContext<EventsDataContextInterface>(data);
+
+export default EventsDataContext;

@@ -1,22 +1,31 @@
 import EventRoute from "../screens/home/event";
-import Sidebar from "../components/sidebar";
 import Calander from "../screens/home/calander";
-import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import Login from "../screens/Login";
+import Logout from "../screens/Logout";
 
-function App() {
-    return (
-        <Router>
-            <div className="p-4 flex flex-row gap-4">
-                <div>
-                    <Sidebar />
-                    <Routes>
-                        <Route path="/events" element={<EventRoute />} />
-                        <Route path="/calendar" element={<Calander />} />
-                    </Routes>
-                </div>
-            </div>
-        </Router>
-    );
-}
+import {
+    createBrowserRouter,
+    createRoutesFromElements,
+    Route,
+} from "react-router-dom";
 
-export default App;
+import Protected from "../layouts/Protected";
+import SidebarLayout from "../layouts/SidebarLayout";
+
+const router = createBrowserRouter(
+    createRoutesFromElements(
+        <Route path="/">
+            <Route Component={Protected}>
+                <Route Component={SidebarLayout}>
+                    <Route index Component={EventRoute} />
+                    <Route path="calendar" Component={Calander} />
+                    <Route path="event-details/:id"></Route>
+                </Route>
+            </Route>
+            <Route path="login" Component={Login} />
+            <Route path="logout" Component={Logout} />
+        </Route>,
+    ),
+);
+
+export default router;

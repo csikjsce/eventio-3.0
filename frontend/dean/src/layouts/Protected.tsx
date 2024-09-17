@@ -4,12 +4,16 @@ import { UserDataContext } from "../contexts/userContext";
 import EventsDataContext from "../contexts/EventsDataContext";
 import { useNavigate, Outlet } from "react-router-dom";
 
-import { axiosCall } from "../utils/api";
+import { axiosCall } from "../lib/api";
 import axios from "axios";
 
 export default function Protected() {
     const [events, setEvents] = useState<Events | null>(null);
     const [userData, setUserData] = useState<User | null>(null);
+
+    useEffect(() => {
+        console.log(events);
+    }, [events]);
 
     const navigate = useNavigate();
 

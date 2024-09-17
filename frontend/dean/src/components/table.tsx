@@ -1,10 +1,7 @@
-import React, { useState, Fragment } from "react";
+import { useState, Fragment } from "react";
 import { CheckIcon } from "@heroicons/react/20/solid";
 import { Dialog, Transition } from "@headlessui/react";
-import {
-    ExclamationTriangleIcon,
-    XMarkIcon,
-} from "@heroicons/react/24/outline";
+import { XMarkIcon } from "@heroicons/react/24/outline";
 
 const people = [
     {
@@ -14,7 +11,8 @@ const people = [
         time: "7 - 9 pm",
         description:
             "RTP is the fuckoing sdsdfsdf s fs fs kdlkajlskdjhflkasjdhlk lakjsdh ",
-        fulldescription: "RTP blkajdsblfkjablkjdsfblalakjsf laksjdbf alskjdfb alksdjfb alskdjfb alsdkjfb alskdjfb lkajsdfb laksjdfb aslkdjfb asldkfjb lakjbsdf alksjdf ",    
+        fulldescription:
+            "RTP blkajdsblfkjablkjdsfblalakjsf laksjdbf alskjdfb alksdjfb alskdjfb alsdkjfb alskdjfb lkajsdfb laksjdfb aslkdjfb asldkfjb lakjbsdf alksjdf ",
         imageUrl:
             "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
         href: "#",
@@ -83,9 +81,9 @@ export default function IntegratedTableModal() {
                 role="list"
                 className="divide-y ml-20 mt-9 scale-110 divide-gray-300"
             >
-                {people.map((person) => (
+                {people.map((person, index) => (
                     <li
-                        key={person.email}
+                        key={index}
                         className="flex items-center justify-between gap-x-6 py-5 cursor-pointer"
                         onClick={() => openModal(person)}
                     >

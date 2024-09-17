@@ -1,10 +1,18 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
-import { Gift, Calendar, Logout } from "iconsax-react";
+// import { Gift, Calendar, Logout, Icon as IconType } from "iconsax-react";
 import Eventio from "../assets/Eventio.svg";
-import PopoverCustomAnimation from "../components/popoverbutton";
+// import PopoverCustomAnimation from "../components/popoverbutton";
 
-const MenuItem = ({ Icon, href, children }) => (
+const MenuItem = ({
+    // Icon,
+    href,
+    children,
+}: {
+    // Icon: IconType;
+    href: string;
+    children: React.ReactNode;
+}) => (
     <NavLink to={href} className="hover:cursor-pointer hover:drop-shadow-xl">
         {({ isActive }) => (
             <div
@@ -12,11 +20,11 @@ const MenuItem = ({ Icon, href, children }) => (
                     isActive ? "text-[#b61f2d]" : "text-gray-600"
                 }`}
             >
-                <Icon
+                {/* <Icon
                     size="26"
                     variant={isActive ? "Bold" : "Linear"}
                     color={isActive ? "#b61f2d" : "currentColor"}
-                />
+                /> */}
                 <div className="flex-auto">{children}</div>
             </div>
         )}
@@ -25,8 +33,16 @@ const MenuItem = ({ Icon, href, children }) => (
 
 export default function Sidebar() {
     const menuItems = [
-        { icon: Gift, text: "Events", href: "/events" },
-        { icon: Calendar, text: "Calendar", href: "/calendar" },
+        {
+            text: "Events",
+            href: "/",
+            // Icon: Gift,
+        },
+        {
+            text: "Calendar",
+            href: "/calendar",
+            // Icon: Calendar,
+        },
     ];
 
     return (
@@ -53,8 +69,8 @@ export default function Sidebar() {
                         {menuItems.map((item, index) => (
                             <MenuItem
                                 key={index}
-                                Icon={item.icon}
                                 href={item.href}
+                                // Icon={item.Icon}
                             >
                                 {item.text}
                             </MenuItem>
@@ -65,7 +81,6 @@ export default function Sidebar() {
                     </div>
                 </div>
                 <footer className="flex gap-4 text-gray-600 mt-auto pb-12">
-                    <Logout size="26" variant="Bold" />
                     <div className="font-poppins">Logout</div>
                 </footer>
             </nav>
