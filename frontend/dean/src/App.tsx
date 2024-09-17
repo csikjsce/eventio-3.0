@@ -1,25 +1,8 @@
-import { useState } from "react";
-import React from "react";
-import Sidebar from "./components/sidebar";
-import EventRoute from "./screens/home/event";
-import Calander from "./screens/home/calander";
-import "./App.css";
-import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import { RouterProvider } from "react-router-dom";
+import router from "../src/routes/routes";
 
 function App() {
-    return (
-        <Router>
-            <div className="p-4 flex flex-row gap-4">
-                <div>
-                    <Sidebar />
-                    <Routes>
-                        <Route path="/events" element={<EventRoute />} />
-                        <Route path="/calendar" element={<Calander />} />
-                    </Routes>
-                </div>
-            </div>
-        </Router>
-    );
+    return <RouterProvider router={router} />;
 }
 
 export default App;
