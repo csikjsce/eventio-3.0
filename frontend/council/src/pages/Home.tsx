@@ -8,7 +8,7 @@ import Calendar from '../components/calendar/Calendar.tsx';
 export default function Home() {
   const { userData } = useContext(UserDataContext);
   const { eventsData } = useContext(EventsDataContext);
-  const events = [
+  const temp = [
     ...(eventsData?.DRAFT || []),
     ...(eventsData?.APPLIED_FOR_APPROVAL || []),
     ...(eventsData?.UNLISTED || []),
@@ -21,6 +21,7 @@ export default function Home() {
     ...(eventsData?.COMPLETED || []),
     ...(eventsData?.PRIVATE || []),
   ];
+  const events = temp.filter((event) => event.organizer_id === userData?.id);
   return (
     <div className="p-8 flex flex-col gap-6 overflow-y-auto">
       <div className="flex gap-3 text-foreground">
