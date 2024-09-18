@@ -34,35 +34,45 @@ passport.use(
             } catch (e) {
                 let email = profile.emails[0].value;
                 let is_somaiya_student = email.split("@")[1] == "somaiya.edu";
+                
                 try {
-                    //check if user is in councils.json 
-                    let councils = require("./data/councils.json");
-                    let council = councils.find((council) => council.email == email);
-                    if (council) {
-                        let User = await prisma.user.create({
+
+                    try{
+                        console.log("ADMIN DHUNDH RHA HU");
+                        
+                        let admin = await prisma.admins.findUnique({
+                            where: { email: email },
+                        });
+                        if(admin){
+                            console.log("ADMIN MIL GYA "); 
+                        }
+                        
+                            let User = await prisma.user.create({
+                                data: {
+                                    google_id: profile.id,
+                                    email: email,
+                                    name: profile.displayName,
+                                    photo_url: profile.photos[0].value,
+                                    is_somaiya_student: is_somaiya_student,
+                                    role: admin.role,
+                                },
+                            });
+                            profile["user_id"] = User.id;
+                            return done(null, profile);
+                    }catch(e){
+                        console.error(e);
+                        let user = await prisma.user.create({
                             data: {
                                 google_id: profile.id,
                                 email: email,
                                 name: profile.displayName,
                                 photo_url: profile.photos[0].value,
                                 is_somaiya_student: is_somaiya_student,
-                                role: "COUNCIL",
                             },
                         });
-                        profile["user_id"] = User.id;
+                        profile["user_id"] = user.id;
                         return done(null, profile);
                     }
-                    let user = await prisma.user.create({
-                        data: {
-                            google_id: profile.id,
-                            email: email,
-                            name: profile.displayName,
-                            photo_url: profile.photos[0].value,
-                            is_somaiya_student: is_somaiya_student,
-                        },
-                    });
-                    profile["user_id"] = user.id;
-                    return done(null, profile);
                 } catch (err) {
                     logger.error(err);
                     return done(
