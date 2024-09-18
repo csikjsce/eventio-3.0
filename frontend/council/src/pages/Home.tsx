@@ -3,6 +3,7 @@ import UserDataContext from '../contexts/UserDataContext';
 import EventsDataContext from '../contexts/EventsDataContext';
 import EventCard from '../components/EventCard';
 import { Link } from 'react-router-dom';
+import Calendar from '../components/calendar/Calendar.tsx';
 
 export default function Home() {
   const { userData } = useContext(UserDataContext);
@@ -33,6 +34,7 @@ export default function Home() {
           <p className="text-mute">{userData?.email}</p>
         </div>
       </div>
+      <Calendar />
       <div className="flex justify-between items-center">
         <p className="text-2xl text-foreground font-fira">Your Events</p>
         <Link
