@@ -1,8 +1,9 @@
-import { useState, useContext, Fragment } from "react";
+import { useState, useContext, Fragment, useEffect } from "react";
 import { CheckIcon } from "@heroicons/react/20/solid";
 import { Dialog, Transition } from "@headlessui/react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import EventsDataContext from "../contexts/EventsDataContext";
+import axios from "axios";
 
 export default function IntegratedTableModal() {
     const { eventsData } = useContext(EventsDataContext);
@@ -14,31 +15,79 @@ export default function IntegratedTableModal() {
         ...(eventsData?.TICKET_OPEN || []),
         ...(eventsData?.TICKET_CLOSED || []),
         ...(eventsData?.ONGOING || []),
+        ...(eventsData?.APPLIED_FOR_APPROVAL || []),
     ];
     console.log(eventsData);
-
     const [open, setOpen] = useState(false);
     const [selectedevent, setSelectedevent] = useState(null);
-
-    const handleApprove = (e) => {
+    useEffect(() => {
+        console.log(events);
+    }
+    , [events]);
+    
+    const handleApprove = (e, event_id) => {
         e.stopPropagation();
-        // idhar logic daal lode
-        console.log("Approved");
+        try{
+            axios
+            .request({
+                baseURL: import.meta.env.VITE_APP_SERVER_ADDRESS,
+                url: "/api/v1" + "/event/p/update/" + event_id,
+                method: "POST",
+                headers: {
+                          Authorization:
+                              "Bearer " + localStorage.getItem("accessToken"),
+                      },
+                data: {
+                    state: "UNLISTED",
+                },
+            }).then((response) => {
+                console.log(response.data);
+                window.location.reload();
+            }
+            )
+        }catch(err){
+            console.error(err);
+        }
+    
+        
     };
-
-    const handleReject = (e) => {
+    const handleReject = (e, event_id) => {
         e.stopPropagation();
-        // idahr bhi
-        console.log("Rejected");
+        try{
+            axios
+            .request({
+                baseURL: import.meta.env.VITE_APP_SERVER_ADDRESS,
+                url: "/api/v1" + "/event/p/update/" + event_id,
+                method: "POST",
+                headers: {
+                          Authorization:
+                              "Bearer " + localStorage.getItem("accessToken"),
+                      },
+                data: {
+                    state: "DRAFT",
+                },
+            }).then((response) => {
+                console.log(response.data);
+                window.location.reload();
+            }
+            )
+        }catch(err){
+            console.error(err);
+        }
+    
+        
     };
-
     const openModal = (event) => {
         setSelectedevent(event);
         setOpen(true);
     };
-
+    
+    if (events.length === 0 || !events) {
+        return <div className="flex p-4 pl-10 text-2xl">No events left for approval</div>;
+    }
     return (
         <div className="flex">
+
             <ul
                 role="list"
                 className="divide-y ml-20 mt-9 scale-110 divide-gray-300"
@@ -122,13 +171,13 @@ export default function IntegratedTableModal() {
                         </div>
                         <div className="flex flex-row gap-4">
                             <button
-                                onClick={handleApprove}
+                                onClick={(e) => handleApprove(e, event.id)}
                                 className="group relative flex items-center rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-green-300 transition-all duration-300 ease-in-out overflow-hidden"
                             >
                                 <CheckIcon className="h-5 w-5" />
                             </button>
                             <button
-                                onClick={handleReject}
+                                onClick={(e) => handleReject(e, event.id)}
                                 className="group relative flex items-center rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-red-300 transition-all duration-300 ease-in-out overflow-hidden"
                             >
                                 <svg

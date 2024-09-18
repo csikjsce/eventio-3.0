@@ -41,6 +41,7 @@ interface EventData {
     start_in_event_activity?: boolean;
 }
 
+
 // Interface for the Events object
 interface Events {
     UPCOMING: EventData[];
@@ -49,6 +50,7 @@ interface Events {
     TICKET_CLOSED: EventData[];
     TICKET_OPEN: EventData[];
     ONGOING: EventData[];
+    APPLIED_FOR_APPROVAL: EventData[];
 }
 
 // TypeScript Interface for User Data

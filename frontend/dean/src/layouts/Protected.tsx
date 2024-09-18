@@ -26,12 +26,6 @@ export default function Protected() {
                 }
                 if (response && response.user) {
                     setUserData(response.user);
-                    if (
-                        response.user.phone_number == null ||
-                        response.user.roll_number == null
-                    ) {
-                        navigate("/getting-started");
-                    }
                     return { status: 200 };
                 } else {
                     setUserData(null);
