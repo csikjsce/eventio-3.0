@@ -122,7 +122,7 @@ model User {
   name               String
   phone_number       String?            @unique
   photo_url          String
-  roll_number        String?            
+  roll_number        String?
   year               Int?
   role               ROLE               @default(USER)
   about              String?
@@ -183,5 +183,5 @@ model Participant_user {
 model Admins {
   id                 Int                @id @default(autoincrement())
   email              String             @unique
-  role               ROLE               @default(USER)
+  role               ROLE               @default(COUNCIL)
 }
