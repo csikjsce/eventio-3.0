@@ -83,7 +83,7 @@ export default function Calendar() {
   };
 
   return (
-    <div className="flex gap-10 sm:divide-x justify-center  h-full items-center sm:flex-row flex-col mt-10">
+    <div className="flex gap-10 sm:divide-x justify-center h-full sm:flex-row flex-col mt-10">
       <div className="w-full h-full px-5">
         <div className="flex justify-between items-center">
           <div className="flex gap-5 items-center">
@@ -153,7 +153,7 @@ export default function Calendar() {
           )}
         </div>
       </div>
-      <div className="w-full max-w-sm p-6">
+      <div className="w-full max-w-lg p-6">
         <h1 className="font-semibold text-foreground ">
           {getEventsForDate(selectDate).length !== 0
             ? `Schedule for ${selectDate.format('MMMM D, YYYY')}`

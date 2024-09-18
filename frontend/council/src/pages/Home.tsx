@@ -45,7 +45,7 @@ export default function Home() {
           Create New
         </Link>
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4">
+      <div className="flex flex-col gap-4">
         {events.map((event) => (
           <EventCard key={event.id} event={event} />
         ))}

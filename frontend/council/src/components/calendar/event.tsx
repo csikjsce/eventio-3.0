@@ -41,11 +41,11 @@ const Event = (props: Props) => {
         <img
           src={props.image}
           alt="council image"
-          className="w-full aspect-square object-cover rounded-full"
+          className="w-full aspect-square object-cover rounded-full p-1"
         />
       </div>
 
-      <div className="bg-card  flex flex-1 flex-col items-start p-1 pl-2">
+      <div className="bg-card flex flex-1 flex-col justify-center items-start p-1 pl-2">
         <h2 className="font-marcellus text-left text-foreground ">
           {props?.title}
         </h2>

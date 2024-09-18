@@ -101,10 +101,10 @@ export const newEventSchema = yup.object({
 
   state: yup
     .string()
-    .oneOf(
-      [
-        'DRAFT',
-        'APPLIED_FOR_APPROVAL',
+    .required('State is required')
+    .test('is-valid-state', 'Invalid state', function (value) {
+      const draftStates = ['DRAFT', 'APPLIED_FOR_APPROVAL'];
+      const otherStates = [
         'UNLISTED',
         'UPCOMING',
         'REGISTRATION_OPEN',
@@ -114,11 +114,13 @@ export const newEventSchema = yup.object({
         'ONGOING',
         'COMPLETED',
         'PRIVATE',
-      ],
-      'Invalid state',
-    )
-    .default('DRAFT')
-    .required('State is required'),
+      ];
+      if (draftStates.includes(this.parent.state)) {
+        return draftStates.includes(value);
+      }
+      return otherStates.includes(value);
+    })
+    .default('DRAFT'),
 
   banner_url: yup
     .string()

@@ -45,6 +45,8 @@ export default function NewEvent() {
   const [showAlert, setShowAlert] = useState(false);
   const [success, setSuccess] = useState(false);
 
+  const eventState = watch('state');
+
   useEffect(() => {
     if (id) {
       axios
@@ -140,7 +142,6 @@ export default function NewEvent() {
       setShowAlert(false);
       navigate('/');
     }, 2000);
-
   };
 
   const eventType = watch('event_type');
@@ -464,6 +465,43 @@ export default function NewEvent() {
             </p>
           </div>
 
+          {/* State */}
+          {event && (
+            <div>
+              <label className="block text-foreground">State</label>
+              <select
+                className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
+                {...register('state')}
+              >
+                {/* Render options based on current value */}
+                {eventState === 'DRAFT' ||
+                eventState === 'APPLIED_FOR_APPROVAL' ? (
+                  <>
+                    <option value="DRAFT">Draft</option>
+                    <option value="APPLIED_FOR_APPROVAL">
+                      Applied for Approval
+                    </option>
+                  </>
+                ) : (
+                  <>
+                    <option value="UNLISTED">Unlisted</option>
+                    <option value="UPCOMING">Upcoming</option>
+                    <option value="REGISTRATION_OPEN">Registration Open</option>
+                    <option value="REGISTRATION_CLOSED">
+                      Registration Closed
+                    </option>
+                    <option value="TICKET_OPEN">Ticket Open</option>
+                    <option value="TICKET_CLOSED">Ticket Closed</option>
+                    <option value="ONGOING">Ongoing</option>
+                    <option value="COMPLETED">Completed</option>
+                    <option value="PRIVATE">Private</option>
+                  </>
+                )}
+              </select>
+              <p className="text-red-500">{errors.state?.message}</p>
+            </div>
+          )}
+
           {/* Submit Button */}
           <button
             type="submit"
@@ -477,7 +515,9 @@ export default function NewEvent() {
             className={`absolute bottom-2 left-1/2 transform -translate-x-1/2 translate-y-5 w-96 p-2 rounded-md text-center ${success ? 'bg-green-100 text-green-500' : 'bg-red-100 text-red-500'}`}
           >
             {success
-              ? event ? 'Event updated successfully!' : 'Event created successfully!'
+              ? event
+                ? 'Event updated successfully!'
+                : 'Event created successfully!'
               : 'Failed to create event!'}
           </div>
         )}
