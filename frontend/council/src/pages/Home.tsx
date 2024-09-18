@@ -8,13 +8,17 @@ export default function Home() {
   const { userData } = useContext(UserDataContext);
   const { eventsData } = useContext(EventsDataContext);
   const events = [
+    ...(eventsData?.DRAFT || []),
+    ...(eventsData?.APPLIED_FOR_APPROVAL || []),
+    ...(eventsData?.UNLISTED || []),
     ...(eventsData?.UPCOMING || []),
-    ...(eventsData?.ONGOING || []),
     ...(eventsData?.REGISTRATION_OPEN || []),
     ...(eventsData?.REGISTRATION_CLOSED || []),
     ...(eventsData?.TICKET_OPEN || []),
     ...(eventsData?.TICKET_CLOSED || []),
     ...(eventsData?.ONGOING || []),
+    ...(eventsData?.COMPLETED || []),
+    ...(eventsData?.PRIVATE || []),
   ];
   return (
     <div className="p-8 flex flex-col gap-6 overflow-y-auto">

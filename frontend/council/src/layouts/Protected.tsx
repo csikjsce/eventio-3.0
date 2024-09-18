@@ -9,6 +9,10 @@ export default function Protected() {
   const [userData, setUserData] = useState<User | null>(null);
   const [eventsData, setEventsData] = useState<Events | null>(null);
 
+  useEffect(() => {
+    console.log(eventsData);
+  }, [eventsData]);
+
   const navigate = useNavigate();
 
   useEffect(() => {
