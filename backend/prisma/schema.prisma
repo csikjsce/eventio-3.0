@@ -122,7 +122,7 @@ model User {
   name               String
   phone_number       String?            @unique
   photo_url          String
-  roll_number        String?            
+  roll_number        String?
   year               Int?
   role               ROLE               @default(USER)
   about              String?
@@ -178,4 +178,10 @@ model Participant_user {
   user           User @relation(fields: [user_id], references: [id])
 
   @@id([participant_id, user_id])
+}
+
+model Admins {
+  id                 Int                @id @default(autoincrement())
+  email              String             @unique
+  role               ROLE               @default(COUNCIL)
 }

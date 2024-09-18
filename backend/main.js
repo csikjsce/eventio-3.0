@@ -34,18 +34,45 @@ passport.use(
             } catch (e) {
                 let email = profile.emails[0].value;
                 let is_somaiya_student = email.split("@")[1] == "somaiya.edu";
+                
                 try {
-                    let user = await prisma.user.create({
-                        data: {
-                            google_id: profile.id,
-                            email: email,
-                            name: profile.displayName,
-                            photo_url: profile.photos[0].value,
-                            is_somaiya_student: is_somaiya_student,
-                        },
-                    });
-                    profile["user_id"] = user.id;
-                    return done(null, profile);
+
+                    try{
+                        console.log("ADMIN DHUNDH RHA HU");
+                        
+                        let admin = await prisma.admins.findUnique({
+                            where: { email: email },
+                        });
+                        if(admin){
+                            console.log("ADMIN MIL GYA "); 
+                        }
+                        
+                            let User = await prisma.user.create({
+                                data: {
+                                    google_id: profile.id,
+                                    email: email,
+                                    name: profile.displayName,
+                                    photo_url: profile.photos[0].value,
+                                    is_somaiya_student: is_somaiya_student,
+                                    role: admin.role,
+                                },
+                            });
+                            profile["user_id"] = User.id;
+                            return done(null, profile);
+                    }catch(e){
+                        console.error(e);
+                        let user = await prisma.user.create({
+                            data: {
+                                google_id: profile.id,
+                                email: email,
+                                name: profile.displayName,
+                                photo_url: profile.photos[0].value,
+                                is_somaiya_student: is_somaiya_student,
+                            },
+                        });
+                        profile["user_id"] = user.id;
+                        return done(null, profile);
+                    }
                 } catch (err) {
                     logger.error(err);
                     return done(

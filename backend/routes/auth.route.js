@@ -11,7 +11,6 @@ router.get("/google", (req, res, next) => {
         ...(process.env.NODE_ENV == "production" && { hd: "somaiya.edu" }),
     })(req, res, next);
 });
-
 router.get(
     "/google/callback",
     passport.authenticate("google", {
@@ -31,7 +30,7 @@ router.get(
             { expiresIn: process.env.RT_EXPIRATION },
         );
 
-        prisma.user
+        const userDB = await prisma.user
             .update({
                 where: { google_id: user.id },
                 data: { refresh_token: refreshToken },
@@ -40,10 +39,20 @@ router.get(
                 logger.error(e);
                 res.redirect(`${process.env.CLIENT_URL}?failure=${500}`);
             });
-
+            let redirectURL;
+            switch (userDB.role) {
+                case "FACULTY":
+                    redirectURL = process.env.FACULTY_CLIENT_URL;
+                    break;
+                case "COUNCIL":
+                    redirectURL = process.env.COUNCIL_CLIENT_URL;
+                    break;
+                default:
+                    redirectURL = process.env.CLIENT_URL;
+            }
         res.redirect(
             `${
-                process.env.CLIENT_URL + process.env.FRONTEND_REDIRECT_PATH
+                redirectURL + process.env.FRONTEND_REDIRECT_PATH
             }?accessToken=${accessToken}&refreshToken=${refreshToken}`,
         );
     },

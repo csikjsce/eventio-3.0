@@ -12,6 +12,76 @@ router.post(protected + "/get", authCheck, async (req, res) => {
     if (!req.user) {
         return res.status(401).json({ error: "Unauthorized" });
     }
+    if(req.user.role === "COUNCIL") {
+        try {
+            let events = [];
+            events= await prisma.events.findMany({
+                where:{
+                    organizer_id: req.user.id
+                },
+                relationLoadStrategy: "join",
+                include: {
+                    organizer: true,
+                },
+            });
+            let event = {};
+            events.forEach((e) => {
+                if (!event[e.state]) [(event[e.state] = [])];
+                event[e.state].push(e);
+            });
+            return res.json({ error: false, events: event, message: "Events fetched successfully" });
+            
+        } catch (err) {
+            console.log(err);
+            return res
+                .status(500)
+                .json({ error: true, message: "Internal Server Error" });
+        }
+    }
+    if(req.user.role === "FACULTY") {
+        try {
+            let events = [];
+            if(req.query.state) {
+                events = await prisma.events.findMany({
+                    where: {
+                        state: {
+                            in: req.query.state,
+                        },
+                    },
+                    relationLoadStrategy: "join",
+                    include: {
+                        organizer: true,
+                    },
+                });
+            } else {
+                events = await prisma.events.findMany({
+                    where: {
+                        state: {
+                            in: [
+                                "APPLIED_FOR_APPROVAL"
+                            ],
+                        },
+                    },
+                    relationLoadStrategy: "join",
+                    include: {
+                        organizer: true,
+                    },
+                });
+            }
+            let event = {};
+            events.forEach((e) => {
+                if (!event[e.state]) [(event[e.state] = [])];
+                event[e.state].push(e);
+            });
+            return res.json({ error: false, events: event, message: "Events fetched successfully for state " });
+        } catch (err) {
+            console.log(err);
+            return res
+                .status(500)
+                .json({ error: true, message: "Internal Server Error" });
+        }
+    }
+
     if (req.user.is_somaiya_student) {
         try {
             let events = [];
@@ -437,4 +507,50 @@ router.post(protected + "/register-for-event", authCheck, async (req, res) => {
     }
 });
 
+router.post(protected + "/update/:id", authCheck, validateUpdateFields, async (req, res) => {
+    if (!req.user) {
+        return res.status(401).json({ error: true, message: "Unauthorized" });
+    }
+    
+    if (req.user.role !== "DEAN") {
+        return res.status(403).json({ error: true, message: "Forbidden: Only DEAN can update event state" });
+    }
+    
+    try {
+        const event = await prisma.events.findUnique({
+            where: {
+                id: parseInt(req.params.id),
+            },
+        });
+        
+        if (!event) {
+            return res.status(404).json({
+                error: true,
+                message: "Event not found",
+            });
+        }
+        
+        const updatedEvent = await prisma.events.update({
+            where: {
+                id: parseInt(req.params.id),
+            },
+            data: {
+                state: req.body.state, 
+            },
+        });
+        
+        return res.status(200).json({
+            error: false,
+            message: "Event state updated successfully",
+            data: updatedEvent,
+        });
+        
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            error: true,
+            message: "Internal Server Error",
+        });
+    }
+});
 module.exports = router;
