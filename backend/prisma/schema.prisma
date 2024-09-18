@@ -179,3 +179,9 @@ model Participant_user {
 
   @@id([participant_id, user_id])
 }
+
+model Admins {
+  id                 Int                @id @default(autoincrement())
+  email              String             @unique
+  role               ROLE               @default(USER)
+}

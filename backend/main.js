@@ -35,7 +35,6 @@ passport.use(
                 let email = profile.emails[0].value;
                 let is_somaiya_student = email.split("@")[1] == "somaiya.edu";
                 try {
-
                     //check if user is in councils.json 
                     let councils = require("./data/councils.json");
                     let council = councils.find((council) => council.email == email);
