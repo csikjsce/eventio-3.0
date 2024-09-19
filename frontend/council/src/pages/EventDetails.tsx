@@ -34,15 +34,15 @@ function IconText({
 
 function Passage({
   title,
-  content,
+  children,
 }: {
   title: string;
-  content: string | JSX.Element;
+  children: React.ReactNode;
 }) {
   return (
     <div className="flex flex-col gap-2 items-start text-left">
       <p className="font-fira text-foreground  text-lg">{title}</p>
-      <p className="font-fira text-mute  text-xs">{content}</p>
+      <p className="font-fira text-mute  text-xs">{children}</p>
     </div>
   );
 }
@@ -52,7 +52,6 @@ export default function EventDetails() {
 
   const [loading, setLoading] = useState(true);
   const [snackbarVisible, setSnackbarVisible] = useState(false);
-
 
   const { id } = useParams();
   const register = useCallback(() => {
@@ -72,8 +71,7 @@ export default function EventDetails() {
         setSnackbarVisible(true);
         setTimeout(() => setSnackbarVisible(false), 3000); // Hide after 3 seconds
       })
-      .catch(() => {
-      });
+      .catch(() => {});
   }, [id]);
   const navigate = useNavigate();
   useEffect(() => {
@@ -90,8 +88,7 @@ export default function EventDetails() {
         .then((res) => {
           setEvent(res.data.event);
           setLoading(false);
-        }
-      )
+        });
     };
     if (id) fetchEvent(id);
   }, [id, navigate, register]);
@@ -218,31 +215,23 @@ export default function EventDetails() {
               <hr className="border-1 border-mute" />
             </div>
             {event?.start_in_event_activity && (
-              <Passage
-                title="Event Activity"
-                content={
-                  (
-                    <a
-                      href={event?.in_event_activity}
-                      className="text-blue-600"
-                    >
-                      {event?.in_event_activity}
-                    </a>
-                  ) || ''
-                }
-              />
+              <Passage title="Event Activity">
+                <a href={event?.in_event_activity} className="text-blue-600">
+                  {event?.in_event_activity || ''}
+                </a>
+              </Passage>
             )}
-            <Passage
-              title="About the Event"
-              content={event?.long_description || ''}
-            />
+            <Passage title="About the Event">
+              {event?.long_description || ''}
+            </Passage>
           </div>
 
-            <Link to="./edit"
-              className="w-[90%] max-w-sm mx-auto rounded-full bg-primary text-center flex items-center justify-center gap-2 h-12 font-fira normal-case text-lg text-white"
-            >
-                Edit
-            </Link>
+          <Link
+            to="./edit"
+            className="w-[90%] max-w-sm mx-auto rounded-full bg-primary text-center flex items-center justify-center gap-2 h-12 font-fira normal-case text-lg text-white"
+          >
+            Edit
+          </Link>
         </div>
         {snackbarVisible && (
           <div className="fixed bottom-5 left-1/2 transform -translate-x-1/2 w-96 bg-green-400 text-white p-4 rounded-md z-40 flex gap-4">

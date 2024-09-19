@@ -21,7 +21,9 @@ export default function Home() {
     ...(eventsData?.COMPLETED || []),
     ...(eventsData?.PRIVATE || []),
   ];
-  const events = temp.filter((event) => event.organizer_id === userData?.id);
+  const events = temp.filter(
+    (event) => event.organizer_id === Number(userData?.id),
+  );
   return (
     <div className="p-8 flex flex-col gap-6 overflow-y-auto">
       <div className="flex gap-3 text-foreground">

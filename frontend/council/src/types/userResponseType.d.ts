@@ -43,17 +43,17 @@ interface EventData {
 
 // Interface for the Events object
 interface Events {
-  DRAFT: [];
-  APPLIED_FOR_APPROVAL: [];
-  UNLISTED: [];
-  UPCOMING: [];
-  REGISTRATION_OPEN: [];
-  REGISTRATION_CLOSED: [];
-  TICKET_OPEN: [];
-  TICKET_CLOSED: [];
-  ONGOING: [];
-  COMPLETED: [];
-  PRIVATE: [];
+  DRAFT: EventData[];
+  APPLIED_FOR_APPROVAL: EventData[];
+  UNLISTED: EventData[];
+  UPCOMING: EventData[];
+  REGISTRATION_OPEN: EventData[];
+  REGISTRATION_CLOSED: EventData[];
+  TICKET_OPEN: EventData[];
+  TICKET_CLOSED: EventData[];
+  ONGOING: EventData[];
+  COMPLETED: EventData[];
+  PRIVATE: EventData[];
 }
 
 // TypeScript Interface for User Data

@@ -16,7 +16,7 @@ export default function Calendar() {
 
   const { eventsData } = useContext(EventsDataContext);
 
-  const events = [
+  const events: EventData[] = [
     ...(eventsData?.DRAFT || []),
     ...(eventsData?.APPLIED_FOR_APPROVAL || []),
     ...(eventsData?.UNLISTED || []),
@@ -32,7 +32,7 @@ export default function Calendar() {
 
   const getEventsForDate = (date: dayjs.Dayjs) =>
     events.filter((event) =>
-      event.dates.some((eventDateString) =>
+      event.dates.some((eventDateString: Date) =>
         dayjs(eventDateString).isSame(date, 'day'),
       ),
     );
