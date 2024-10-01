@@ -12,16 +12,38 @@ router.post(protected + "/get", authCheck, async (req, res) => {
     if (!req.user) {
         return res.status(401).json({ error: "Unauthorized" });
     }
-    if(req.user.role === "COUNCIL") {
+    if (req.user.role === "COUNCIL") {
         try {
             let events = [];
-            events= await prisma.events.findMany({
-                where:{
-                    organizer_id: req.user.id
+            events = await prisma.events.findMany({
+                where: {
+                    OR: [
+                        { organizer_id: req.user.id },
+                        {
+                            state: {
+                                in: [
+                                    "UPCOMING",
+                                    "REGISTRATION_OPEN",
+                                    "REGISTRATION_CLOSED",
+                                    "TICKET_OPEN",
+                                    "TICKET_CLOSED",
+                                    "ONGOING",
+                                    "COMPLETED",
+                                ],
+                            },
+                        },
+                    ],
                 },
                 relationLoadStrategy: "join",
                 include: {
-                    organizer: true,
+                    organizer: {
+                        select: {
+                            name: true,
+                            photo_url: true,
+                            id: true,
+                            email: true,
+                        },
+                    },
                 },
             });
             let event = {};
@@ -29,8 +51,11 @@ router.post(protected + "/get", authCheck, async (req, res) => {
                 if (!event[e.state]) [(event[e.state] = [])];
                 event[e.state].push(e);
             });
-            return res.json({ error: false, events: event, message: "Events fetched successfully" });
-            
+            return res.json({
+                error: false,
+                events: event,
+                message: "Events fetched successfully",
+            });
         } catch (err) {
             console.log(err);
             return res
@@ -38,10 +63,10 @@ router.post(protected + "/get", authCheck, async (req, res) => {
                 .json({ error: true, message: "Internal Server Error" });
         }
     }
-    if(req.user.role === "FACULTY") {
+    if (req.user.role === "FACULTY") {
         try {
             let events = [];
-            if(req.query.state) {
+            if (req.query.state) {
                 events = await prisma.events.findMany({
                     where: {
                         state: {
@@ -50,21 +75,33 @@ router.post(protected + "/get", authCheck, async (req, res) => {
                     },
                     relationLoadStrategy: "join",
                     include: {
-                        organizer: true,
+                        organizer: {
+                            select: {
+                                name: true,
+                                photo_url: true,
+                                id: true,
+                                email: true,
+                            },
+                        },
                     },
                 });
             } else {
                 events = await prisma.events.findMany({
                     where: {
                         state: {
-                            in: [
-                                "APPLIED_FOR_APPROVAL"
-                            ],
+                            in: ["APPLIED_FOR_APPROVAL"],
                         },
                     },
                     relationLoadStrategy: "join",
                     include: {
-                        organizer: true,
+                        organizer: {
+                            select: {
+                                name: true,
+                                photo_url: true,
+                                id: true,
+                                email: true,
+                            },
+                        },
                     },
                 });
             }
@@ -73,7 +110,11 @@ router.post(protected + "/get", authCheck, async (req, res) => {
                 if (!event[e.state]) [(event[e.state] = [])];
                 event[e.state].push(e);
             });
-            return res.json({ error: false, events: event, message: "Events fetched successfully for state " });
+            return res.json({
+                error: false,
+                events: event,
+                message: "Events fetched successfully for state ",
+            });
         } catch (err) {
             console.log(err);
             return res
@@ -94,7 +135,14 @@ router.post(protected + "/get", authCheck, async (req, res) => {
                     },
                     relationLoadStrategy: "join",
                     include: {
-                        organizer: true,
+                        organizer: {
+                            select: {
+                                name: true,
+                                photo_url: true,
+                                id: true,
+                                email: true,
+                            },
+                        },
                     },
                 });
             } else {
@@ -113,7 +161,14 @@ router.post(protected + "/get", authCheck, async (req, res) => {
                     },
                     relationLoadStrategy: "join",
                     include: {
-                        organizer: true,
+                        organizer: {
+                            select: {
+                                name: true,
+                                photo_url: true,
+                                id: true,
+                                email: true,
+                            },
+                        },
                     },
                 });
             }
@@ -142,7 +197,14 @@ router.post(protected + "/get", authCheck, async (req, res) => {
                     },
                     relationLoadStrategy: "join",
                     include: {
-                        organizer: true,
+                        organizer: {
+                            select: {
+                                name: true,
+                                photo_url: true,
+                                id: true,
+                                email: true,
+                            },
+                        },
                     },
                 });
             } else {
@@ -166,6 +228,8 @@ router.post(protected + "/get", authCheck, async (req, res) => {
                             select: {
                                 name: true,
                                 photo_url: true,
+                                id: true,
+                                email: true,
                             },
                         },
                     },
@@ -199,6 +263,8 @@ router.post(protected + "/get/:id", authCheck, async (req, res) => {
                     select: {
                         name: true,
                         photo_url: true,
+                        id: true,
+                        email: true,
                     },
                 },
                 Participant: {
@@ -231,8 +297,10 @@ router.post(protected + "/get/:id", authCheck, async (req, res) => {
             dates: event.dates,
             venue: event.venue,
             organizer: event.organizer,
+            organizer_id: event.organizer_id,
             state: event.state,
             name: event.name,
+            tag_line: event.tag_line,
             Participant:
                 event.Participant.length == 0 ? false : event.Participant[0],
             start_in_event_activity: event.start_in_event_activity,
@@ -261,7 +329,7 @@ router.post(protected + "/create", authCheck, (req, res) => {
             long_description,
             event_type,
             banner_url,
-            logo_image__url,
+            logo_image_url,
             event_page_image_url,
             dates,
             tags,
@@ -280,7 +348,7 @@ router.post(protected + "/create", authCheck, (req, res) => {
             fee,
             tags,
             banner_url,
-            logo_image__url,
+            logo_image_url,
             event_page_image_url,
             is_feedback_enabled,
             attendance_type,
@@ -307,7 +375,7 @@ router.post(protected + "/create", authCheck, (req, res) => {
                     fee,
                     tags,
                     banner_url,
-                    logo_image__url,
+                    logo_image__url: logo_image_url,
                     event_page_image_url,
                     is_feedback_enabled,
                     attendance_type,
@@ -353,7 +421,10 @@ router.post(
                     id: parseInt(req.params.id),
                 },
             });
-            if (event.organizer_id != req.user.id && req.user.role != "FACULTY") {
+            if (
+                event.organizer_id != req.user.id &&
+                req.user.role != "FACULTY"
+            ) {
                 return res
                     .status(403)
                     .json({ error: true, message: "Forbidden" });
@@ -367,6 +438,12 @@ router.post(
         }
 
         let field = req.body;
+
+        field.logo_image__url = field.logo_image_url;
+        delete field.logo_image_url;
+
+        delete field.organizer;
+        delete field.Participant;
 
         if (field.dates && field.dates.length) {
             field.dates = field.dates.map((d) => new Date(d));
@@ -385,13 +462,14 @@ router.post(
                 message: "Event updated successfully",
             });
         } catch (err) {
+            console.error(err);
             logger.error(err);
             return res.status(500).json({
                 error: true,
                 message: "Error updating event",
             });
         }
-    }
+    },
 );
 router.get(protected + "/search/", authCheck, async (req, res) => {
     if (!req.user) {
@@ -508,6 +586,5 @@ router.post(protected + "/register-for-event", authCheck, async (req, res) => {
         }
     }
 });
-
 
 module.exports = router;
