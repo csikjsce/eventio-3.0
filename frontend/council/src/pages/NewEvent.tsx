@@ -86,6 +86,11 @@ export default function NewEvent() {
             setValue('ma_ppt', 1);
             setValue('min_ppt', 1);
           }
+          console.log(response.data.event.is_ticket_feature_enabled);
+          setValue(
+            'is_ticket_feature_enabled',
+            response.data.event.is_ticket_feature_enabled,
+          );
         });
     }
   }, [id]);
@@ -425,19 +430,14 @@ export default function NewEvent() {
             </div>
           ) : (
             <div>
-              <label className="block text-foreground">Enable Tickets</label>
-              <select
-                className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
-                onChange={(e) =>
-                  setValue(
-                    'is_ticket_feature_enabled',
-                    e.target.value === 'YES',
-                  )
-                }
-              >
-                <option value="No">No</option>
-                <option value="YES">Yes</option>
-              </select>
+              {/* Checkbox for feedback */}
+              <label className="text-foreground flex items-center h-full gap-2 select-none hover:cursor-pointer">
+                <input
+                  type="checkbox"
+                  {...register('is_ticket_feature_enabled')}
+                />
+                Enable Tickets
+              </label>
               <p className="text-red-500">
                 {errors.is_ticket_feature_enabled?.message}
               </p>
@@ -457,18 +457,10 @@ export default function NewEvent() {
 
           {/* Checkbox for start in-event activity */}
           <div>
-            <label className="block text-foreground">
-              Start In Event Activity
+            <label className="text-foreground flex items-center h-full gap-2 select-none hover:cursor-pointer">
+              <input type="checkbox" {...register('start_in_event_activity')} />
+              Start In-Event Activity
             </label>
-            <select
-              className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
-              onChange={(e) =>
-                setValue('start_in_event_activity', e.target.value === 'YES')
-              }
-            >
-              <option value="No">No</option>
-              <option value="YES">Yes</option>
-            </select>
             <p className="text-red-500">
               {errors.start_in_event_activity?.message}
             </p>
