@@ -1,5 +1,5 @@
-import React from 'react'
-import EventBg from "../assets/EventBg.svg"
+import React from "react";
+import EventBg from "../assets/EventBg.svg";
 
 const EventHeader = () => {
     return (
@@ -38,7 +38,7 @@ const EventHeader = () => {
                 </p>
             </div>
         </div>
-    );     
+    );
 };
 
-export default EventHeader
+export default EventHeader;

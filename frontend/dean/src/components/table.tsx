@@ -20,74 +20,69 @@ export default function IntegratedTableModal() {
     console.log(eventsData);
     const [open, setOpen] = useState(false);
     const [selectedevent, setSelectedevent] = useState(null);
-    useEffect(() => {
-        console.log(events);
-    }
-    , [events]);
-    
+
     const handleApprove = (e, event_id) => {
         e.stopPropagation();
-        try{
+        try {
             axios
-            .request({
-                baseURL: import.meta.env.VITE_APP_SERVER_ADDRESS,
-                url: "/api/v1" + "/event/p/update/" + event_id,
-                method: "POST",
-                headers: {
-                          Authorization:
-                              "Bearer " + localStorage.getItem("accessToken"),
-                      },
-                data: {
-                    state: "UNLISTED",
-                },
-            }).then((response) => {
-                console.log(response.data);
-                window.location.reload();
-            }
-            )
-        }catch(err){
+                .request({
+                    baseURL: import.meta.env.VITE_APP_SERVER_ADDRESS,
+                    url: "/api/v1" + "/event/p/update/" + event_id,
+                    method: "POST",
+                    headers: {
+                        Authorization:
+                            "Bearer " + localStorage.getItem("accessToken"),
+                    },
+                    data: {
+                        state: "UNLISTED",
+                    },
+                })
+                .then((response) => {
+                    console.log(response.data);
+                    window.location.reload();
+                });
+        } catch (err) {
             console.error(err);
         }
-    
-        
     };
     const handleReject = (e, event_id) => {
         e.stopPropagation();
-        try{
+        try {
             axios
-            .request({
-                baseURL: import.meta.env.VITE_APP_SERVER_ADDRESS,
-                url: "/api/v1" + "/event/p/update/" + event_id,
-                method: "POST",
-                headers: {
-                          Authorization:
-                              "Bearer " + localStorage.getItem("accessToken"),
-                      },
-                data: {
-                    state: "DRAFT",
-                },
-            }).then((response) => {
-                console.log(response.data);
-                window.location.reload();
-            }
-            )
-        }catch(err){
+                .request({
+                    baseURL: import.meta.env.VITE_APP_SERVER_ADDRESS,
+                    url: "/api/v1" + "/event/p/update/" + event_id,
+                    method: "POST",
+                    headers: {
+                        Authorization:
+                            "Bearer " + localStorage.getItem("accessToken"),
+                    },
+                    data: {
+                        state: "DRAFT",
+                    },
+                })
+                .then((response) => {
+                    console.log(response.data);
+                    window.location.reload();
+                });
+        } catch (err) {
             console.error(err);
         }
-    
-        
     };
     const openModal = (event) => {
         setSelectedevent(event);
         setOpen(true);
     };
-    
+
     if (events.length === 0 || !events) {
-        return <div className="flex p-4 pl-10 text-2xl">No events left for approval</div>;
+        return (
+            <div className="flex p-4 pl-10 text-2xl">
+                No events left for approval
+            </div>
+        );
     }
     return (
         <div className="flex">
-
             <ul
                 role="list"
                 className="divide-y ml-20 mt-9 scale-110 divide-gray-300"

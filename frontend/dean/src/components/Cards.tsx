@@ -1,6 +1,10 @@
 import React from "react";
-import Redbull from '../assets/redbull.jpeg'
-import { CalendarDateRangeIcon, MapPinIcon, ClockIcon } from "@heroicons/react/20/solid";
+import Redbull from "../assets/redbull.jpeg";
+import {
+    CalendarDateRangeIcon,
+    MapPinIcon,
+    ClockIcon,
+} from "@heroicons/react/20/solid";
 
 const Cards = () => {
     return (

@@ -41,7 +41,6 @@ interface EventData {
     start_in_event_activity?: boolean;
 }
 
-
 // Interface for the Events object
 interface Events {
     UPCOMING: EventData[];

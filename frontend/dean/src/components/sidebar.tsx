@@ -1,5 +1,5 @@
 import React from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, Link } from "react-router-dom";
 // import { Gift, Calendar, Logout, Icon as IconType } from "iconsax-react";
 import Eventio from "../assets/Eventio.svg";
 // import PopoverCustomAnimation from "../components/popoverbutton";
@@ -81,7 +81,9 @@ export default function Sidebar() {
                     </div>
                 </div>
                 <footer className="flex gap-4 text-gray-600 mt-auto pb-12">
-                    <div className="font-poppins">Logout</div>
+                    <Link to="logout" className="font-poppins">
+                        Logout
+                    </Link>
                 </footer>
             </nav>
         </div>

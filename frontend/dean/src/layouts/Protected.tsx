@@ -24,7 +24,11 @@ export default function Protected() {
                 if (response.error) {
                     throw new Error("error fetching");
                 }
-                if (response && response.user) {
+                if (
+                    response &&
+                    response.user &&
+                    response.user.role === "FACULTY"
+                ) {
                     setUserData(response.user);
                     return { status: 200 };
                 } else {
@@ -81,6 +85,8 @@ export default function Protected() {
                         navigate("/logout");
                     }
                 }
+            } else if (resp.status === 400) {
+                navigate("/logout");
             }
             await fetchEvents();
         };
