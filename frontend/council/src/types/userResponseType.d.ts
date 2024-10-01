@@ -22,6 +22,8 @@ interface EventData {
   organizer: {
     name: string;
     photo_url: string;
+    id: number;
+    email: string;
   };
   organizer_id: number;
   parent_id: number | null;

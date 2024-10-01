@@ -36,7 +36,14 @@ router.post(protected + "/get", authCheck, async (req, res) => {
                 },
                 relationLoadStrategy: "join",
                 include: {
-                    organizer: true,
+                    organizer: {
+                        select: {
+                            name: true,
+                            photo_url: true,
+                            id: true,
+                            email: true,
+                        },
+                    },
                 },
             });
             let event = {};
@@ -68,7 +75,14 @@ router.post(protected + "/get", authCheck, async (req, res) => {
                     },
                     relationLoadStrategy: "join",
                     include: {
-                        organizer: true,
+                        organizer: {
+                            select: {
+                                name: true,
+                                photo_url: true,
+                                id: true,
+                                email: true,
+                            },
+                        },
                     },
                 });
             } else {
@@ -80,7 +94,14 @@ router.post(protected + "/get", authCheck, async (req, res) => {
                     },
                     relationLoadStrategy: "join",
                     include: {
-                        organizer: true,
+                        organizer: {
+                            select: {
+                                name: true,
+                                photo_url: true,
+                                id: true,
+                                email: true,
+                            },
+                        },
                     },
                 });
             }
@@ -114,7 +135,14 @@ router.post(protected + "/get", authCheck, async (req, res) => {
                     },
                     relationLoadStrategy: "join",
                     include: {
-                        organizer: true,
+                        organizer: {
+                            select: {
+                                name: true,
+                                photo_url: true,
+                                id: true,
+                                email: true,
+                            },
+                        },
                     },
                 });
             } else {
@@ -133,7 +161,14 @@ router.post(protected + "/get", authCheck, async (req, res) => {
                     },
                     relationLoadStrategy: "join",
                     include: {
-                        organizer: true,
+                        organizer: {
+                            select: {
+                                name: true,
+                                photo_url: true,
+                                id: true,
+                                email: true,
+                            },
+                        },
                     },
                 });
             }
@@ -162,7 +197,14 @@ router.post(protected + "/get", authCheck, async (req, res) => {
                     },
                     relationLoadStrategy: "join",
                     include: {
-                        organizer: true,
+                        organizer: {
+                            select: {
+                                name: true,
+                                photo_url: true,
+                                id: true,
+                                email: true,
+                            },
+                        },
                     },
                 });
             } else {
@@ -186,6 +228,8 @@ router.post(protected + "/get", authCheck, async (req, res) => {
                             select: {
                                 name: true,
                                 photo_url: true,
+                                id: true,
+                                email: true,
                             },
                         },
                     },
@@ -219,6 +263,8 @@ router.post(protected + "/get/:id", authCheck, async (req, res) => {
                     select: {
                         name: true,
                         photo_url: true,
+                        id: true,
+                        email: true,
                     },
                 },
                 Participant: {
@@ -251,6 +297,7 @@ router.post(protected + "/get/:id", authCheck, async (req, res) => {
             dates: event.dates,
             venue: event.venue,
             organizer: event.organizer,
+            organizer_id: event.organizer_id,
             state: event.state,
             name: event.name,
             tag_line: event.tag_line,

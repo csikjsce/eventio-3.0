@@ -6,11 +6,11 @@ import {
   Location,
   Send2,
   User,
-  TickCircle,
 } from 'iconsax-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState, useContext } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import Loader from '../components/Loader';
+import UserDataContext from '../contexts/UserDataContext';
 
 import { Icon as IconType } from 'iconsax-react';
 
@@ -49,30 +49,11 @@ function Passage({
 
 export default function EventDetails() {
   const [event, setEvent] = useState<EventData | null>(null);
+  const { userData } = useContext(UserDataContext);
 
   const [loading, setLoading] = useState(true);
-  const [snackbarVisible, setSnackbarVisible] = useState(false);
 
   const { id } = useParams();
-  const register = useCallback(() => {
-    axios
-      .request({
-        baseURL: import.meta.env.VITE_APP_SERVER_ADDRESS,
-        url: '/api/v1' + `/event/p/register-for-event`,
-        method: 'POST',
-        headers: {
-          Authorization: 'Bearer ' + localStorage.getItem('accessToken'),
-        },
-        data: {
-          event_id: id,
-        },
-      })
-      .then(() => {
-        setSnackbarVisible(true);
-        setTimeout(() => setSnackbarVisible(false), 3000); // Hide after 3 seconds
-      })
-      .catch(() => {});
-  }, [id]);
   const navigate = useNavigate();
   useEffect(() => {
     const fetchEvent = async (id: string) => {
@@ -91,7 +72,7 @@ export default function EventDetails() {
         });
     };
     if (id) fetchEvent(id);
-  }, [id, navigate, register]);
+  }, [id, navigate]);
 
   if (loading && event == null) {
     return <Loader />;
@@ -225,20 +206,15 @@ export default function EventDetails() {
               {event?.long_description || ''}
             </Passage>
           </div>
-
-          <Link
-            to="./edit"
-            className="w-[90%] max-w-sm mx-auto rounded-full bg-primary text-center flex items-center justify-center gap-2 h-12 font-fira normal-case text-lg text-white"
-          >
-            Edit
-          </Link>
+          {event?.organizer_id === userData?.id && userData?.id && (
+            <Link
+              to="./edit"
+              className="w-[90%] max-w-sm mx-auto rounded-full bg-primary text-center flex items-center justify-center gap-2 h-12 font-fira normal-case text-lg text-white"
+            >
+              Edit
+            </Link>
+          )}
         </div>
-        {snackbarVisible && (
-          <div className="fixed bottom-5 left-1/2 transform -translate-x-1/2 w-96 bg-green-400 text-white p-4 rounded-md z-40 flex gap-4">
-            <TickCircle size="24" color="#57585A" />
-            Registration Successful!!
-          </div>
-        )}
       </>
     );
 }

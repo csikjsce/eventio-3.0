@@ -3,16 +3,19 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import { NewEventSchema, newEventSchema } from '../utils/validation';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useContext } from 'react';
 import axios from 'axios';
 import Spinner from '../components/Spinner';
 import Loader from '../components/Loader';
 import { useNavigate, useParams } from 'react-router-dom';
+import UserDataContext from '../contexts/UserDataContext';
 
 export default function NewEvent() {
   const navigate = useNavigate();
   const { id } = useParams();
   const [event, setEvent] = useState<NewEventSchema | null>(null);
+
+  const { userData } = useContext(UserDataContext);
 
   const methods = useForm<NewEventSchema>({
     resolver: yupResolver(newEventSchema),
@@ -59,8 +62,14 @@ export default function NewEvent() {
           },
         })
         .then((response) => {
+          if (
+            !response.data.event.organizer_id ||
+            !userData?.id ||
+            response.data.event.organizer_id !== parseInt(userData?.id)
+          ) {
+            navigate('/');
+          }
           setEvent(response.data.event);
-          console.log(response.data.event);
           methods.reset(response.data.event);
           setStartDate(new Date(response.data.event.dates[0]));
           if (response.data.event.dates.length > 1) {
@@ -79,7 +88,7 @@ export default function NewEvent() {
           }
         });
     }
-  }, []);
+  }, [id]);
 
   function getDates(start: Date | null, end: Date | null) {
     const dateArray: Date[] = [];
