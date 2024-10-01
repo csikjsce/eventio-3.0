@@ -1,4 +1,4 @@
-import { useState, useContext, Fragment, useEffect } from "react";
+import { useState, useContext, Fragment } from "react";
 import { CheckIcon } from "@heroicons/react/20/solid";
 import { Dialog, Transition } from "@headlessui/react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
@@ -17,11 +17,13 @@ export default function IntegratedTableModal() {
         ...(eventsData?.ONGOING || []),
         ...(eventsData?.APPLIED_FOR_APPROVAL || []),
     ];
-    console.log(eventsData);
     const [open, setOpen] = useState(false);
-    const [selectedevent, setSelectedevent] = useState(null);
+    const [selectedevent, setSelectedevent] = useState<EventData | null>(null);
 
-    const handleApprove = (e, event_id) => {
+    const handleApprove = (
+        e: React.ChangeEvent<HTMLButtonElement>,
+        event_id: number,
+    ) => {
         e.stopPropagation();
         try {
             axios
@@ -45,7 +47,10 @@ export default function IntegratedTableModal() {
             console.error(err);
         }
     };
-    const handleReject = (e, event_id) => {
+    const handleReject = (
+        e: React.ChangeEvent<HTMLButtonElement>,
+        event_id: number,
+    ) => {
         e.stopPropagation();
         try {
             axios
@@ -69,7 +74,7 @@ export default function IntegratedTableModal() {
             console.error(err);
         }
     };
-    const openModal = (event) => {
+    const openModal = (event: EventData) => {
         setSelectedevent(event);
         setOpen(true);
     };
@@ -109,7 +114,7 @@ export default function IntegratedTableModal() {
                                     {event.organizer.name}
                                 </p>
                                 <p className="mt-1 truncate text-lg leading-5 text-gray-700">
-                                    {event.event}
+                                    {event.name}
                                 </p>
                                 <div className="flex flex-row gap-6">
                                     <p className="mt-2 -ml-1 flex flex-row truncate text-md leading-5 text-gray-700">

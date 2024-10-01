@@ -1,4 +1,3 @@
-import React from "react";
 import EventBg from "../assets/EventBg.svg";
 
 const EventHeader = () => {

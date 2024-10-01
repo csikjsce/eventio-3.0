@@ -1,4 +1,3 @@
-import React from "react";
 import Redbull from "../assets/redbull.jpeg";
 import {
     CalendarDateRangeIcon,
