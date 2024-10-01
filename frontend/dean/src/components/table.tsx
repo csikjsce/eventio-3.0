@@ -21,7 +21,7 @@ export default function IntegratedTableModal() {
     const [selectedevent, setSelectedevent] = useState<EventData | null>(null);
 
     const handleApprove = (
-        e: React.ChangeEvent<HTMLButtonElement>,
+        e: React.MouseEvent<HTMLButtonElement>,
         event_id: number,
     ) => {
         e.stopPropagation();
@@ -48,7 +48,7 @@ export default function IntegratedTableModal() {
         }
     };
     const handleReject = (
-        e: React.ChangeEvent<HTMLButtonElement>,
+        e: React.MouseEvent<HTMLButtonElement>,
         event_id: number,
     ) => {
         e.stopPropagation();
