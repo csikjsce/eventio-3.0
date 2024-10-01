@@ -113,7 +113,7 @@ export default function NewEvent() {
     }
     const dates = getDates(startDate, endDate || startDate);
     setValue('dates', dates);
-  }, [startDate, endDate]);
+  }, [startDate, endDate, isMultipleDates]);
 
   useEffect(() => {
     if (!isTeamEvent) {
