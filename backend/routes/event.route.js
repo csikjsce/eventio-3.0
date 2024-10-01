@@ -412,7 +412,7 @@ router.post(
                 .status(401)
                 .json({ error: true, message: "Unauthorized" });
         }
-        if (req.user.role != "COUNCIL") {
+        if (req.user.role != "COUNCIL" && req.user.role != "FACULTY") {
             return res.status(403).json({ error: true, message: "Forbidden" });
         }
         try {
@@ -421,7 +421,10 @@ router.post(
                     id: parseInt(req.params.id),
                 },
             });
-            if (event.organizer_id != req.user.id) {
+            if (
+                event.organizer_id != req.user.id &&
+                req.user.role != "FACULTY"
+            ) {
                 return res
                     .status(403)
                     .json({ error: true, message: "Forbidden" });
@@ -445,6 +448,8 @@ router.post(
         if (field.dates && field.dates.length) {
             field.dates = field.dates.map((d) => new Date(d));
         }
+        console.log(field);
+        console.log(req.body);
         try {
             await prisma.events.update({
                 where: {
@@ -582,59 +587,4 @@ router.post(protected + "/register-for-event", authCheck, async (req, res) => {
     }
 });
 
-router.post(
-    protected + "/update/:id",
-    authCheck,
-    validateUpdateFields,
-    async (req, res) => {
-        if (!req.user) {
-            return res
-                .status(401)
-                .json({ error: true, message: "Unauthorized" });
-        }
-
-        if (req.user.role !== "DEAN") {
-            return res.status(403).json({
-                error: true,
-                message: "Forbidden: Only DEAN can update event state",
-            });
-        }
-
-        try {
-            const event = await prisma.events.findUnique({
-                where: {
-                    id: parseInt(req.params.id),
-                },
-            });
-
-            if (!event) {
-                return res.status(404).json({
-                    error: true,
-                    message: "Event not found",
-                });
-            }
-
-            const updatedEvent = await prisma.events.update({
-                where: {
-                    id: parseInt(req.params.id),
-                },
-                data: {
-                    state: req.body.state,
-                },
-            });
-
-            return res.status(200).json({
-                error: false,
-                message: "Event state updated successfully",
-                data: updatedEvent,
-            });
-        } catch (err) {
-            console.error(err);
-            return res.status(500).json({
-                error: true,
-                message: "Internal Server Error",
-            });
-        }
-    },
-);
 module.exports = router;
