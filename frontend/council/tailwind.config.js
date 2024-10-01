@@ -1,19 +1,24 @@
 /** @type {import('tailwindcss').Config} */
 
-
-const withMT = require("@material-tailwind/react/utils/withMT");
-module.exports = withMT({
-
-  content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
-  ],
+export default {
+  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
+  darkMode: 'media',
   theme: {
-    extend: {},
-    fontFamily: {
-      sans: ["Open Sans", "sans-serif" , "fira-sans-regular"],
+    extend: {
+      colors: {
+        foreground: 'rgb(var(--color-foreground) / <alpha-value>)',
+        background: 'rgb(var(--color-background) / <alpha-value>)',
+        card: 'rgb(var(--color-card) / <alpha-value>)',
+        mute: 'rgb(var(--color-mute) / <alpha-value>)',
+        primary: 'rgb(var(--color-primary) / <alpha-value>)',
+        vitality: 'rgb(var(--color-vitality) / <alpha-value>)',
+      },
+      fontFamily: {
+        marcellus: 'Marcellus',
+        fira: ['Fira Sans', 'sans-serif'],
+        poppins: 'Poppins',
+      },
     },
   },
   plugins: [],
-});
-
+};

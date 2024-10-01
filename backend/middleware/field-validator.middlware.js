@@ -20,7 +20,7 @@ const restrictedFieldsByRole = {
         restrictedRole: ["all"],
     },
     state: {
-        unrestrictedRoles: ["ADMIN"],
+        unrestrictedRoles: ["ADMIN", "COUNCIL"],
         restrictedRole: ["all"],
     },
     state_history: {
