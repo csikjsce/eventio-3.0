@@ -9,6 +9,7 @@ import Spinner from '../components/Spinner';
 import Loader from '../components/Loader';
 import { useNavigate, useParams } from 'react-router-dom';
 import UserDataContext from '../contexts/UserDataContext';
+import EventsDataContext from '../contexts/EventsDataContext';
 
 export default function NewEvent() {
   const navigate = useNavigate();
@@ -16,6 +17,7 @@ export default function NewEvent() {
   const [event, setEvent] = useState<NewEventSchema | null>(null);
 
   const { userData } = useContext(UserDataContext);
+  const { refreshEventsData } = useContext(EventsDataContext);
 
   const methods = useForm<NewEventSchema>({
     resolver: yupResolver(newEventSchema),
@@ -145,6 +147,7 @@ export default function NewEvent() {
       );
       console.log(response.data);
       setSuccess(true);
+      refreshEventsData();
     } catch (error) {
       console.error(error);
       setSuccess(false);
