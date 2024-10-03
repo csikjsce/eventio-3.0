@@ -86,7 +86,6 @@ export default function NewEvent() {
             setValue('ma_ppt', 1);
             setValue('min_ppt', 1);
           }
-          console.log(response.data.event.is_ticket_feature_enabled);
           setValue(
             'is_ticket_feature_enabled',
             response.data.event.is_ticket_feature_enabled,
@@ -218,6 +217,7 @@ export default function NewEvent() {
           </div>
 
           {/* Date Picker (Single or Range) */}
+
           <div>
             <label className="block text-foreground">
               {isMultipleDates ? 'Start Date' : 'Event Date'}
@@ -229,7 +229,6 @@ export default function NewEvent() {
               className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
               placeholderText="Select event date"
             />
-            <p className="text-red-500">{errors.dates?.message}</p>
           </div>
 
           {/* End Date (Only if multiple dates are allowed) */}
@@ -257,6 +256,11 @@ export default function NewEvent() {
               />
               This is a multi-day event
             </label>
+            <p className="text-red-500">
+              {errors.dates &&
+                errors.dates.map &&
+                errors.dates.map((error) => error?.message || '')}
+            </p>
           </div>
 
           {/* Event Type */}
@@ -522,6 +526,7 @@ export default function NewEvent() {
               : 'Failed to create event!'}
           </div>
         )}
+        {/* {JSON.stringify(errors)} */}
       </div>
     </FormProvider>
   );
