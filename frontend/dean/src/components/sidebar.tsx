@@ -1,6 +1,6 @@
 import React from "react";
 import { NavLink, Link } from "react-router-dom";
-import { Home, Calendar, LogoutCurve, Icon } from "iconsax-react";
+import { Home, LogoutCurve, Icon } from "iconsax-react";
 import Eventio from "../assets/Eventio.svg";
 
 const MenuItem = ({

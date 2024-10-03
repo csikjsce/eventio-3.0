@@ -1,10 +1,4 @@
-const Event = ({
-    event,
-    startTime,
-}: {
-    event: EventData;
-    startTime: string;
-}) => {
+const Event = ({ event }: { event: EventData }) => {
     return (
         <div className="min-w-full p-3 mt-2 bg-card rounded-lg">
             <div className="flex gap-2 text-foreground items-center">

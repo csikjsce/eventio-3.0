@@ -164,10 +164,7 @@ export default function Calendar() {
                             : `No events on ${selectDate.format("MMMM D, YYYY")}`}
                     </h1>
 
-                    <EventList
-                        events={getEventsForDate(selectDate)}
-                        date={selectDate}
-                    />
+                    <EventList events={getEventsForDate(selectDate)} />
                 </div>
             </div>
         </div>
