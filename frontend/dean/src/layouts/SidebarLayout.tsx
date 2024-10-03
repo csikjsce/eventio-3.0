@@ -3,7 +3,7 @@ import Sidebar from "../components/sidebar";
 
 export default function SIdebarLayout() {
     return (
-        <div className="p-8 pl-[272px]">
+        <div className="py-8 px-2 pl-[272px]">
             <Sidebar />
             <Outlet />
         </div>
