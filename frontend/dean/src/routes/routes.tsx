@@ -1,5 +1,5 @@
-import EventRoute from "../screens/home/event";
-import Calander from "../screens/home/calander";
+import Home from "../screens/Home";
+// import Calander from "../screens/home/calander";
 import Login from "../screens/Login";
 import Logout from "../screens/Logout";
 
@@ -17,8 +17,8 @@ const router = createBrowserRouter(
         <Route path="/">
             <Route Component={Protected}>
                 <Route Component={SidebarLayout}>
-                    <Route index Component={EventRoute} />
-                    <Route path="calendar" Component={Calander} />
+                    <Route index Component={Home} />
+                    {/* <Route path="calendar" Component={Calander} /> */}
                 </Route>
             </Route>
             <Route path="login" Component={Login} />
