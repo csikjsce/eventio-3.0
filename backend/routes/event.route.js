@@ -89,7 +89,16 @@ router.post(protected + "/get", authCheck, async (req, res) => {
                 events = await prisma.events.findMany({
                     where: {
                         state: {
-                            in: ["APPLIED_FOR_APPROVAL"],
+                            in: [
+                                "APPLIED_FOR_APPROVAL",
+                                "UPCOMING",
+                                "REGISTRATION_OPEN",
+                                "REGISTRATION_CLOSED",
+                                "TICKET_OPEN",
+                                "TICKET_CLOSED",
+                                "ONGOING",
+                                "COMPLETED",
+                            ],
                         },
                     },
                     relationLoadStrategy: "join",

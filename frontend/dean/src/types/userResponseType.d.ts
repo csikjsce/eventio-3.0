@@ -22,6 +22,8 @@ interface EventData {
     organizer: {
         name: string;
         photo_url: string;
+        id: number;
+        email: string;
     };
     organizer_id: number;
     parent_id: number | null;
@@ -43,6 +45,7 @@ interface EventData {
 
 // Interface for the Events object
 interface Events {
+    UNLISTED: EventData[];
     UPCOMING: EventData[];
     REGISTRATION_OPEN: EventData[];
     REGISTRATION_CLOSED: EventData[];
@@ -50,6 +53,7 @@ interface Events {
     TICKET_OPEN: EventData[];
     ONGOING: EventData[];
     APPLIED_FOR_APPROVAL: EventData[];
+    COMPLETED: EventData[];
 }
 
 // TypeScript Interface for User Data
