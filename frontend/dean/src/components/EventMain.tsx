@@ -1,6 +1,53 @@
 import { Calendar, Location } from "iconsax-react";
+import axios from "axios";
+import EventsDataContext from "../contexts/EventsDataContext";
+import { useContext } from "react";
 
 export default function EventMain({ event }: { event: EventData }) {
+    const { refreshEventsData } = useContext(EventsDataContext);
+
+    async function approve() {
+        try {
+            const res = await axios.request({
+                baseURL: import.meta.env.VITE_APP_SERVER_ADDRESS,
+                url: "/api/v1" + "/event/p/update/" + event.id,
+                method: "POST",
+                headers: {
+                    Authorization:
+                        "Bearer " + localStorage.getItem("accessToken"),
+                },
+                data: {
+                    state: "UNLISTED",
+                },
+            });
+            console.log(res.data);
+            refreshEventsData();
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    async function reject() {
+        try {
+            const res = await axios.request({
+                baseURL: import.meta.env.VITE_APP_SERVER_ADDRESS,
+                url: "/api/v1" + "/event/p/update/" + event.id,
+                method: "POST",
+                headers: {
+                    Authorization:
+                        "Bearer " + localStorage.getItem("accessToken"),
+                },
+                data: {
+                    state: "DRAFT",
+                },
+            });
+            console.log(res.data);
+            refreshEventsData();
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
     return (
         <div className="w-full outline outline-1 outline-card rounded-lg">
             <div
@@ -54,13 +101,19 @@ export default function EventMain({ event }: { event: EventData }) {
                 <div className="flex gap-2 justify-center items-center text-foreground">
                     <button
                         className="border border-green-600 w-16 h-8 p-1 rounded-full hover:bg-green-600 hover:text-white active:bg-green-700"
-                        onClick={() => {}}
+                        onClick={(e) => {
+                            approve();
+                            e.currentTarget.disabled = true;
+                        }}
                     >
                         ✓
                     </button>
                     <button
                         className="border border-red-600 w-16 h-8 p-1 rounded-full hover:bg-red-600 hover:text-white active:bg-red-700"
-                        onClick={() => {}}
+                        onClick={(e) => {
+                            reject();
+                            e.currentTarget.disabled = true;
+                        }}
                     >
                         X
                     </button>
