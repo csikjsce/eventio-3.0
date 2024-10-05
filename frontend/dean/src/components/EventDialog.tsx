@@ -7,12 +7,15 @@ import {
 } from "@headlessui/react";
 import { useState } from "react";
 
-export default function EventDialog() {
-    const [isOpen, setIsOpen] = useState(false);
-
+export default function EventDialog({
+    isOpen,
+    setIsOpen,
+    approval,
+    reject,
+    action,
+}) {
     return (
         <>
-            <button onClick={() => setIsOpen(true)}>Open dialog</button>
             <Dialog
                 open={isOpen}
                 onClose={() => setIsOpen(false)}
@@ -27,21 +30,34 @@ export default function EventDialog() {
                     {/* The actual dialog panel  */}
                     <DialogPanel className="max-w-lg space-y-4 bg-white p-12">
                         <DialogTitle className="font-bold">
-                            Deactivate account
+                            {action === "approved" ? "Approve" : "Reject"}
                         </DialogTitle>
                         <Description>
-                            This will permanently deactivate your account
+                            {action === "approved"
+                                ? "Are you sure you want to Approve?"
+                                : "Are you sure you want to Deny?"}
                         </Description>
-                        <p>
-                            Are you sure you want to deactivate your account?
-                            All of your data will be permanently removed.
-                        </p>
+                        {action == "reject" && (
+                            <input
+                                type="text"
+                                placeholder="Reason for rejection"
+                            />
+                        )}
                         <div className="flex gap-4">
                             <button onClick={() => setIsOpen(false)}>
                                 Cancel
                             </button>
-                            <button onClick={() => setIsOpen(false)}>
-                                Deactivate
+                            <button
+                                onClick={() => {
+                                    if (action === "approved") {
+                                        approval();
+                                    } else if (action === "rejected") {
+                                        reject();
+                                    }
+                                    setIsOpen(false);
+                                }}
+                            >
+                                Yes
                             </button>
                         </div>
                     </DialogPanel>

@@ -1,11 +1,13 @@
 import { Calendar, Location } from "iconsax-react";
 import axios from "axios";
 import EventsDataContext from "../contexts/EventsDataContext";
-import { useContext } from "react";
+import { useContext, useState } from "react";
 import EventDialog from "./EventDialog";
 
 export default function EventMain({ event }: { event: EventData }) {
     const { refreshEventsData } = useContext(EventsDataContext);
+    const [isOpen, setIsOpen] = useState(false);
+    const [action, setAction] = useState<"approved" | "rejected">("approved");
 
     async function approve() {
         try {
@@ -51,7 +53,13 @@ export default function EventMain({ event }: { event: EventData }) {
 
     return (
         <div className="w-full outline outline-1 outline-card rounded-lg">
-            <EventDialog />
+            <EventDialog
+                isOpen={isOpen}
+                setIsOpen={setIsOpen}
+                approval={approve}
+                reject={reject}
+                action={action}
+            />
             <div
             // style={{
             //     maskImage:
@@ -104,7 +112,8 @@ export default function EventMain({ event }: { event: EventData }) {
                     <button
                         className="border border-green-600 w-16 h-8 p-1 rounded-full hover:bg-green-600 hover:text-white active:bg-green-700"
                         onClick={(e) => {
-                            approve();
+                            setAction("approved");
+                            setIsOpen(true);
                             e.currentTarget.disabled = true;
                         }}
                     >
@@ -113,7 +122,8 @@ export default function EventMain({ event }: { event: EventData }) {
                     <button
                         className="border border-red-600 w-16 h-8 p-1 rounded-full hover:bg-red-600 hover:text-white active:bg-red-700"
                         onClick={(e) => {
-                            reject();
+                            setAction("rejected");
+                            setIsOpen(true);
                             e.currentTarget.disabled = true;
                         }}
                     >
