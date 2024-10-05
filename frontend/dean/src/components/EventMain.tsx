@@ -2,6 +2,7 @@ import { Calendar, Location } from "iconsax-react";
 import axios from "axios";
 import EventsDataContext from "../contexts/EventsDataContext";
 import { useContext } from "react";
+import EventDialog from "./EventDialog";
 
 export default function EventMain({ event }: { event: EventData }) {
     const { refreshEventsData } = useContext(EventsDataContext);
@@ -50,6 +51,7 @@ export default function EventMain({ event }: { event: EventData }) {
 
     return (
         <div className="w-full outline outline-1 outline-card rounded-lg">
+            <EventDialog />
             <div
             // style={{
             //     maskImage:
