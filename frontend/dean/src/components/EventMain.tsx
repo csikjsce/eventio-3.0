@@ -114,7 +114,6 @@ export default function EventMain({ event }: { event: EventData }) {
                         onClick={(e) => {
                             setAction("approved");
                             setIsOpen(true);
-                            e.currentTarget.disabled = true;
                         }}
                     >
                         ✓
@@ -124,7 +123,6 @@ export default function EventMain({ event }: { event: EventData }) {
                         onClick={(e) => {
                             setAction("rejected");
                             setIsOpen(true);
-                            e.currentTarget.disabled = true;
                         }}
                     >
                         X
