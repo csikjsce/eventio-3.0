@@ -12,7 +12,7 @@ export default function EventCard({ event }: { event: EventData }) {
       className="flex flex-row justify-between items-center bg-card  rounded-lg p-3 shadow-md mb-2 mx-1"
       to={'/event-details/' + event.id}
     >
-      <div className="flex gap-6 h-full">
+      <div className="flex gap-6 w-full h-full">
         {/* Event Image */}
         <img
           src={event.logo_image__url}
