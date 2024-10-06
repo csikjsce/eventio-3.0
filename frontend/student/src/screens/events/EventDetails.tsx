@@ -72,6 +72,46 @@ export default function EventDetails() {
         });
       });
   }, [id]);
+  const claimTicket = useCallback(() => {
+    setButtonState({
+      text: 'RSVPing',
+      loading: true,
+      disabled: true,
+      onClick: () => {},
+    });
+    axios
+      .request({
+        baseURL: import.meta.env.VITE_APP_SERVER_ADDRESS,
+        url: '/api/v1' + `/event/p/claim-ticket`,
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer ' + localStorage.getItem('accessToken'),
+        },
+        data: {
+          event_id: id,
+        },
+      })
+      .then(() => {
+        setButtonState({
+          text: 'View Ticket',
+          loading: false,
+          disabled: false,
+          onClick: () => {
+            navigate('/ticket/' + id);
+          },
+        });
+        setSnackbarVisible(true);
+        setTimeout(() => setSnackbarVisible(false), 3000); // Hide after 3 seconds
+      })
+      .catch(() => {
+        setButtonState({
+          text: 'RSVP for this event',
+          loading: false,
+          disabled: false,
+          onClick: claimTicket,
+        });
+      });
+  }, [id]);
   const navigate = useNavigate();
   useEffect(() => {
     const fetchEvent = async (id: string) => {
@@ -119,9 +159,12 @@ export default function EventDetails() {
                 onClick: () => {},
               });
             }
-          } else if (res.data.event.state == 'TICKET_OPEN') {
+          } else if (
+            res.data.event.state == 'TICKET_OPEN' &&
+            res.data.event.is_ticket_feature_enabled
+          ) {
             if (res.data.event.Participant) {
-              if (res.data.event.Participant.attended) {
+              if (res.data.event.Participant.ticket_collected) {
                 setButtonState({
                   text: 'View Ticket',
                   loading: false,
@@ -132,10 +175,10 @@ export default function EventDetails() {
                 });
               } else {
                 setButtonState({
-                  text: 'Event is full',
+                  text: 'RSVP for this event',
                   loading: false,
-                  disabled: true,
-                  onClick: () => {},
+                  disabled: false,
+                  onClick: claimTicket,
                 });
               }
             } else {
@@ -146,13 +189,30 @@ export default function EventDetails() {
                 onClick: () => {},
               });
             }
-          } else if (res.data.event.state == 'TICKET_CLOSED') {
-            setButtonState({
-              text: 'Entry closed',
-              loading: false,
-              disabled: true,
-              onClick: () => {},
-            });
+          } else if (
+            res.data.event.state == 'TICKET_CLOSED' ||
+            !res.data.event.is_ticket_feature_enabled
+          ) {
+            if (
+              res.data.event.Participant &&
+              res.data.event.Participant.claimed_ticket
+            ) {
+              setButtonState({
+                text: 'View Ticket',
+                loading: false,
+                disabled: false,
+                onClick: () => {
+                  navigate('/ticket/' + res.data.event.id);
+                },
+              });
+            } else {
+              setButtonState({
+                text: 'RSVP closed',
+                loading: false,
+                disabled: true,
+                onClick: () => {},
+              });
+            }
           } else if (res.data.event.state == 'UPCOMING') {
             setButtonState({
               text: 'Registrations Opening Soon',

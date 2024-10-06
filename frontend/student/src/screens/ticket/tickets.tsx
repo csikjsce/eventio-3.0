@@ -1,27 +1,33 @@
 import { ArrowLeft } from 'iconsax-react';
 import { useContext, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { UserDataContext } from '../../contexts/userContext';
-import { axiosCall } from '../../utils/api';
+import axios from 'axios';
 
 export default function Ticket() {
   const navigate = useNavigate();
+  const { id } = useParams();
   const userContext = useContext(UserDataContext);
   const userData = userContext?.userData;
   const [eventData, setEventData] = useState<EventData>();
 
   const handleClose = () => {
-    navigate('/');
+    navigate('/event-details/' + id);
   };
 
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const response = await axiosCall('POST', '/event/p/get', true);
-        console.log(response);
-        if (response.events) {
-          console.log(response.events.TICKET_OPEN);
-          setEventData(response.events.TICKET_OPEN[0]);
+        const response = await axios.request({
+          baseURL: import.meta.env.VITE_APP_SERVER_ADDRESS,
+          url: '/api/v1' + `/event/p/get/${id}`,
+          method: 'POST',
+          headers: {
+            Authorization: 'Bearer ' + localStorage.getItem('accessToken'),
+          },
+        });
+        if (response.data && response.data.event) {
+          setEventData(response.data.event);
         }
       } catch (error) {
         console.error('Error fetching events:', error);
@@ -32,18 +38,10 @@ export default function Ticket() {
   }, []);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-center bg-cover h-screen relative">
-      <div className="absolute top-6 left-5 z-20  ">
-        <button
-          onClick={handleClose}
-          className="text-gray-700 text-xl font-bold rounded-full p-2"
-        >
-          <ArrowLeft size={24} color="white" />
-        </button>
-      </div>
-      <div className="max-w-md w-full mx-auto z-10 bg-white h-screen relative">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-center bg-cover text-foreground p-4">
+      <div className="max-w-md w-full mx-auto z-10 bg-background relative">
         <div className="flex flex-col">
-          <div className="bg-gray-200 relative drop-shadow-2xl p-4">
+          <div className="bg-card relative p-4 rounded-xl">
             <div className="flex-none sm:flex">
               <div className="flex-auto justify-evenly">
                 <div className="flex items-center justify-between">
@@ -51,35 +49,45 @@ export default function Ticket() {
                     <img
                       src={eventData?.banner_url}
                       alt="User"
-                      className="h-96 w-full object-cover rounded-lg"
+                      className="max-h-96 aspect-square w-full object-cover rounded-lg"
                     />
+                    <div className="absolute top-7 left-6 z-20  ">
+                      <button
+                        onClick={handleClose}
+                        className="text-xl font-bold rounded-full p-2 text-foreground bg-card"
+                      >
+                        <ArrowLeft size={24} color="currentColor" />
+                      </button>
+                    </div>
                   </div>
                 </div>
                 <div className="flex flex-col py-2">
                   <span className="text-2xl font-bold">{eventData?.name}</span>
-                  <div className="">{eventData?.description}</div>
-                  <div className="font-semibold">By CSI KJSCE</div>
+                  <div className="text-mute">{eventData?.description}</div>
+                  <div className="font-semibold">
+                    By {eventData?.organizer.name}
+                  </div>
                 </div>
-                <div className="border-dashed border-gray-500 border-b-2 my-5 pt-5">
-                  <div className="absolute rounded-full w-6 h-6 bg-white -mt-2 -left-2"></div>
-                  <div className="absolute rounded-full w-6 h-6 bg-white -mt-2 -right-2"></div>
+                <div className="border-dashed border-mute border-b-2 my-5 pt-5">
+                  <div className="absolute rounded-full w-6 h-6 bg-background -mt-2.5 -left-2"></div>
+                  <div className="absolute rounded-full w-6 h-6 bg-background -mt-2.5 -right-2"></div>
                 </div>
                 <div className="flex items-center mb-5 p-2 text-sm">
                   <div className="flex flex-col">
-                    <span className="text-sm">Name</span>
+                    <span className="text-sm text-mute">Name</span>
                     <div className="font-semibold">
                       {userData?.name || 'Unknown'}
                     </div>
-                    <span className="text-sm mt-2">College</span>
+                    <span className="text-sm mt-2 text-mute">College</span>
                     <div className="font-semibold">
                       {userData?.college || 'Unknown College'}
                     </div>
                   </div>
                 </div>
 
-                <div className="border-dashed border-gray-500 border-b-2 my-5 pt-5">
-                  <div className="absolute rounded-full w-6 h-6 bg-white -mt-2 -left-2"></div>
-                  <div className="absolute rounded-full w-6 h-6 bg-white -mt-2 -right-2"></div>
+                <div className="border-dashed border-mute border-b-2 my-5 pt-5">
+                  <div className="absolute rounded-full w-6 h-6 bg-background -mt-2.5 -left-2"></div>
+                  <div className="absolute rounded-full w-6 h-6 bg-background -mt-2.5 -right-2"></div>
                 </div>
 
                 <img

@@ -23,7 +23,7 @@ export default function NewEvent() {
     resolver: yupResolver(newEventSchema),
     defaultValues: {
       fee: 0,
-      is_ticket_feature_enabled: false,
+      is_ticket_feature_enabled: true,
       ma_ppt: 1,
       min_ppt: 1,
       is_feedback_enabled: false,
