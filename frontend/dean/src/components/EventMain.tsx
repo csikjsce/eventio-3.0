@@ -21,6 +21,7 @@ export default function EventMain({ event }: { event: EventData }) {
                 },
                 data: {
                     state: "UNLISTED",
+                    comment: null,
                 },
             });
             console.log(res.data);
