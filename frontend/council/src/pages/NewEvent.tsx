@@ -1,8 +1,7 @@
 import { useForm, FormProvider } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { NewEventSchema, newEventSchema } from '../utils/validation';
-import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
+import { DatePicker } from '@nayojs/react-datetime-picker';
 import { useEffect, useState, useContext } from 'react';
 import axios from 'axios';
 import Spinner from '../components/Spinner';
@@ -171,13 +170,19 @@ export default function NewEvent() {
     <FormProvider {...methods}>
       <div className="p-8 w-full relative">
         <p className="text-2xl font-fira text-foreground mb-4">New Event</p>
+        <p className="text-l font-fira text-foreground mt-4 mb-4">
+          Inputs marked with <strong className="text-red-600">*</strong>
+          are mandatory
+        </p>
         <form
           onSubmit={handleSubmit(onSubmit)}
           className="grid grid-cols-2 gap-6"
         >
           {/* Name */}
           <div>
-            <label className="block text-foreground">Event Name</label>
+            <label className="block text-foreground">
+              Event Name<strong className="text-red-600">*</strong>
+            </label>
             <input
               className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
               {...register('name')}
@@ -188,7 +193,9 @@ export default function NewEvent() {
 
           {/* Tagline */}
           <div>
-            <label className="block text-foreground">Tagline</label>
+            <label className="block text-foreground">
+              Tagline<strong className="text-red-600">*</strong>
+            </label>
             <input
               className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
               {...register('tag_line')}
@@ -199,18 +206,22 @@ export default function NewEvent() {
 
           {/* Description */}
           <div>
-            <label className="block text-foreground">Description</label>
+            <label className="block text-foreground">
+              Short Description<strong className="text-red-600">*</strong>
+            </label>
             <textarea
               className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
               {...register('description')}
-              placeholder="Enter event description"
+              placeholder="Enter event short description"
             />
             <p className="text-red-500">{errors.description?.message}</p>
           </div>
 
           {/* Long Description */}
           <div>
-            <label className="block text-foreground">Long Description</label>
+            <label className="block text-foreground">
+              Long Description<strong className="text-red-600">*</strong>
+            </label>
             <textarea
               className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
               {...register('long_description')}
@@ -226,11 +237,7 @@ export default function NewEvent() {
               {isMultipleDates ? 'Start Date' : 'Event Date'}
             </label>
             <DatePicker
-              selected={startDate}
-              showTimeSelect
-              onChange={(date) => setStartDate(date as Date)}
-              className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
-              placeholderText="Select event date"
+              selectDateHandler={(date: Date) => setStartDate(date as Date)}
             />
           </div>
 
@@ -239,12 +246,7 @@ export default function NewEvent() {
             <div>
               <label className="block text-foreground">End Date</label>
               <DatePicker
-                selected={endDate}
-                showTimeSelect
-                onChange={(date) => setEndDate(date as Date)}
-                className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
-                placeholderText="Select end date"
-                // disabled={!isMultipleDates}
+                selectDateHandler={(date: Date) => setEndDate(date as Date)}
               />
               <p className="text-red-500">{errors.dates?.message}</p>
             </div>
@@ -286,6 +288,7 @@ export default function NewEvent() {
           <div>
             <label className="block text-foreground">
               {eventType === 'ONLINE' ? 'Online Event Link' : 'Venue'}
+              <strong className="text-red-600">*</strong>
             </label>
             <input
               className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
@@ -308,7 +311,7 @@ export default function NewEvent() {
           {/* Event Page Image URL */}
           <div>
             <label className="block text-foreground">
-              Events Page Image URL
+              Events Page Image URL<strong className="text-red-600">*</strong>
             </label>
             <input
               className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
@@ -322,7 +325,9 @@ export default function NewEvent() {
 
           {/* Banner Image URL */}
           <div>
-            <label className="block text-foreground">Banner Image URL</label>
+            <label className="block text-foreground">
+              Banner Image URL<strong className="text-red-600">*</strong>
+            </label>
             <input
               className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
               {...register('banner_url')}
