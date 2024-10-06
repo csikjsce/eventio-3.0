@@ -19,6 +19,10 @@ const restrictedFieldsByRole = {
         unrestrictedRoles: ["ADMIN"],
         restrictedRole: ["all"],
     },
+    comment: {
+        unrestrictedRoles: ["ADMIN", "FACULTY"],
+        restrictedRole: ["all"],
+    },
     state: {
         unrestrictedRoles: ["ADMIN", "COUNCIL", "FACULTY"],
         restrictedRole: ["all"],
@@ -75,6 +79,7 @@ const restrictedFieldsByRole = {
 const validateUpdateFields = (req, res, next) => {
     const { role } = req.user;
     const field = req.body;
+    console.log(field, role);
     Object.keys(field).forEach((key) => {
         if (
             restrictedFieldsByRole[key] &&

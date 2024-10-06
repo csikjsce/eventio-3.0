@@ -1,10 +1,13 @@
 import { Calendar, Location } from "iconsax-react";
 import axios from "axios";
 import EventsDataContext from "../contexts/EventsDataContext";
-import { useContext } from "react";
+import { useContext, useState } from "react";
+import EventDialog from "./EventDialog";
 
 export default function EventMain({ event }: { event: EventData }) {
     const { refreshEventsData } = useContext(EventsDataContext);
+    const [isOpen, setIsOpen] = useState(false);
+    const [isRejected, setIsRejected] = useState<boolean>(false);
 
     async function approve() {
         try {
@@ -18,6 +21,7 @@ export default function EventMain({ event }: { event: EventData }) {
                 },
                 data: {
                     state: "UNLISTED",
+                    comment: null,
                 },
             });
             console.log(res.data);
@@ -27,7 +31,7 @@ export default function EventMain({ event }: { event: EventData }) {
         }
     }
 
-    async function reject() {
+    async function reject(comment: string) {
         try {
             const res = await axios.request({
                 baseURL: import.meta.env.VITE_APP_SERVER_ADDRESS,
@@ -39,6 +43,7 @@ export default function EventMain({ event }: { event: EventData }) {
                 },
                 data: {
                     state: "DRAFT",
+                    comment,
                 },
             });
             console.log(res.data);
@@ -50,6 +55,13 @@ export default function EventMain({ event }: { event: EventData }) {
 
     return (
         <div className="w-full outline outline-1 outline-card rounded-lg">
+            <EventDialog
+                isOpen={isOpen}
+                setIsOpen={setIsOpen}
+                approval={approve}
+                reject={reject}
+                isRejected={isRejected}
+            />
             <div
             // style={{
             //     maskImage:
@@ -101,18 +113,18 @@ export default function EventMain({ event }: { event: EventData }) {
                 <div className="flex gap-2 justify-center items-center text-foreground">
                     <button
                         className="border border-green-600 w-16 h-8 p-1 rounded-full hover:bg-green-600 hover:text-white active:bg-green-700"
-                        onClick={(e) => {
-                            approve();
-                            e.currentTarget.disabled = true;
+                        onClick={() => {
+                            setIsRejected(false);
+                            setIsOpen(true);
                         }}
                     >
                         ✓
                     </button>
                     <button
                         className="border border-red-600 w-16 h-8 p-1 rounded-full hover:bg-red-600 hover:text-white active:bg-red-700"
-                        onClick={(e) => {
-                            reject();
-                            e.currentTarget.disabled = true;
+                        onClick={() => {
+                            setIsRejected(true);
+                            setIsOpen(true);
                         }}
                     >
                         X

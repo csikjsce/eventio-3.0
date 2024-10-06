@@ -476,7 +476,7 @@ export default function NewEvent() {
           {/* State */}
           {event && (
             <div>
-              <label className="block text-foreground">State</label>
+              <label className="block text-foreground">Status</label>
               <select
                 className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
                 {...register('state')}

@@ -393,6 +393,7 @@ router.post(protected + "/create", authCheck, (req, res) => {
                     is_ticket_feature_enabled,
                     organizer_id: req.user.id,
                     dates,
+                    state_history:["DRAFT"]
                 },
             })
             .then((event) => {
@@ -424,12 +425,16 @@ router.post(
         if (req.user.role != "COUNCIL" && req.user.role != "FACULTY") {
             return res.status(403).json({ error: true, message: "Forbidden" });
         }
+        let state_history =[];
+        let state="";
         try {
             const event = await prisma.events.findUnique({
                 where: {
                     id: parseInt(req.params.id),
                 },
             });
+            state_history=event.state_history;
+            state=event.state;
             if (
                 event.organizer_id != req.user.id &&
                 req.user.role != "FACULTY"
@@ -445,7 +450,8 @@ router.post(
                 message: "Event not found",
             });
         }
-
+        
+        
         let field = req.body;
 
         field.logo_image__url = field.logo_image_url;
@@ -459,12 +465,18 @@ router.post(
         }
         console.log(field);
         console.log(req.body);
+        
         try {
+            if(field.state!=state){
+                state_history.push(field.state);
+                field.state_history=state_history;
+            }
             await prisma.events.update({
                 where: {
                     id: parseInt(req.params.id),
                 },
                 data: field,
+
             });
             res.json({
                 error: false,
