@@ -6,9 +6,8 @@ import './SplashScreen.css';
 function SplashScreen() {
   return (
     <div className="flex flex-col items-center justify-evenly min-h-screen text-center space-y-2">
-      {' '}
       <div>
-        <img src={logo} alt="Logo" className="logo" />
+        <img src={logo} alt="Logo" className="w-32" />
         <div>
           <h1 className="text-4xl font-bold font-marcellus text-vitality">
             Eventio
@@ -17,7 +16,6 @@ function SplashScreen() {
         </div>
       </div>
       <div className="flex justify-center items-center mb-4">
-        {' '}
         <div className="loader"></div>
       </div>
       <div className="flex items-center gap-4">
