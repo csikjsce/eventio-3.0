@@ -1,5 +1,11 @@
 import * as yup from 'yup';
 
+function yesterday() {
+  const date = new Date();
+  date.setDate(date.getDate() - 1);
+  return date;
+}
+
 export const newEventSchema = yup.object({
   name: yup
     .string()
@@ -61,7 +67,7 @@ export const newEventSchema = yup.object({
     .of(
       yup
         .date()
-        .min(new Date(), 'Event date must be in the future')
+        .min(yesterday(), 'Event dates must be in the future')
         .required('Each date must be valid'),
     )
     .min(1, 'At least one event date is required')

@@ -81,7 +81,7 @@ model Events {
   registration_type          REGISTRATION_TYPE @default(ONPLATFORM)
   external_registration_link String?
   is_ticket_feature_enabled  Boolean           @default(true)
-
+  comment                    String?            
   Participant Participant[]
 }
 

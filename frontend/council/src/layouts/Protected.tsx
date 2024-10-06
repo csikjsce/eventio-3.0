@@ -15,45 +15,45 @@ export default function Protected() {
 
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const response = await axiosCall('POST', '/user/p/me', true);
-        if (response.error) {
-          throw new Error('error fetching');
-        }
-        if (response && response.user) {
-          setUserData(response.user);
-          return { status: 200 };
-        } else {
-          setUserData(null);
-          return { status: 400 };
-        }
-      } catch (err) {
-        if ((err as { status: number; error: string }).status === 401) {
-          return { status: 401 };
-        }
-        console.error(err);
+  const fetchUser = async () => {
+    try {
+      const response = await axiosCall('POST', '/user/p/me', true);
+      if (response.error) {
+        throw new Error('error fetching');
+      }
+      if (response && response.user) {
+        setUserData(response.user);
+        return { status: 200 };
+      } else {
+        setUserData(null);
         return { status: 400 };
       }
-    };
-    const fetchEvents = async () => {
-      try {
-        const response = await axiosCall('POST', '/event/p/get', true);
-        if (response.error) {
-          throw new Error('error fetching');
-        }
-        if (response && response.events) {
-          setEventsData(response.events);
-        } else {
-          setEventsData(null);
-        }
-      } catch (err) {
-        console.error(err);
-        throw err;
+    } catch (err) {
+      if ((err as { status: number; error: string }).status === 401) {
+        return { status: 401 };
       }
-    };
+      console.error(err);
+      return { status: 400 };
+    }
+  };
+  const refreshEventsData = async () => {
+    try {
+      const response = await axiosCall('POST', '/event/p/get', true);
+      if (response.error) {
+        throw new Error('error fetching');
+      }
+      if (response && response.events) {
+        setEventsData(response.events);
+      } else {
+        setEventsData(null);
+      }
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
+  };
 
+  useEffect(() => {
     const handler = async () => {
       const resp = await fetchUser();
       if (resp.status === 401) {
@@ -76,15 +76,19 @@ export default function Protected() {
             navigate('/logout');
           }
         }
+      } else if (resp.status === 400) {
+        navigate('/logout');
       }
-      await fetchEvents();
+      await refreshEventsData();
     };
 
     handler();
   }, []);
   return (
     <UserDataContext.Provider value={{ userData, setUserData }}>
-      <EventsDataContext.Provider value={{ eventsData, setEventsData }}>
+      <EventsDataContext.Provider
+        value={{ eventsData, setEventsData, refreshEventsData }}
+      >
         <Outlet />
       </EventsDataContext.Provider>
     </UserDataContext.Provider>
