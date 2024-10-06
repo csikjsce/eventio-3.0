@@ -16,8 +16,8 @@ export default function Home() {
           Trending Events
         </p>
         <div className="overflow-x-auto flex gap-4 pb-6 px-4 -mx-4">
-          {events?.UPCOMING?.map((event) => (
-            <TrendingCard key={event.id} event={event} text="Coming Soon" />
+          {events?.TICKET_OPEN?.map((event) => (
+            <TrendingCard key={event.id} event={event} text="RSVP Now!!" />
           ))}
           {events?.ONGOING?.map((event) => (
             <TrendingCard key={event.id} event={event} text="Ongoing" />
@@ -29,12 +29,8 @@ export default function Home() {
               text="Registrations Open"
             />
           ))}
-          {events?.TICKET_OPEN?.map((event) => (
-            <TrendingCard
-              key={event.id}
-              event={event}
-              text="Tickets Released"
-            />
+          {events?.UPCOMING?.map((event) => (
+            <TrendingCard key={event.id} event={event} text="Coming Soon" />
           ))}
         </div>
       </div>

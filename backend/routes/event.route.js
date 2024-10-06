@@ -281,7 +281,7 @@ router.post(protected + "/get/:id", authCheck, async (req, res) => {
                         user_id: req.user.id,
                     },
                     select: {
-                        attended: true,
+                        ticket_collected: true,
                     },
                 },
             },
@@ -393,7 +393,7 @@ router.post(protected + "/create", authCheck, (req, res) => {
                     is_ticket_feature_enabled,
                     organizer_id: req.user.id,
                     dates,
-                    state_history:["DRAFT"]
+                    state_history: ["DRAFT"],
                 },
             })
             .then((event) => {
@@ -425,16 +425,16 @@ router.post(
         if (req.user.role != "COUNCIL" && req.user.role != "FACULTY") {
             return res.status(403).json({ error: true, message: "Forbidden" });
         }
-        let state_history =[];
-        let state="";
+        let state_history = [];
+        let state = "";
         try {
             const event = await prisma.events.findUnique({
                 where: {
                     id: parseInt(req.params.id),
                 },
             });
-            state_history=event.state_history;
-            state=event.state;
+            state_history = event.state_history;
+            state = event.state;
             if (
                 event.organizer_id != req.user.id &&
                 req.user.role != "FACULTY"
@@ -450,8 +450,7 @@ router.post(
                 message: "Event not found",
             });
         }
-        
-        
+
         let field = req.body;
 
         field.logo_image__url = field.logo_image_url;
@@ -465,18 +464,17 @@ router.post(
         }
         console.log(field);
         console.log(req.body);
-        
+
         try {
-            if(field.state!=state){
+            if (field.state != state) {
                 state_history.push(field.state);
-                field.state_history=state_history;
+                field.state_history = state_history;
             }
             await prisma.events.update({
                 where: {
                     id: parseInt(req.params.id),
                 },
                 data: field,
-
             });
             res.json({
                 error: false,
@@ -605,6 +603,71 @@ router.post(protected + "/register-for-event", authCheck, async (req, res) => {
                 message: "Error registering for event",
             });
         }
+    }
+});
+router.post(protected + "/claim-ticket", authCheck, async (req, res) => {
+    if (!req.user) {
+        return res.status(401).json({ error: true, message: "Unauthorized" });
+    }
+    let { event_id } = req.body;
+    let event = null;
+    try {
+        event = await prisma.events.findUnique({
+            where: {
+                id: parseInt(event_id),
+            },
+        });
+    } catch (err) {
+        logger.error(err);
+        return res
+            .status(500)
+            .json({ error: true, message: "Error fetching event" });
+    }
+    let participant = null;
+    try {
+        participant = await prisma.participant.findFirstOrThrow({
+            where: {
+                user_id: req.user.id,
+                event_id: parseInt(event_id),
+            },
+        });
+    } catch (e) {
+        return res.status(400).json({
+            error: true,
+            message: "User hasn't registered for this event",
+        });
+    }
+    if (!event.is_ticket_feature_enabled) {
+        return res.status(400).json({
+            error: true,
+            message: "Ticket feature not enabled for this event",
+        });
+    }
+    if (participant.ticket_collected) {
+        return res.status(400).json({
+            error: true,
+            message: "Ticket already collected",
+        });
+    }
+    try {
+        await prisma.participant.update({
+            where: {
+                id: participant.id,
+            },
+            data: {
+                ticket_collected: true,
+            },
+        });
+        res.json({
+            error: false,
+            message: "Ticket claimed successfully",
+        });
+    } catch (err) {
+        logger.error(err);
+        return res.status(500).json({
+            error: true,
+            message: "Error claiming ticket",
+        });
     }
 });
 
