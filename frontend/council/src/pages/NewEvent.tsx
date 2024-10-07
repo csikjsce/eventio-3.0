@@ -9,36 +9,6 @@ import { useNavigate, useParams } from 'react-router-dom';
 import UserDataContext from '../contexts/UserDataContext';
 import EventsDataContext from '../contexts/EventsDataContext';
 
-function GayNigga({
-  isMultipleDays,
-  endDate,
-  setEndDate,
-  errors,
-}: {
-  isMultipleDays: boolean;
-  endDate: string;
-  setEndDate: (date: string) => void;
-  errors: any;
-}) {
-  if (isMultipleDays) {
-    return (
-      <div>
-        <label className="block text-foreground">End Date</label>
-        <input
-          type="datetime-local"
-          className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
-          onChange={(e) => {
-            setEndDate(e.target.value);
-          }}
-          value={endDate}
-        />
-        <p className="text-red-500">{errors.dates?.message}</p>
-      </div>
-    );
-  }
-  return <></>;
-}
-
 function dateToString(date: Date) {
   const formattedDate = date.toLocaleString('en-CA', {
     year: 'numeric',
