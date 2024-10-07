@@ -1,8 +1,6 @@
 import { useForm, FormProvider } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { NewEventSchema, newEventSchema } from '../utils/validation';
-import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
 import { useEffect, useState, useContext } from 'react';
 import axios from 'axios';
 import Spinner from '../components/Spinner';
@@ -10,6 +8,50 @@ import Loader from '../components/Loader';
 import { useNavigate, useParams } from 'react-router-dom';
 import UserDataContext from '../contexts/UserDataContext';
 import EventsDataContext from '../contexts/EventsDataContext';
+
+function GayNigga({
+  isMultipleDays,
+  endDate,
+  setEndDate,
+  errors,
+}: {
+  isMultipleDays: boolean;
+  endDate: string;
+  setEndDate: (date: string) => void;
+  errors: any;
+}) {
+  if (isMultipleDays) {
+    return (
+      <div>
+        <label className="block text-foreground">End Date</label>
+        <input
+          type="datetime-local"
+          className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
+          onChange={(e) => {
+            setEndDate(e.target.value);
+          }}
+          value={endDate}
+        />
+        <p className="text-red-500">{errors.dates?.message}</p>
+      </div>
+    );
+  }
+  return <></>;
+}
+
+function dateToString(date: Date) {
+  const formattedDate = date.toLocaleString('en-CA', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false, // 24-hour format
+  });
+
+  const formattedOutput = formattedDate.replace(', ', 'T').slice(0, 16);
+  return formattedOutput;
+}
 
 export default function NewEvent() {
   const navigate = useNavigate();
@@ -41,8 +83,8 @@ export default function NewEvent() {
   } = methods;
 
   // States for date inputs
-  const [startDate, setStartDate] = useState<Date | undefined>();
-  const [endDate, setEndDate] = useState<Date | undefined>();
+  const [startDate, setStartDate] = useState<string>(dateToString(new Date()));
+  const [endDate, setEndDate] = useState<string>(dateToString(new Date()));
   const [isMultipleDates, setIsMultipleDates] = useState(false);
   const [isTeamEvent, setIsTeamEvent] = useState(false);
 
@@ -73,11 +115,15 @@ export default function NewEvent() {
           }
           setEvent(response.data.event);
           methods.reset(response.data.event);
-          setStartDate(new Date(response.data.event.dates[0]));
+          setStartDate(dateToString(new Date(response.data.event.dates[0])));
           if (response.data.event.dates.length > 1) {
             setEndDate(
-              new Date(
-                response.data.event.dates[response.data.event.dates.length - 1],
+              dateToString(
+                new Date(
+                  response.data.event.dates[
+                    response.data.event.dates.length - 1
+                  ],
+                ),
               ),
             );
             setIsMultipleDates(true);
@@ -106,18 +152,16 @@ export default function NewEvent() {
       dateArray.push(new Date(currentDate));
       currentDate.setDate(currentDate.getDate() + 1);
     }
+    dateArray.push(end);
     return dateArray;
   }
 
   useEffect(() => {
-    if (!startDate) {
-      return;
-    }
     if (!isMultipleDates) {
-      setValue('dates', [startDate]);
+      setValue('dates', [new Date(startDate)]);
       return;
     }
-    const dates = getDates(startDate, endDate || startDate);
+    const dates = getDates(new Date(startDate), new Date(endDate));
     setValue('dates', dates);
   }, [startDate, endDate, isMultipleDates]);
 
@@ -225,29 +269,34 @@ export default function NewEvent() {
             <label className="block text-foreground">
               {isMultipleDates ? 'Start Date' : 'Event Date'}
             </label>
-            <DatePicker
-              selected={startDate}
-              showTimeSelect
-              onChange={(date) => setStartDate(date as Date)}
+            <input
+              type="datetime-local"
               className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
-              placeholderText="Select event date"
+              onChange={(e) => {
+                setStartDate(e.target.value);
+              }}
+              // value={startDate?.toISOString().slice(0, 16)}
+              // defaultValue={startDate?.toLocaleString().slice(0, 16)}
+              value={startDate}
             />
           </div>
 
           {/* End Date (Only if multiple dates are allowed) */}
-          {isMultipleDates && (
+          {isMultipleDates ? (
             <div>
               <label className="block text-foreground">End Date</label>
-              <DatePicker
-                selected={endDate}
-                showTimeSelect
-                onChange={(date) => setEndDate(date as Date)}
+              <input
+                type="datetime-local"
                 className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
-                placeholderText="Select end date"
-                // disabled={!isMultipleDates}
+                onChange={(e) => {
+                  setEndDate(e.target.value);
+                }}
+                value={endDate}
               />
               <p className="text-red-500">{errors.dates?.message}</p>
             </div>
+          ) : (
+            <></>
           )}
 
           {/* Checkbox for multiple dates */}
@@ -256,6 +305,7 @@ export default function NewEvent() {
               <input
                 type="checkbox"
                 onChange={() => setIsMultipleDates(!isMultipleDates)}
+                checked={isMultipleDates}
               />
               This is a multi-day event
             </label>
