@@ -4,8 +4,6 @@ import CouncilCard from '../../components/CouncilCard';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 
-import csiLogo from '../../assets/csiLogo.png';
-
 export default function Councils() {
   const [councils, setCouncils] = useState<User[]>([]);
 
