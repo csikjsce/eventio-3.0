@@ -2,8 +2,8 @@ const express = require("express");
 const jwt = require("jsonwebtoken");
 const router = express.Router();
 const passport = require("passport");
-const prisma = require("../utils/prisma_client");
-const logger = require("../utils/logger");
+const prisma = require("../../utils/prisma_client");
+const logger = require("../../utils/logger");
 
 router.get("/google", (req, res, next) => {
     passport.authenticate("google", {
@@ -39,17 +39,17 @@ router.get(
                 logger.error(e);
                 res.redirect(`${process.env.CLIENT_URL}?failure=${500}`);
             });
-            let redirectURL;
-            switch (userDB.role) {
-                case "FACULTY":
-                    redirectURL = process.env.FACULTY_CLIENT_URL;
-                    break;
-                case "COUNCIL":
-                    redirectURL = process.env.COUNCIL_CLIENT_URL;
-                    break;
-                default:
-                    redirectURL = process.env.CLIENT_URL;
-            }
+        let redirectURL;
+        switch (userDB.role) {
+            case "FACULTY":
+                redirectURL = process.env.FACULTY_CLIENT_URL;
+                break;
+            case "COUNCIL":
+                redirectURL = process.env.COUNCIL_CLIENT_URL;
+                break;
+            default:
+                redirectURL = process.env.CLIENT_URL;
+        }
         res.redirect(
             `${
                 redirectURL + process.env.FRONTEND_REDIRECT_PATH

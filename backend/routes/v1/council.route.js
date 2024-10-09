@@ -1,6 +1,6 @@
 const express = require("express");
-const authCheck = require("../middleware/auth.middleware");
-const prisma = require("../utils/prisma_client");
+const authCheck = require("../../middleware/auth.middleware");
+const prisma = require("../../utils/prisma_client");
 const router = express.Router();
 
 let protected = "/p";

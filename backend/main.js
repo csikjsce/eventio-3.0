@@ -10,10 +10,8 @@ const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const prisma = require("./utils/prisma_client");
 const session = require("express-session");
 
-const userRoute = require("./routes/user.route");
-const authRoute = require("./routes/auth.route");
-const eventRoute = require("./routes/event.route");
-const councilRoute = require("./routes/council.route");
+const v1Router = require("./routes/v1/router");
+const v2Router = require("./routes/v2/router");
 
 // passport setup
 passport.use(
@@ -34,33 +32,24 @@ passport.use(
             } catch (e) {
                 let email = profile.emails[0].value;
                 let is_somaiya_student = email.split("@")[1] == "somaiya.edu";
-                
                 try {
-
-                    try{
-                        console.log("ADMIN DHUNDH RHA HU");
-                        
+                    try {
                         let admin = await prisma.admins.findUnique({
                             where: { email: email },
                         });
-                        if(admin){
-                            console.log("ADMIN MIL GYA "); 
-                        }
-                        
-                            let User = await prisma.user.create({
-                                data: {
-                                    google_id: profile.id,
-                                    email: email,
-                                    name: profile.displayName,
-                                    photo_url: profile.photos[0].value,
-                                    is_somaiya_student: is_somaiya_student,
-                                    role: admin.role,
-                                },
-                            });
-                            profile["user_id"] = User.id;
-                            return done(null, profile);
-                    }catch(e){
-                        console.error(e);
+                        let User = await prisma.user.create({
+                            data: {
+                                google_id: profile.id,
+                                email: email,
+                                name: profile.displayName,
+                                photo_url: profile.photos[0].value,
+                                is_somaiya_student: is_somaiya_student,
+                                role: admin.role,
+                            },
+                        });
+                        profile["user_id"] = User.id;
+                        return done(null, profile);
+                    } catch (e) {
                         let user = await prisma.user.create({
                             data: {
                                 google_id: profile.id,
@@ -77,12 +66,12 @@ passport.use(
                     logger.error(err);
                     return done(
                         new Error("error fetching/creating user"),
-                        null
+                        null,
                     );
                 }
             }
-        }
-    )
+        },
+    ),
 );
 passport.serializeUser((user, done) => {
     done(null, user);
@@ -101,7 +90,7 @@ passport.deserializeUser(async (user, done) => {
 //middlewares
 app.use(passport.initialize());
 app.use(
-    session({ secret: "secretkey", resave: false, saveUninitialized: true })
+    session({ secret: "secretkey", resave: false, saveUninitialized: true }),
 );
 app.use(passport.session());
 app.use(httpLogger);
@@ -110,23 +99,18 @@ app.use(
     cors({
         origin: "*",
         credentials: true,
-    })
+    }),
 );
 
-// version
-const version = "v1";
-
 // routes
-app.get("/api/" + version + "/health", async (req, res) => {
+app.get("/api/health", async (req, res) => {
     res.json({
         status: "up and running",
     });
 });
 
-app.use("/api/" + version + "/user", userRoute);
-app.use("/api/" + version + "/auth", authRoute);
-app.use("/api/" + version + "/event", eventRoute);
-app.use("/api/" + version + "/council", councilRoute);
+app.use("/api/v1", v1Router);
+app.use("/api/v2", v2Router);
 
 if (process.env.NODE_ENV !== "production") {
     const port = process.env.PORT || 8000;

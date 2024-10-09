@@ -1,17 +1,17 @@
 const express = require("express");
 const router = express.Router();
-const authCheck = require("../middleware/auth.middleware");
-const prisma = require("../utils/prisma_client");
-const logger = require("../utils/logger");
+const authCheck = require("../../middleware/auth.middleware");
+const prisma = require("../../utils/prisma_client");
+const logger = require("../../utils/logger");
 
 let protected = "/p";
 router.post(protected + "/me", authCheck, (req, res) => {
-    delete req.user['google_id']
-    delete req.user['refresh_token']
-    delete req.user['updated_at']
-    delete req.user['created_at']
-    delete req.user['council_type']
-    delete req.user['about']
+    delete req.user["google_id"];
+    delete req.user["refresh_token"];
+    delete req.user["updated_at"];
+    delete req.user["created_at"];
+    delete req.user["council_type"];
+    delete req.user["about"];
     res.json({
         error: false,
         user: req.user,

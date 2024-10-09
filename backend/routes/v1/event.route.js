@@ -1,8 +1,8 @@
 const express = require("express");
-const authCheck = require("../middleware/auth.middleware");
-const prisma = require("../utils/prisma_client");
-const logger = require("../utils/logger");
-const validateUpdateFields = require("../middleware/field-validator.middlware");
+const authCheck = require("../../middleware/auth.middleware");
+const prisma = require("../../utils/prisma_client");
+const logger = require("../../utils/logger");
+const validateUpdateFields = require("../../middleware/field-validator.middlware");
 const router = express.Router();
 
 let protected = "/p";
