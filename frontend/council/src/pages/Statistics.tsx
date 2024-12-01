@@ -12,7 +12,7 @@ const dummyData = {
   events: [
     {
       id: 1,
-      name: "Tech Workshop 2023",
+      name: "Coffee with codecell",
       category: "Technical",
       date: "2023-01-15",
       participants: 150,
@@ -22,7 +22,7 @@ const dummyData = {
     },
     {
       id: 2,
-      name: "Cultural",
+      name: "RTP",
       category: "Cultural",
       date: "2023-02-20",
       participants: 200,
@@ -32,7 +32,7 @@ const dummyData = {
     },
     {
       id: 3,
-      name: "Sports Meet",
+      name: "Bit By Bid",
       category: "Sports",
       date: "2023-03-10",
       participants: 180,
@@ -147,7 +147,7 @@ export default function Statistics() {
               onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
             />
           </div>
-          
+
           <select
             className="bg-card rounded-lg px-4 py-2 border-none text-white"
             value={filters.category}
@@ -167,11 +167,10 @@ export default function Statistics() {
           {filteredEvents.map(event => (
             <div
               key={event.id}
-              className={`p-4 rounded-lg cursor-pointer transition-all ${
-                selectedEvents.includes(event)
+              className={`p-4 rounded-lg cursor-pointer transition-all ${selectedEvents.includes(event)
                   ? 'bg-primary text-primary-foreground'
                   : 'bg-card hover:bg-primary/10'
-              }`}
+                }`}
               onClick={() => {
                 setSelectedEvents(prev =>
                   prev.includes(event)
