@@ -12,8 +12,24 @@ import {
   YAxis
 } from 'recharts';
 
-const Stats = ({ eventId }) => {
-  const [data, setData] = useState({
+interface StatsProps {
+  eventId: string;
+}
+
+interface Data {
+  yearData: { name: string; value: number }[];
+  branchData: { name: string; value: number }[];
+  genderData: { name: string; value: number }[];
+}
+
+interface TooltipProps {
+  active: boolean;
+  payload: { value: number }[];
+  label: string;
+}
+
+const Stats: React.FC<StatsProps> = ({ eventId }) => {
+  const [data, setData] = useState<Data>({
     yearData: [
       { name: 'FY', value: 150 },
       { name: 'SY', value: 120 },
@@ -43,7 +59,7 @@ const Stats = ({ eventId }) => {
   useEffect(() => {
   }, [eventId]);
 
-  const CustomTooltip = ({ active, payload, label }) => {
+  const CustomTooltip: React.FC<TooltipProps> = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-card p-2 rounded-md shadow-md">
@@ -55,7 +71,7 @@ const Stats = ({ eventId }) => {
   };
 
   return (
-    <div className="w-full p-4 bg-background rounded-lg shadow-lg">
+    <div className="w-full bg-background rounded-lg shadow-lg">
       <div className="bg-card rounded-lg shadow-md overflow-hidden">
         <div className="p-4 md:p-6 border-b border-mute/20">
           <h2 className="font-marcellus text-2xl text-foreground">
@@ -69,7 +85,6 @@ const Stats = ({ eventId }) => {
           </div>
 
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-2">
-            {/* Year-wise Distribution */}
             <div className="min-h-[300px]">
               <p className="font-fira text-lg mb-4 text-foreground">
                 Year-wise Distribution
@@ -90,7 +105,6 @@ const Stats = ({ eventId }) => {
               </div>
             </div>
 
-            {/* Branch-wise Distribution */}
             <div className="min-h-[300px]">
               <p className="font-fira text-lg mb-4 text-foreground">
                 Branch-wise Distribution
@@ -119,7 +133,6 @@ const Stats = ({ eventId }) => {
               </div>
             </div>
 
-            {/* Gender Distribution */}
             <div className="min-h-[300px] md:col-span-2">
               <p className="font-fira text-lg mb-4 text-foreground">
                 Gender Distribution
@@ -155,4 +168,3 @@ const Stats = ({ eventId }) => {
 };
 
 export default Stats;
-

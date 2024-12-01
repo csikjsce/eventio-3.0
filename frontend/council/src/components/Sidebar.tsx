@@ -4,7 +4,7 @@ import { Home, Calendar, LogoutCurve, AddSquare } from 'iconsax-react';
 
 const routes = [
   { name: 'Home', to: '/', icon: <Home size="28" /> },
-  { name: 'Calendar', to: '/calendar', icon: <Calendar size="28" /> },
+  { name: 'Statistics', to: '/calendar', icon: <Calendar size="28" /> },
   { name: 'New Event', to: '/new-event', icon: <AddSquare size="28" /> },
 ];
 

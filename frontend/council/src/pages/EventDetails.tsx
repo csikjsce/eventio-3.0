@@ -153,7 +153,7 @@ export default function EventDetails() {
               )}
             </div>
           </div>
-          <div className="w-full lg:w-1/2">
+          <div className="w-full lg:w-1/2 lg:mt-0">
             <Stats eventId={id} />
           </div>
         </div>
