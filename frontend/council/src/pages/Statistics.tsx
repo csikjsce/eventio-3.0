@@ -1,18 +1,27 @@
 import React, { useMemo, useState } from 'react';
 import { BarChart, Bar, PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, XAxis, YAxis, LineChart, Line } from 'recharts';
-import { SearchNormal1, FilterSquare } from 'iconsax-react';
+import { FilterSquare, Calendar2, Location, User } from 'iconsax-react';
 
 const COLORS = {
+  primary: '#8884d8',
+  mute: '#aaaaaa',
+  branch: ['#FF8042', '#FFBB28', '#00C49F', '#0088FE', '#FF6B6B'],
+  gender: ['#0088FE', '#FF8042'],
   year: ['#8884d8', '#83a6ed', '#8dd1e1', '#82ca9d'],
-  branch: ['#ff7c43', '#f95d6a', '#d45087', '#a05195'],
-  gender: ['#0088FE', '#FF8042']
+  barChart: ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#00c49f']
+};
+
+const ComparisonMetrics = {
+  participants: "Participants",
+  duration: "Duration (hours)",
+  rating: "Rating"
 };
 
 const dummyData = {
   events: [
     {
       id: 1,
-      name: "Coffee with codecell",
+      name: "Coffee with CodeCell",
       category: "Technical",
       date: "2023-01-15",
       participants: 150,
@@ -39,13 +48,73 @@ const dummyData = {
       branch: "All",
       duration: 8,
       rating: 4.2
+    },
+    {
+      id: 4,
+      name: "Linux Workshop",
+      category: "Technical",
+      date: "2023-04-05",
+      participants: 120,
+      branch: "IT",
+      duration: 5,
+      rating: 4.6
+    },
+    {
+      id: 5,
+      name: "Crackathon",
+      category: "Technical",
+      date: "2023-05-12",
+      participants: 250,
+      branch: "All",
+      duration: 48,
+      rating: 4.9
+    },
+    {
+      id: 6,
+      name: "Devopia",
+      category: "Technical",
+      date: "2023-06-18",
+      participants: 300,
+      branch: "CSE",
+      duration: 12,
+      rating: 4.7
+    },
+    {
+      id: 7,
+      name: "UI & UX Workshop",
+      category: "Technical",
+      date: "2023-07-22",
+      participants: 100,
+      branch: "IT",
+      duration: 6,
+      rating: 4.4
+    },
+    {
+      id: 8,
+      name: "Technovate",
+      category: "Technical",
+      date: "2023-08-30",
+      participants: 400,
+      branch: "All",
+      duration: 72,
+      rating: 4.8
+    },
+    {
+      id: 9,
+      name: "ETH India",
+      category: "Technical",
+      date: "2023-09-15",
+      participants: 500,
+      branch: "All",
+      duration: 36,
+      rating: 4.9
     }
   ],
   eventCounts: [
-    { name: 'Technical', value: 15 },
-    { name: 'Cultural', value: 10 },
-    { name: 'Sports', value: 8 },
-    { name: 'Academic', value: 12 },
+    { name: 'Technical', value: 25 },
+    { name: 'Cultural', value: 15 },
+    { name: 'Sports', value: 10 },
+    { name: 'Academic', value: 20 },
   ],
   participationTrend: [
     { date: '2023-01', participants: 200 },
@@ -53,49 +122,51 @@ const dummyData = {
     { date: '2023-03', participants: 300 },
     { date: '2023-04', participants: 280 },
     { date: '2023-05', participants: 350 },
+    { date: '2023-06', participants: 400 },
+    { date: '2023-07', participants: 380 },
+    { date: '2023-08', participants: 450 },
+    { date: '2023-09', participants: 500 },
   ],
   branchDistribution: [
-    { name: 'CSE', value: 30 },
-    { name: 'IT', value: 25 },
+    { name: 'CSE', value: 35 },
+    { name: 'IT', value: 30 },
     { name: 'ECE', value: 20 },
-    { name: 'Mechanical', value: 15 },
-    { name: 'Civil', value: 10 },
+    { name: 'Mechanical', value: 10 },
+    { name: 'Civil', value: 5 },
   ],
   genderDistribution: [
-    { name: 'Male', value: 60 },
-    { name: 'Female', value: 40 },
+    { name: 'Male', value: 55 },
+    { name: 'Female', value: 45 },
   ],
-};
-
-const ComparisonMetrics = {
-  participants: "Participants",
-  duration: "Duration (hours)",
-  rating: "Rating"
 };
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-card p-2 rounded-md shadow-md">
-        <p className="font-fira text-sm text-white">{`${label}: ${payload[0].value}`}</p>
+      <div className="bg-background p-2 rounded-md shadow-md">
+        <p className="font-fira text-foreground text-sm font-medium">{`${label}`}</p>
+        {payload.map((entry, index) => (
+          <p key={index} className="font-fira text-white text-sm">
+            {`${entry.name}: ${entry.value}`}
+          </p>
+        ))}
       </div>
     );
   }
   return null;
 };
 
-export default function Statistics() {
+function Statistics() {
   const [selectedEvents, setSelectedEvents] = useState([]);
   const [filters, setFilters] = useState({
-    category: "All",
-    search: ""
+    category: "All"
   });
+  const [activeTab, setActiveTab] = useState("overview");
 
   const filteredEvents = useMemo(() => {
     return dummyData.events.filter(event => {
-      const matchesSearch = event.name.toLowerCase().includes(filters.search.toLowerCase());
       const matchesCategory = filters.category === "All" || event.category === filters.category;
-      return matchesSearch && matchesCategory;
+      return matchesCategory;
     });
   }, [filters]);
 
@@ -110,10 +181,10 @@ export default function Statistics() {
   }, [selectedEvents]);
 
   const keyInsights = useMemo(() => {
-    const totalEvents = dummyData.eventCounts.reduce((sum, event) => sum + event.value, 0);
-    const totalParticipants = dummyData.participationTrend.reduce((sum, trend) => sum + trend.participants, 0);
-    const averageAttendance = Math.round(totalParticipants / dummyData.participationTrend.length);
-    const mostPopularEvent = dummyData.eventCounts.reduce((max, event) => max.value > event.value ? max : event);
+    const totalEvents = dummyData.events.length;
+    const totalParticipants = dummyData.events.reduce((sum, event) => sum + event.participants, 0);
+    const averageAttendance = Math.round(totalParticipants / totalEvents);
+    const mostPopularEvent = dummyData.events.reduce((max, event) => max.participants > event.participants ? max : event);
     const mostActiveBranch = dummyData.branchDistribution.reduce((max, branch) => max.value > branch.value ? max : branch);
     const maleCount = dummyData.genderDistribution.find(g => g.name === 'Male')?.value || 0;
     const femaleCount = dummyData.genderDistribution.find(g => g.name === 'Female')?.value || 0;
@@ -124,7 +195,7 @@ export default function Statistics() {
     return {
       totalEvents,
       mostPopularEvent: mostPopularEvent.name,
-      mostPopularEventAttendees: mostPopularEvent.value,
+      mostPopularEventParticipants: mostPopularEvent.participants,
       averageAttendance,
       mostActiveBranch: mostActiveBranch.name,
       genderRatio,
@@ -132,112 +203,139 @@ export default function Statistics() {
   }, []);
 
   return (
-    <div className="w-full min-h-screen bg-background p-8">
-      <h1 className="text-3xl font-bold text-white mb-8">Council Statistics</h1>
+    <div className="w-full min-h-screen bg-background">
+      <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <h1 className="font-fira text-foreground text-3xl font-bold mb-8">Council Statistics</h1>
 
-      <div className="mb-8 space-y-4">
-        <div className="flex flex-wrap gap-4 items-center">
-          <div className="flex items-center space-x-2 bg-card rounded-lg px-4 py-2">
-            <SearchNormal1 size={20} className="text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Search events..."
-              className="bg-transparent border-none focus:outline-none text-white"
-              value={filters.search}
-              onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-            />
-          </div>
-
-          <select
-            className="bg-card rounded-lg px-4 py-2 border-none text-white"
-            value={filters.category}
-            onChange={(e) => setFilters(prev => ({ ...prev, category: e.target.value }))}
-          >
-            <option value="All">All Categories</option>
-            <option value="Technical">Technical</option>
-            <option value="Cultural">Cultural</option>
-            <option value="Sports">Sports</option>
-          </select>
-        </div>
-      </div>
-
-      <div className="mb-8">
-        <h2 className="text-xl font-bold mb-4 text-white">Select Events to Compare</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredEvents.map(event => (
-            <div
-              key={event.id}
-              className={`p-4 rounded-lg cursor-pointer transition-all ${selectedEvents.includes(event)
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-card hover:bg-primary/10'
+        <div className="mb-8">
+          <div className="flex space-x-4">
+            <button
+              className={`px-6 py-2 rounded-full font-fira text-lg ${activeTab === 'overview' ? 'bg-primary text-white' : 'bg-background text-foreground'
                 }`}
-              onClick={() => {
-                setSelectedEvents(prev =>
-                  prev.includes(event)
-                    ? prev.filter(e => e !== event)
-                    : [...prev, event]
-                );
-              }}
+              onClick={() => setActiveTab('overview')}
             >
-              <h3 className="font-bold text-white">{event.name}</h3>
-              <p className="text-sm opacity-80 text-white">{event.category} • {event.date}</p>
+              Overview
+            </button>
+            <button
+              className={`px-6 py-2 rounded-full font-fira text-lg ${activeTab === 'comparison' ? 'bg-primary text-white' : 'bg-background text-foreground'
+                }`}
+              onClick={() => setActiveTab('comparison')}
+            >
+              Event Comparison
+            </button>
+          </div>
+        </div>
+
+        {activeTab === 'overview' && (
+          <>
+            <KeyInsights insights={keyInsights} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+              <EventCountChart data={dummyData.eventCounts} />
+              <ParticipationTrendChart data={dummyData.participationTrend} />
+              <BranchDistributionChart data={dummyData.branchDistribution} />
+              <GenderDistributionChart data={dummyData.genderDistribution} />
             </div>
-          ))}
-        </div>
-      </div>
+          </>
+        )}
 
-      {selectedEvents.length > 0 && (
-        <div className="bg-card p-6 rounded-lg">
-          <h2 className="text-xl font-bold mb-4 text-white">Event Comparison</h2>
-          <ResponsiveContainer width="100%" height={400}>
-            <BarChart data={comparisonData}>
-              <XAxis dataKey="metric" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              {selectedEvents.map((event, index) => (
-                <Bar
-                  key={event.id}
-                  dataKey={event.name}
-                  fill={COLORS.year[index % COLORS.year.length]}
-                />
-              ))}
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
-        <EventCountChart data={dummyData.eventCounts} />
-        <ParticipationTrendChart data={dummyData.participationTrend} />
-        <BranchDistributionChart data={dummyData.branchDistribution} />
-        <GenderDistributionChart data={dummyData.genderDistribution} />
+        {activeTab === 'comparison' && (
+          <>
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold text-white mb-4">Event Comparison</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {filteredEvents.map(event => (
+                  <div
+                    key={event.id}
+                    className={`bg-card p-4 rounded-md shadow-md cursor-pointer ${selectedEvents.includes(event) ? 'border-2 border-blue-500' : ''}`}
+                    onClick={() => {
+                      setSelectedEvents(prev =>
+                        prev.includes(event)
+                          ? prev.filter(e => e !== event)
+                          : [...prev, event]
+                      );
+                    }}
+                  >
+                    <h3 className="font-bold text-white text-lg mb-2">{event.name}</h3>
+                    <p className="text-white">Category: {event.category}</p>
+                    <p className="text-white">Date: {event.date}</p>
+                    <p className="text-white">Participants: {event.participants}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {selectedEvents.length > 0 && (
+              <ComparisonChart data={comparisonData} events={selectedEvents} />
+            )}
+          </>
+        )}
       </div>
+    </div>
+  );
+}
 
-      <div className="mt-8">
-        <h2 className="text-2xl font-bold text-white mb-4">Key Insights</h2>
-        <ul className="list-disc list-inside space-y-2 text-white">
-          <li>Total events organized: {keyInsights.totalEvents}</li>
-          <li>Most popular event category: {keyInsights.mostPopularEvent} with {keyInsights.mostPopularEventAttendees} events</li>
-          <li>Average attendance per month: {keyInsights.averageAttendance}</li>
-          <li>Most active branch: {keyInsights.mostActiveBranch}</li>
-          <li>Gender ratio (Male:Female): {keyInsights.genderRatio}</li>
-        </ul>
+function KeyInsights({ insights }) {
+  return (
+    <div className="mb-8">
+      <h2 className="font-fira text-foreground text-2xl font-bold mb-4">Key Insights</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <InsightCard
+          icon={Calendar2}
+          title="Total events organized"
+          value={insights.totalEvents}
+        />
+        <InsightCard
+          icon={User}
+          title="Most popular event"
+          value={insights.mostPopularEvent}
+          subvalue={`${insights.mostPopularEventParticipants} participants`}
+        />
+        <InsightCard
+          icon={User}
+          title="Average attendance per event"
+          value={insights.averageAttendance}
+        />
+        <InsightCard
+          icon={Location}
+          title="Most active branch"
+          value={insights.mostActiveBranch}
+        />
+        <InsightCard
+          icon={User}
+          title="Gender ratio (Male:Female)"
+          value={insights.genderRatio}
+        />
       </div>
+    </div>
+  );
+}
+
+function InsightCard({ icon: Icon, title, value, subvalue }) {
+  return (
+    <div className="bg-card p-4 rounded-md shadow-md">
+      <div className="flex items-center mb-2">
+        <Icon size={24} color={COLORS.primary} variant="Bold" />
+        <h3 className="font-fira text-foreground text-lg font-bold ml-2">{title}</h3>
+      </div>
+      <p className="font-fira text-white text-2xl font-bold">{value}</p>
+      {subvalue && <p className="font-fira text-white text-sm">{subvalue}</p>}
     </div>
   );
 }
 
 function EventCountChart({ data }) {
   return (
-    <div className="bg-card p-4 rounded-lg shadow-md">
-      <h2 className="text-xl font-bold text-white mb-4">Event Count by Category</h2>
+    <div className="bg-card p-4 rounded-md shadow-md">
+      <h2 className="font-fira text-foreground text-xl font-bold mb-4">Event Count by Category</h2>
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={data}>
-          <XAxis dataKey="name" />
-          <YAxis />
+          <XAxis dataKey="name" tick={{ fill: COLORS.mute }} />
+          <YAxis tick={{ fill: COLORS.mute }} />
           <Tooltip content={<CustomTooltip />} />
-          <Bar dataKey="value" fill="#8884d8" />
+          <Bar dataKey="value">
+            {data.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={COLORS.barChart[index % COLORS.barChart.length]} />
+            ))}
+          </Bar>
         </BarChart>
       </ResponsiveContainer>
     </div>
@@ -246,14 +344,14 @@ function EventCountChart({ data }) {
 
 function ParticipationTrendChart({ data }) {
   return (
-    <div className="bg-card p-4 rounded-lg shadow-md">
-      <h2 className="text-xl font-bold text-white mb-4">Participation Trend</h2>
+    <div className="bg-card p-4 rounded-md shadow-md">
+      <h2 className="font-fira text-foreground text-xl font-bold mb-4">Participation Trend</h2>
       <ResponsiveContainer width="100%" height={300}>
         <LineChart data={data}>
-          <XAxis dataKey="date" />
-          <YAxis />
+          <XAxis dataKey="date" tick={{ fill: COLORS.mute }} />
+          <YAxis tick={{ fill: COLORS.mute }} />
           <Tooltip content={<CustomTooltip />} />
-          <Line type="monotone" dataKey="participants" stroke="#8884d8" />
+          <Line type="monotone" dataKey="participants" stroke={COLORS.primary} />
         </LineChart>
       </ResponsiveContainer>
     </div>
@@ -262,8 +360,8 @@ function ParticipationTrendChart({ data }) {
 
 function BranchDistributionChart({ data }) {
   return (
-    <div className="bg-card p-4 rounded-lg shadow-md">
-      <h2 className="text-xl font-bold text-white mb-4">Branch Distribution</h2>
+    <div className="bg-card p-4 rounded-md shadow-md">
+      <h2 className="font-fira text-foreground text-xl font-bold mb-4">Branch Distribution</h2>
       <ResponsiveContainer width="100%" height={300}>
         <PieChart>
           <Pie
@@ -271,7 +369,7 @@ function BranchDistributionChart({ data }) {
             cx="50%"
             cy="50%"
             outerRadius={80}
-            fill="#8884d8"
+            fill={COLORS.primary}
             dataKey="value"
             label
           >
@@ -289,8 +387,8 @@ function BranchDistributionChart({ data }) {
 
 function GenderDistributionChart({ data }) {
   return (
-    <div className="bg-card p-4 rounded-lg shadow-md">
-      <h2 className="text-xl font-bold text-white mb-4">Gender Distribution</h2>
+    <div className="bg-card p-4 rounded-md shadow-md">
+      <h2 className="font-fira text-foreground text-xl font-bold mb-4">Gender Distribution</h2>
       <ResponsiveContainer width="100%" height={300}>
         <PieChart>
           <Pie
@@ -298,7 +396,7 @@ function GenderDistributionChart({ data }) {
             cx="50%"
             cy="50%"
             outerRadius={80}
-            fill="#8884d8"
+            fill={COLORS.primary}
             dataKey="value"
             label
           >
@@ -313,3 +411,30 @@ function GenderDistributionChart({ data }) {
     </div>
   );
 }
+
+function ComparisonChart({ data, events }) {
+  const COLORS_EXTENDED = [
+    COLORS.primary,
+    '#FF8042', '#FFBB28', '#00C49F', '#0088FE', '#FF6B6B', '#4CAF50', '#9C27B0', '#FF9800'
+  ];
+
+  return (
+    <div className="bg-card p-4 rounded-md shadow-md overflow-x-auto">
+      <h2 className="font-fira text-foreground text-xl font-bold mb-4">Event Comparison</h2>
+      <ResponsiveContainer width="100%" height={400 + events.length * 30}>
+        <BarChart data={data} layout="vertical">
+          <XAxis type="number" tick={{ fill: COLORS.mute }} />
+          <YAxis dataKey="metric" type="category" width={150} tick={{ fill: COLORS.mute }} />
+          <Tooltip content={<CustomTooltip />} />
+          <Legend />
+          {events.map((event, index) => (
+            <Bar key={event.id} dataKey={event.name} fill={COLORS_EXTENDED[index % COLORS_EXTENDED.length]} />
+          ))}
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+export { Statistics };
+export default Statistics;

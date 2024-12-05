@@ -1,10 +1,10 @@
 import { NavLink, Link } from 'react-router-dom';
 import EventioLogo from '../assets/EventioLogo.svg';
-import { Home, Calendar, LogoutCurve, AddSquare } from 'iconsax-react';
+import { Home, StatusUp, LogoutCurve, AddSquare } from 'iconsax-react';
 
 const routes = [
   { name: 'Home', to: '/', icon: <Home size="28" /> },
-  { name: 'Statistics', to: '/calendar', icon: <Calendar size="28" /> },
+  { name: 'Statistics', to: '/statistics', icon: <StatusUp size="28" /> },
   { name: 'New Event', to: '/new-event', icon: <AddSquare size="28" /> },
 ];
 

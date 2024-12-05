@@ -20,7 +20,7 @@ const router = createBrowserRouter(
       <Route Component={Protected}>
         <Route Component={SidebarLayout}>
           <Route index Component={Home} />
-          <Route path="calendar" Component={Statistics} />
+          <Route path="statistics" Component={Statistics} />
           <Route path="new-event" Component={NewEvent} />
           <Route path="event-details/:id">
             <Route index Component={EventDetails} />
