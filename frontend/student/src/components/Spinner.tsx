@@ -1,6 +1,6 @@
-export default function Spinner() {
+export default function Spinner({ className = '' }: { className?: string }) {
   return (
-    <div role="status">
+    <div role="status" className={className}>
       <svg
         aria-hidden="true"
         className="w-8 h-8 text-gray-300 animate-spin fill-primary"
