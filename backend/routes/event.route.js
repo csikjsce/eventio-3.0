@@ -44,6 +44,11 @@ router.post(protected + "/get", authCheck, async (req, res) => {
                             email: true,
                         },
                     },
+                    children: {
+                        select: {
+                            id: true,
+                        },
+                    },
                 },
             });
             let event = {};
@@ -83,6 +88,11 @@ router.post(protected + "/get", authCheck, async (req, res) => {
                                 email: true,
                             },
                         },
+                        children: {
+                            select: {
+                                id: true,
+                            },
+                        },
                     },
                 });
             } else {
@@ -109,6 +119,11 @@ router.post(protected + "/get", authCheck, async (req, res) => {
                                 photo_url: true,
                                 id: true,
                                 email: true,
+                            },
+                        },
+                        children: {
+                            select: {
+                                id: true,
                             },
                         },
                     },
@@ -152,6 +167,11 @@ router.post(protected + "/get", authCheck, async (req, res) => {
                                 email: true,
                             },
                         },
+                        children: {
+                            select: {
+                                id: true,
+                            },
+                        },
                     },
                 });
             } else {
@@ -176,6 +196,11 @@ router.post(protected + "/get", authCheck, async (req, res) => {
                                 photo_url: true,
                                 id: true,
                                 email: true,
+                            },
+                        },
+                        children: {
+                            select: {
+                                id: true,
                             },
                         },
                     },
@@ -214,6 +239,11 @@ router.post(protected + "/get", authCheck, async (req, res) => {
                                 email: true,
                             },
                         },
+                        children: {
+                            select: {
+                                id: true,
+                            },
+                        },
                     },
                 });
             } else {
@@ -239,6 +269,11 @@ router.post(protected + "/get", authCheck, async (req, res) => {
                                 photo_url: true,
                                 id: true,
                                 email: true,
+                            },
+                        },
+                        children: {
+                            select: {
+                                id: true,
                             },
                         },
                     },
@@ -282,6 +317,11 @@ router.post(protected + "/get/:id", authCheck, async (req, res) => {
                     },
                     select: {
                         ticket_collected: true,
+                    },
+                },
+                children: {
+                    select: {
+                        id: true,
                     },
                 },
             },
@@ -329,88 +369,72 @@ router.post(protected + "/create", authCheck, (req, res) => {
         return res.status(403).json({ error: true, message: "Forbidden" });
     }
 
-    if (req.body.is_parent) {
-        let {
-            name,
-            title,
-            tag_line,
-            description,
-            long_description,
-            event_type,
-            banner_url,
-            logo_image_url,
-            event_page_image_url,
-            dates,
-            tags,
-            is_only_somaiya,
-            fee,
-        } = req.body;
-    } else {
-        let {
-            name,
-            title,
-            tag_line,
-            description,
-            long_description,
-            event_type,
-            is_only_somaiya,
-            fee,
-            tags,
-            banner_url,
-            logo_image_url,
-            event_page_image_url,
-            is_feedback_enabled,
-            attendance_type,
-            registration_type,
-            external_registration_link,
-            is_ticket_feature_enabled,
-            venue,
-            dates,
-        } = req.body;
-        if (dates && dates.length) {
-            dates = dates.map((d) => new Date(d));
-        }
-        prisma.events
-            .create({
-                data: {
-                    name,
-                    title,
-                    tag_line,
-                    event_type,
-                    description,
-                    long_description,
-                    is_only_somaiya,
-                    venue,
-                    fee,
-                    tags,
-                    banner_url,
-                    logo_image__url: logo_image_url,
-                    event_page_image_url,
-                    is_feedback_enabled,
-                    attendance_type,
-                    registration_type,
-                    external_registration_link,
-                    is_ticket_feature_enabled,
-                    organizer_id: req.user.id,
-                    dates,
-                    state_history: ["DRAFT"],
-                },
-            })
-            .then((event) => {
-                res.json({
-                    error: false,
-                    message: "Event created successfully",
-                    event,
-                });
-            })
-            .catch((err) => {
-                logger.error(err);
-                res.status(500).json({
-                    error: true,
-                    message: "Error creating event",
-                });
-            });
+    let {
+        name,
+        title,
+        tag_line,
+        description,
+        long_description,
+        event_type,
+        is_only_somaiya,
+        fee,
+        tags,
+        banner_url,
+        logo_image_url,
+        event_page_image_url,
+        parent_id,
+        is_feedback_enabled,
+        attendance_type,
+        registration_type,
+        external_registration_link,
+        is_ticket_feature_enabled,
+        venue,
+        dates,
+    } = req.body;
+    if (dates && dates.length) {
+        dates = dates.map((d) => new Date(d));
     }
+    prisma.events
+        .create({
+            data: {
+                name,
+                title,
+                tag_line,
+                event_type,
+                description,
+                long_description,
+                is_only_somaiya,
+                venue,
+                fee,
+                tags,
+                banner_url,
+                logo_image__url: logo_image_url,
+                event_page_image_url,
+                parent_id,
+                is_feedback_enabled,
+                attendance_type,
+                registration_type,
+                external_registration_link,
+                is_ticket_feature_enabled,
+                organizer_id: req.user.id,
+                dates,
+                state_history: ["DRAFT"],
+            },
+        })
+        .then((event) => {
+            res.json({
+                error: false,
+                message: "Event created successfully",
+                event,
+            });
+        })
+        .catch((err) => {
+            logger.error(err);
+            res.status(500).json({
+                error: true,
+                message: "Error creating event",
+            });
+        });
 });
 router.post(
     protected + "/update/:id",

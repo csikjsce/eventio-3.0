@@ -29,7 +29,22 @@ export default function NewEvent() {
   const [event, setEvent] = useState<NewEventSchema | null>(null);
 
   const { userData } = useContext(UserDataContext);
-  const { refreshEventsData } = useContext(EventsDataContext);
+  const { eventsList, refreshEventsData } = useContext(EventsDataContext);
+
+  const events = eventsList
+    .filter((event) =>
+      [
+        'UPCOMING',
+        'REGISTRATION_OPEN',
+        'REGISTRATION_CLOSED',
+        'TICKET_OPEN',
+        'TICKET_CLOSED',
+        'ONGOING',
+      ].includes(event.state),
+    )
+    .sort((a, b) => {
+      return a.name.localeCompare(b.name);
+    });
 
   const methods = useForm<NewEventSchema>({
     resolver: yupResolver(newEventSchema),
@@ -145,6 +160,9 @@ export default function NewEvent() {
 
   const onSubmit = async (data: NewEventSchema) => {
     data.logo_image_url = data.event_page_image_url;
+    if (data.parent_id === -1) {
+      data.parent_id = null;
+    }
     console.log(data);
     try {
       setLoading(true);
@@ -232,6 +250,25 @@ export default function NewEvent() {
             />
             <p className="text-red-500">{errors.long_description?.message}</p>
           </div>
+
+          {/* Parent Event */}
+          <div>
+            <label className="block text-foreground">Parent Event</label>
+            <select
+              className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
+              {...register('parent_id')}
+            >
+              <option value={-1}>None</option>
+              {events.map((event) => (
+                <option key={event.id} value={event.id}>
+                  {event.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Empty cell */}
+          <div></div>
 
           {/* Date Picker (Single or Range) */}
 

@@ -20,6 +20,7 @@ import Profile from '../screens/profile/Profile';
 
 import EventDetails from '../screens/events/EventDetails';
 import Ticket from '../screens/ticket/tickets';
+import ChildEvents from '../screens/events/ChildEvents';
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -34,6 +35,7 @@ const router = createBrowserRouter(
           <Route path="profile" Component={Profile} />
         </Route>
         <Route path="event-details/:id" Component={EventDetails} />
+        <Route path="child-events/:id" Component={ChildEvents} />
         <Route path="ticket/:id" Component={Ticket} />
         <Route path="getting-started" Component={GetStarted} />
       </Route>

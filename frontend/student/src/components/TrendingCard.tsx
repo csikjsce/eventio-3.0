@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 export default function TrendingCard({
   event,
@@ -7,19 +7,14 @@ export default function TrendingCard({
   event: EventData;
   text: string;
 }) {
-  const navigate = useNavigate();
-
-  const handleClick = () => {
-    if (event.id) {
-      navigate(`/event-details/${event.id}`);
-    } else {
-      console.error('Event ID is missing');
-    }
-  };
   return (
-    <div
+    <Link
+      to={
+        event.children.length > 0
+          ? `/child-events/${event.id}`
+          : `/event-details/${event.id}`
+      }
       className="min-w-[97%] flex flex-col gap-2 bg-card  rounded-b-lg cursor-pointer shadow-lg"
-      onClick={handleClick}
     >
       {/* Event picture */}
       <img
@@ -52,6 +47,6 @@ export default function TrendingCard({
           {text}
         </p>
       </div>
-    </div>
+    </Link>
   );
 }

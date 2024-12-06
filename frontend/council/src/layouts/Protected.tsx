@@ -9,6 +9,20 @@ export default function Protected() {
   const [userData, setUserData] = useState<User | null>(null);
   const [eventsData, setEventsData] = useState<Events | null>(null);
 
+  const eventsList = [
+    ...(eventsData?.DRAFT || []),
+    ...(eventsData?.APPLIED_FOR_APPROVAL || []),
+    ...(eventsData?.UNLISTED || []),
+    ...(eventsData?.UPCOMING || []),
+    ...(eventsData?.REGISTRATION_OPEN || []),
+    ...(eventsData?.REGISTRATION_CLOSED || []),
+    ...(eventsData?.TICKET_OPEN || []),
+    ...(eventsData?.TICKET_CLOSED || []),
+    ...(eventsData?.ONGOING || []),
+    ...(eventsData?.COMPLETED || []),
+    ...(eventsData?.PRIVATE || []),
+  ];
+
   useEffect(() => {
     console.log(eventsData);
   }, [eventsData]);
@@ -87,7 +101,7 @@ export default function Protected() {
   return (
     <UserDataContext.Provider value={{ userData, setUserData }}>
       <EventsDataContext.Provider
-        value={{ eventsData, setEventsData, refreshEventsData }}
+        value={{ eventsData, setEventsData, eventsList, refreshEventsData }}
       >
         <Outlet />
       </EventsDataContext.Provider>
