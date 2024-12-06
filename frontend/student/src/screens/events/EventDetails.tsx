@@ -14,12 +14,15 @@ import IconText from '../../components/IconText';
 import Loader from '../../components/Loader';
 import Passage from '../../components/Passage';
 import Spinner from '../../components/Spinner';
+import FeedbackModal from '../../components/FeedbackModal';
 
 export default function EventDetails() {
   const [event, setEvent] = useState<EventData | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [snackbarVisible, setSnackbarVisible] = useState(false);
+
+  const [isFeedbackPopupOpen, setIsFeedbackPopupOpen] = useState(false);
 
   const [buttonState, setButtonState] = useState<{
     text: string;
@@ -204,7 +207,7 @@ export default function EventDetails() {
                 onClick: () => {
                   navigate('/ticket/' + res.data.event.id);
                 },
-              });
+              });  
             } else {
               setButtonState({
                 text: 'RSVP closed',
@@ -248,6 +251,15 @@ export default function EventDetails() {
                 onClick: () => {},
               });
             }
+          } else if (res.data.event.state == 'COMPLETED') {
+            setButtonState({
+              text: 'Give Feedback',
+              loading: false,
+              disabled: false,
+              onClick: () => {
+                setIsFeedbackPopupOpen(true);
+              },
+            });
           }
         });
     };
@@ -396,7 +408,7 @@ export default function EventDetails() {
             />
           </div>
 
-          <div className="fixed bottom-0 left-0 w-screen p-4 bg-background">
+          <div className="fixed bottom-0 left-0 w-screen p-4 bg-background flex gap-4">
             <button
               className="w-full rounded-full bg-primary text-center flex flex-row items-center justify-center gap-2 h-12"
               disabled={buttonState.disabled}
@@ -409,6 +421,16 @@ export default function EventDetails() {
             </button>
           </div>
         </div>
+        {isFeedbackPopupOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setIsFeedbackPopupOpen(false);
+            }
+          }}>
+          <FeedbackModal />
+        </div>
+        )}
         {snackbarVisible && (
           <div className="fixed bottom-5 left-1/2 transform -translate-x-1/2 w-96 bg-green-400 text-white p-4 rounded-md z-40 flex gap-4">
             <TickCircle size="24" color="#57585A" />
