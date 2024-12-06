@@ -258,6 +258,40 @@ router.post(protected + "/get", authCheck, async (req, res) => {
         }
     }
 });
+router.post(protected + "/get/me", authCheck, async (req, res) => {
+    if (!req.user) {
+        return res.status(401).json({ error: "Unauthorized" });
+    }
+    // events where user has participated
+    try {
+        let events = await prisma.participant.findMany({
+            where: {
+                user_id: req.user.id,
+            },
+            include: {
+                event: {
+                    include: {
+                        organizer: {
+                            select: {
+                                name: true,
+                                photo_url: true,
+                                id: true,
+                                email: true,
+                            },
+                        },
+                    },
+                },
+            },
+        });
+        events = events.filter((e) => e.event.state != "PRIVATE");
+        res.json({ error: false, events });
+    } catch (err) {
+        console.error(err);
+        return res
+            .status(500)
+            .json({ error: true, message: "Internal Server Error" });
+    }
+});
 router.post(protected + "/get/:id", authCheck, async (req, res) => {
     if (!req.user) {
         return res.status(401).json({ error: true, message: "Unauthorized" });

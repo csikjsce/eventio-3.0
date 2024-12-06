@@ -248,6 +248,13 @@ export default function EventDetails() {
                 onClick: () => {},
               });
             }
+          } else if (res.data.event.state == 'COMPLETED') {
+            setButtonState({
+              text: 'Event Completed',
+              loading: false,
+              disabled: true,
+              onClick: () => {},
+            });
           }
         });
     };

@@ -1,7 +1,7 @@
 import {
   ArrowRight2,
-  // Calendar,
   CallCalling,
+  Clock,
   Icon as Icontype,
   LogoutCurve,
   // UserEdit,
@@ -70,12 +70,12 @@ export default function Profile() {
                 Icon={UserEdit}
                 title="Edit Profile"
                 to="/profile/edit"
-              />
-              <ProfileItem
-                Icon={Calendar}
-                title="My Appointments"
-                to="/profile/appointments"
               /> */}
+              <ProfileItem
+                Icon={Clock}
+                title="My Events"
+                to="/profile/myevents"
+              />
               <ProfileItem
                 Icon={CallCalling}
                 title="Contact Us"
