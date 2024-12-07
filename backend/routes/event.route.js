@@ -537,7 +537,7 @@ router.get(protected + "/search/", authCheck, async (req, res) => {
             .json({ error: true, message: "Internal Server Error" });
     }
 });
-router.get(protected + "/stats", async (req, res) => {
+router.get(protected + "/stats", authCheck, async (req, res) => {
     if (!req.user) {
         return res.status(401).json({ error: true, message: "Unauthorized" });
     }
@@ -562,7 +562,6 @@ router.get(protected + "/stats", async (req, res) => {
             },
         });
 
-        
         const result = eventsStats.map((event) => {
             const totalParticipants = event.Participant.length;
 
@@ -741,7 +740,5 @@ router.post(protected + "/claim-ticket", authCheck, async (req, res) => {
         });
     }
 });
-
-
 
 module.exports = router;
