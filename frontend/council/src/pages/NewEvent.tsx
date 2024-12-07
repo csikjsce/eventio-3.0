@@ -98,8 +98,11 @@ export default function NewEvent() {
             );
             setIsMultipleDates(true);
           }
+          console.log(response.data.event.min_ppt);
           if (response.data.event.ma_ppt > 1) {
             setIsTeamEvent(true);
+            setValue('ma_ppt', response.data.event.ma_ppt);
+            setValue('min_ppt', response.data.event.min_ppt);
           } else {
             setValue('ma_ppt', 1);
             setValue('min_ppt', 1);
@@ -356,6 +359,7 @@ export default function NewEvent() {
             <label className="text-foreground max-w-44 flex items-center gap-2 select-none hover:cursor-pointer">
               <input
                 type="checkbox"
+                checked={isTeamEvent}
                 onChange={() => setIsTeamEvent(!isTeamEvent)}
               />
               Is this a team event?

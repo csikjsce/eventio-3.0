@@ -131,7 +131,17 @@ export default function EventDetails() {
           setEvent(res.data.event);
           setLoading(false);
           if (res.data.event.state == 'REGISTRATION_OPEN') {
-            if (res.data.event.Participant) {
+            if (res.data.event.ma_ppt > 1) {
+              setButtonState({
+                text: res.data.event.Participant ? 'View Team' : 'Register',
+                loading: false,
+                disabled: false,
+                onClick: () =>
+                  res.data.event.Participant
+                    ? navigate('/team-details/' + id)
+                    : navigate('/team-register/' + id),
+              });
+            } else if (res.data.event.Participant) {
               setButtonState({
                 text: 'Registered',
                 loading: false,

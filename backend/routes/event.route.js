@@ -1,11 +1,23 @@
 const express = require("express");
 const authCheck = require("../middleware/auth.middleware");
 const prisma = require("../utils/prisma_client");
+const { Prisma } = require("@prisma/client");
 const logger = require("../utils/logger");
 const validateUpdateFields = require("../middleware/field-validator.middlware");
 const router = express.Router();
 
 let protected = "/p";
+
+function generateRandomCode() {
+    const chars =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvqxyz0123456789";
+    let code = "";
+    const length = 5;
+    for (let i = 0; i < length; i++) {
+        code += chars[Math.floor(Math.random() * chars.length)];
+    }
+    return code;
+}
 
 router.post(protected + "/get", authCheck, async (req, res) => {
     console.log(req.query);
@@ -282,6 +294,25 @@ router.post(protected + "/get/:id", authCheck, async (req, res) => {
                     },
                     select: {
                         ticket_collected: true,
+                        team: {
+                            select: {
+                                id: true,
+                                name: true,
+                                leader_id: true,
+                                invite_code: true,
+                                Participant: {
+                                    select: {
+                                        user: {
+                                            select: {
+                                                id: true,
+                                                name: true,
+                                                photo_url: true,
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
                     },
                 },
             },
@@ -314,6 +345,8 @@ router.post(protected + "/get/:id", authCheck, async (req, res) => {
                 event.Participant.length == 0 ? false : event.Participant[0],
             start_in_event_activity: event.start_in_event_activity,
             in_event_activity: event.in_event_activity,
+            ma_ppt: event.ma_ppt,
+            min_ppt: event.min_ppt,
         };
         res.json({ error: false, event: eventResponse });
     } catch (err) {
@@ -583,6 +616,12 @@ router.post(protected + "/register-for-event", authCheck, async (req, res) => {
                     "Only Somaiya participants are allowed to register for this event",
             });
         }
+        if (event.state !== "REGISTRATION_OPEN") {
+            return res.status(403).json({
+                error: true,
+                message: "Registrations are not open.",
+            });
+        }
         try {
             await prisma.participant.create({
                 data: {
@@ -603,6 +642,362 @@ router.post(protected + "/register-for-event", authCheck, async (req, res) => {
                 message: "Error registering for event",
             });
         }
+    }
+});
+router.post(protected + "/create-team", authCheck, async (req, res) => {
+    if (!req.user) {
+        return res.status(401).json({ error: true, message: "Unauthorized" });
+    }
+    let { event_id, team_name } = req.body;
+    let event = null;
+    try {
+        event = await prisma.events.findUnique({
+            where: {
+                id: parseInt(event_id),
+            },
+        });
+    } catch (err) {
+        logger.error(err);
+        return res
+            .status(500)
+            .json({ error: true, message: "Error fetching event" });
+    }
+
+    try {
+        await prisma.participant.findFirstOrThrow({
+            where: {
+                user_id: req.user.id,
+                event_id: parseInt(event_id),
+            },
+        });
+        return res.status(400).json({
+            error: true,
+            message: "User already registered for this event",
+        });
+    } catch (e) {}
+
+    if (event.ma_ppt == 1) {
+        return res.status(403).json({
+            error: true,
+            message: "This is not a team event",
+        });
+    }
+
+    if (!req.user.is_somaiya_student && event.is_only_somaiya) {
+        return res.status(403).json({
+            error: true,
+            message:
+                "Only Somaiya participants are allowed to register for this event",
+        });
+    }
+
+    if (event.state !== "REGISTRATION_OPEN") {
+        return res.status(403).json({
+            error: true,
+            message: "Registrations are not open.",
+        });
+    }
+    const maxRetries = 5;
+    let retries = 0;
+    let team = null;
+    while (retries < maxRetries) {
+        let inviteCode = generateRandomCode();
+        console.log({
+            name: team_name,
+            event_id: parseInt(event_id),
+            leader_id: req.user.id,
+            invite_code: inviteCode,
+        });
+        try {
+            team = await prisma.team.create({
+                data: {
+                    name: team_name,
+                    event_id: parseInt(event_id),
+                    leader_id: req.user.id,
+                    invite_code: inviteCode,
+                },
+            });
+            break;
+        } catch (error) {
+            if (
+                error instanceof Prisma.PrismaClientKnownRequestError &&
+                error.code === "P2002" &&
+                error.meta?.target?.includes("invite_code")
+            ) {
+                // unique constraint failed for the invite code, retry
+                retries++;
+                console.warn(
+                    `Retrying due to invite code collision: ${inviteCode}`,
+                );
+            } else if (
+                error instanceof Prisma.PrismaClientKnownRequestError &&
+                error.code === "P2002" &&
+                error.meta?.target?.includes("name")
+            ) {
+                return res.status(400).json({
+                    error: true,
+                    message: "Team name already exists",
+                });
+            } else {
+                logger.error(error);
+                return res.status(500).json({
+                    error: true,
+                    message: "Error creating team",
+                });
+            }
+        }
+    }
+    try {
+        await prisma.participant.create({
+            data: {
+                event_id: parseInt(event_id),
+                user_id: req.user.id,
+                team_id: team.id,
+                amount: event.fee,
+                payment_status: event.fee == 0 ? "SUCCESS" : "PENDING",
+            },
+        });
+    } catch (err) {
+        logger.error(err);
+        return res.status(500).json({
+            error: true,
+            message: "Error joining team",
+        });
+    }
+    res.json({
+        error: false,
+        message: "Team created successfully",
+        team,
+    });
+});
+router.post(protected + "/join-team", authCheck, async (req, res) => {
+    if (!req.user) {
+        return res.status(401).json({ error: true, message: "Unauthorized" });
+    }
+    let { event_id, invite_code } = req.body;
+    let event = null;
+    try {
+        event = await prisma.events.findUnique({
+            where: {
+                id: parseInt(event_id),
+            },
+        });
+    } catch (err) {
+        logger.error(err);
+        return res
+            .status(500)
+            .json({ error: true, message: "Error fetching event" });
+    }
+
+    try {
+        await prisma.participant.findFirstOrThrow({
+            where: {
+                user_id: req.user.id,
+                event_id: parseInt(event_id),
+            },
+        });
+        return res.status(400).json({
+            error: true,
+            message: "User already registered for this event",
+        });
+    } catch (e) {}
+
+    if (event.ma_ppt == 1) {
+        return res.status(403).json({
+            error: true,
+            message: "This is not a team event",
+        });
+    }
+
+    if (!req.user.is_somaiya_student && event.is_only_somaiya) {
+        return res.status(403).json({
+            error: true,
+            message:
+                "Only Somaiya participants are allowed to register for this event",
+        });
+    }
+
+    if (event.state !== "REGISTRATION_OPEN") {
+        return res.status(403).json({
+            error: true,
+            message: "Registrations are not open.",
+        });
+    }
+
+    let team = null;
+    try {
+        team = await prisma.team.findFirstOrThrow({
+            where: {
+                AND: [
+                    {
+                        event_id: parseInt(event_id),
+                    },
+                    {
+                        invite_code: invite_code,
+                    },
+                ],
+            },
+        });
+    } catch (err) {
+        return res.status(404).json({ error: true, message: "Team not found" });
+    }
+
+    // count the number of participants in the team
+    let teamMembers = await prisma.participant.count({
+        where: {
+            AND: [
+                {
+                    event_id: parseInt(event_id),
+                },
+                {
+                    team_id: team.id,
+                },
+            ],
+        },
+    });
+
+    if (teamMembers >= event.ma_ppt) {
+        return res.status(403).json({
+            error: true,
+            message: "Team is full",
+        });
+    }
+
+    try {
+        await prisma.participant.create({
+            data: {
+                event_id: parseInt(event_id),
+                user_id: req.user.id,
+                team_id: team.id,
+                amount: event.fee,
+                payment_status: event.fee == 0 ? "SUCCESS" : "PENDING",
+            },
+        });
+        res.json({
+            error: false,
+            message: "Joined team successfully",
+            team,
+        });
+    } catch (err) {
+        logger.error(err);
+        return res.status(500).json({
+            error: true,
+            message: "Error joining team",
+        });
+    }
+});
+router.post(protected + "/delete-team", authCheck, async (req, res) => {
+    if (!req.user) {
+        return res.status(401).json({ error: true, message: "Unauthorized" });
+    }
+    let { event_id, team_id } = req.body;
+    let event = null;
+    try {
+        event = await prisma.events.findUniqueOrThrow({
+            where: {
+                id: parseInt(event_id),
+            },
+        });
+    } catch (err) {
+        logger.error(err);
+        return res
+            .status(500)
+            .json({ error: true, message: "Error fetching team" });
+    }
+
+    if (event.state !== "REGISTRATION_OPEN") {
+        return res.status(403).json({
+            error: true,
+            message: "Registrations are not open. Cannot delete team",
+        });
+    }
+
+    try {
+        await prisma.team.delete({
+            where: {
+                id: parseInt(team_id),
+                leader_id: req.user.id,
+            },
+        });
+        res.json({
+            error: false,
+            message: "Team deleted successfully",
+        });
+    } catch (err) {
+        logger.error(err);
+        return res.status(500).json({
+            error: true,
+            message: "Error deleting team",
+        });
+    }
+});
+router.post(protected + "/remove-from-team", authCheck, async (req, res) => {
+    if (!req.user) {
+        return res.status(401).json({ error: true, message: "Unauthorized" });
+    }
+    let { team_id, user_id } = req.body;
+    console.log(req.user.id, team_id, user_id);
+    let team = null;
+    try {
+        team = await prisma.team.findUniqueOrThrow({
+            where: {
+                id: parseInt(team_id),
+            },
+            include: {
+                event: true,
+            },
+        });
+    } catch (err) {
+        logger.error(err);
+        return res
+            .status(500)
+            .json({ error: true, message: "Error fetching team" });
+    }
+
+    if (team.event.state !== "REGISTRATION_OPEN") {
+        return res.status(403).json({
+            error: true,
+            message: "Registrations are not open. Cannot delete team",
+        });
+    }
+
+    if (team.leader_id === user_id) {
+        return res.status(403).json({
+            error: true,
+            message: "Leader cannot be removed from the team",
+        });
+    }
+
+    if (req.user.id !== team.leader_id && req.user.id !== user_id) {
+        return res.status(403).json({
+            error: true,
+            message: "Not authorized to remove user from team",
+        });
+    }
+
+    try {
+        await prisma.participant.deleteMany({
+            where: {
+                AND: [
+                    {
+                        team_id: parseInt(team_id),
+                    },
+                    {
+                        user_id: parseInt(user_id),
+                    },
+                ],
+            },
+        });
+        res.json({
+            error: false,
+            message: "User Removed successfully",
+        });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            error: true,
+            message: "Error deleting team",
+        });
     }
 });
 router.post(protected + "/claim-ticket", authCheck, async (req, res) => {

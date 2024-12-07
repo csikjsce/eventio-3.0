@@ -37,7 +37,20 @@ interface EventData {
   Participant:
     | false
     | {
-        attended: boolean;
+        ticket_collected: boolean;
+        team: null | {
+          id: number;
+          name: string;
+          leader_id: number;
+          invite_code: string;
+          Participant: {
+            user: {
+              id: number;
+              name: string;
+              photo_url: string;
+            };
+          }[];
+        };
       };
   in_event_activity?: string;
   start_in_event_activity?: boolean;
@@ -55,7 +68,7 @@ interface Events {
 
 // TypeScript Interface for User Data
 type User = {
-  id: string;
+  id: number;
   name: string;
   email: string;
   role: string;
