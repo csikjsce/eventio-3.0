@@ -113,7 +113,7 @@ function Statistics() {
           ...acc,
           [event.eventName]:
             event[
-              key === 'totalParticipants' ? key : Object.keys(event[key]).length
+            key === 'totalParticipants' ? key : Object.keys(event[key]).length
             ],
         }),
         {},
@@ -185,21 +185,19 @@ function Statistics() {
         <div className="mb-8">
           <div className="flex space-x-4">
             <button
-              className={`px-6 py-2 rounded-full font-fira text-lg ${
-                activeTab === 'overview'
-                  ? 'bg-primary text-white'
-                  : 'bg-background text-foreground'
-              }`}
+              className={`px-6 py-2 rounded-full font-fira text-lg ${activeTab === 'overview'
+                ? 'bg-primary text-white'
+                : 'bg-background text-foreground'
+                }`}
               onClick={() => setActiveTab('overview')}
             >
               Overview
             </button>
             <button
-              className={`px-6 py-2 rounded-full font-fira text-lg ${
-                activeTab === 'comparison'
-                  ? 'bg-primary text-white'
-                  : 'bg-background text-foreground'
-              }`}
+              className={`px-6 py-2 rounded-full font-fira text-lg ${activeTab === 'comparison'
+                ? 'bg-primary text-white'
+                : 'bg-background text-foreground'
+                }`}
               onClick={() => setActiveTab('comparison')}
             >
               Event Comparison
@@ -256,11 +254,10 @@ function Statistics() {
                 {filteredEvents.map((event) => (
                   <div
                     key={event.eventId}
-                    className={`bg-card p-4 rounded-md shadow-md cursor-pointer ${
-                      selectedEvents.includes(event)
-                        ? 'border-2 border-blue-500'
-                        : ''
-                    }`}
+                    className={`bg-card p-4 rounded-md shadow-md cursor-pointer ${selectedEvents.includes(event)
+                      ? 'border-2 border-blue-500'
+                      : ''
+                      }`}
                     onClick={() => {
                       setSelectedEvents((prev) =>
                         prev.includes(event)
@@ -350,7 +347,7 @@ function EventCountChart({ data }) {
       </h2>
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={data}>
-          <XAxis dataKey="name" tick={{ fill: COLORS.mute }} />
+          <XAxis tick={{ fill: COLORS.mute }} />
           <YAxis tick={{ fill: COLORS.mute }} />
           <Tooltip content={<CustomTooltip />} />
           <Bar dataKey="value">
