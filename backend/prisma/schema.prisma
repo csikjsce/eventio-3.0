@@ -161,6 +161,7 @@ model Participant {
   payment_status   PAYMENT_STATUS
   amount           Float          @default(0.0)
   ticket_collected Boolean?       @default(false)
+  rating           Int?
 }
 
 model Team {

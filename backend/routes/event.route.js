@@ -1000,6 +1000,66 @@ router.post(protected + "/remove-from-team", authCheck, async (req, res) => {
         });
     }
 });
+router.post(protected + "/rate", authCheck, async (req, res) => {
+    if (!req.user) {
+        return res.status(401).json({ error: true, message: "Unauthorized" });
+    }
+    let { event_id, rating } = req.body;
+    if (rating < 1 || rating > 5) {
+        return res
+            .status(400)
+            .json({ error: true, message: "Invalid rating value" });
+    }
+    try {
+        await prisma.events.findUnique({
+            where: {
+                id: parseInt(event_id),
+            },
+        });
+    } catch (err) {
+        logger.error(err);
+        return res
+            .status(500)
+            .json({ error: true, message: "Error fetching event" });
+    }
+    let participant = null;
+    try {
+        console.log(req.user.id, event_id);
+        participant = await prisma.participant.findFirstOrThrow({
+            where: {
+                user_id: req.user.id,
+                event_id: parseInt(event_id),
+            },
+        });
+    } catch (e) {
+        console.error(e);
+        return res.status(400).json({
+            error: true,
+            message: "User hasn't registered for this event",
+        });
+    }
+
+    try {
+        await prisma.participant.update({
+            where: {
+                id: participant.id,
+            },
+            data: {
+                rating,
+            },
+        });
+        res.json({
+            error: false,
+            message: "Rating updated successfully",
+        });
+    } catch (err) {
+        logger.error(err);
+        return res.status(500).json({
+            error: true,
+            message: "Error updating rating",
+        });
+    }
+});
 router.post(protected + "/claim-ticket", authCheck, async (req, res) => {
     if (!req.user) {
         return res.status(401).json({ error: true, message: "Unauthorized" });

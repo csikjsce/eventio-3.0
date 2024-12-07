@@ -217,7 +217,7 @@ export default function EventDetails() {
                 onClick: () => {
                   navigate('/ticket/' + res.data.event.id);
                 },
-              });  
+              });
             } else {
               setButtonState({
                 text: 'RSVP closed',
@@ -432,14 +432,21 @@ export default function EventDetails() {
           </div>
         </div>
         {isFeedbackPopupOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setIsFeedbackPopupOpen(false);
-            }
-          }}>
-          <FeedbackModal />
-        </div>
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setIsFeedbackPopupOpen(false);
+              }
+            }}
+          >
+            {event && (
+              <FeedbackModal
+                event_id={event.id}
+                setIsFeedbackPopupOpen={setIsFeedbackPopupOpen}
+              />
+            )}
+          </div>
         )}
         {snackbarVisible && (
           <div className="fixed bottom-5 left-1/2 transform -translate-x-1/2 w-96 bg-green-400 text-white p-4 rounded-md z-40 flex gap-4">
