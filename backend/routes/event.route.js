@@ -537,6 +537,77 @@ router.get(protected + "/search/", authCheck, async (req, res) => {
             .json({ error: true, message: "Internal Server Error" });
     }
 });
+router.get(protected + "/stats", async (req, res) => {
+    if (!req.user) {
+        return res.status(401).json({ error: true, message: "Unauthorized" });
+    }
+    try {
+        // Fetch all events with participant stats
+        const eventsStats = await prisma.events.findMany({
+            select: {
+                id: true,
+                name: true,
+                Participant: {
+                    select: {
+                        id: true,
+                        user: {
+                            select: {
+                                year: true,
+                                branch: true,
+                                gender: true,
+                            },
+                        },
+                    },
+                },
+            },
+        });
+
+        
+        const result = eventsStats.map((event) => {
+            const totalParticipants = event.Participant.length;
+
+            const yearStats = {};
+            const branchStats = {};
+            const genderStats = {};
+
+            event.Participant.forEach((participant) => {
+                const { year, branch, gender } = participant.user || {};
+
+                // Count year
+                if (year) {
+                    yearStats[year] = (yearStats[year] || 0) + 1;
+                }
+
+                // Count branch
+                if (branch) {
+                    branchStats[branch] = (branchStats[branch] || 0) + 1;
+                }
+
+                // Count gender
+                if (gender) {
+                    genderStats[gender] = (genderStats[gender] || 0) + 1;
+                }
+            });
+
+            return {
+                eventId: event.id,
+                eventName: event.name,
+                totalParticipants,
+                yearStats,
+                branchStats,
+                genderStats,
+            };
+        });
+
+        return res.json({ error: false, data: result });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            error: true,
+            message: "Error fetching event stats",
+        });
+    }
+});
 router.post(protected + "/get-children/:id", authCheck, (req, res) => {});
 router.post(protected + "/get-calendar", authCheck, (req, res) => {});
 router.post(protected + "/register-for-event", authCheck, async (req, res) => {
@@ -670,5 +741,7 @@ router.post(protected + "/claim-ticket", authCheck, async (req, res) => {
         });
     }
 });
+
+
 
 module.exports = router;
