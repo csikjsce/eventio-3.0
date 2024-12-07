@@ -49,7 +49,7 @@ export default function Ticket() {
                     <img
                       src={eventData?.banner_url}
                       alt="User"
-                      className="max-h-96 aspect-square w-full object-cover rounded-lg"
+                      className="aspect-square w-screen object-cover rounded-lg"
                     />
                     <div className="absolute top-7 left-6 z-20  ">
                       <button
@@ -72,17 +72,26 @@ export default function Ticket() {
                   <div className="absolute rounded-full w-6 h-6 bg-background -mt-2.5 -left-2"></div>
                   <div className="absolute rounded-full w-6 h-6 bg-background -mt-2.5 -right-2"></div>
                 </div>
-                <div className="flex items-center mb-5 p-2 text-sm">
-                  <div className="flex flex-col">
-                    <span className="text-sm text-mute">Name</span>
+
+                <div className="grid grid-cols-2">
+                  <div>
+                    <div className="text-sm text-mute">Name</div>
                     <div className="font-semibold">
                       {userData?.name || 'Unknown'}
                     </div>
-                    <span className="text-sm mt-2 text-mute">College</span>
+                    <div className="text-sm mt-2 text-mute">College</div>
                     <div className="font-semibold">
                       {userData?.college || 'Unknown College'}
                     </div>
                   </div>
+                  {eventData && eventData.Participant && (
+                    <div>
+                      <div className="text-sm text-mute">Team</div>
+                      <div className="font-semibold">
+                        {eventData?.Participant.team.name || 'Unknown'}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="border-dashed border-mute border-b-2 my-5 pt-5">

@@ -246,7 +246,7 @@ export default function EventDetails() {
               });
             } else if (res.data.event.start_in_event_activity) {
               setButtonState({
-                text: 'Start Activity',
+                text: 'Follow Activity',
                 loading: false,
                 disabled: false,
                 onClick: () => {

@@ -72,6 +72,8 @@ export default function NewEvent() {
   const [endDate, setEndDate] = useState<string>(dateToString(new Date()));
   const [isMultipleDates, setIsMultipleDates] = useState(false);
   const [isTeamEvent, setIsTeamEvent] = useState(false);
+  const [parentId, setParentId] = useState<number>(-1);
+  const [showParent, setShowParent] = useState<boolean>(false);
 
   const [loading, setLoading] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
@@ -112,6 +114,10 @@ export default function NewEvent() {
               ),
             );
             setIsMultipleDates(true);
+          }
+          if (response.data.event.parent_id) {
+            setParentId(response.data.event.parent_id);
+            setShowParent(true);
           }
           console.log(response.data.event.min_ppt);
           if (response.data.event.ma_ppt > 1) {
@@ -163,7 +169,7 @@ export default function NewEvent() {
 
   const onSubmit = async (data: NewEventSchema) => {
     data.logo_image_url = data.event_page_image_url;
-    if (data.parent_id === -1) {
+    if (data.parent_id === -1 || !showParent) {
       data.parent_id = null;
     }
     console.log(data);
@@ -256,22 +262,48 @@ export default function NewEvent() {
 
           {/* Parent Event */}
           <div>
-            <label className="block text-foreground">Parent Event</label>
-            <select
-              className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
-              {...register('parent_id')}
-            >
-              <option value={-1}>None</option>
-              {events.map((event) => (
-                <option key={event.id} value={event.id}>
-                  {event.name}
-                </option>
-              ))}
-            </select>
+            <label className="block text-foreground">Event Category</label>
+            <div className="mt-1 flex items-center gap-2">
+              <input
+                type="radio"
+                radioGroup="isMainOrSub"
+                checked={!showParent}
+                onChange={() => setShowParent(false)}
+              />
+              <label className="text-foreground">Main Event</label>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="radio"
+                radioGroup="isMainOrSub"
+                checked={showParent}
+                onChange={() => setShowParent(true)}
+              />
+              <label className="text-foreground">Sub Event</label>
+            </div>
           </div>
 
-          {/* Empty cell */}
-          <div></div>
+          {event && showParent ? (
+            <div>
+              <label className="block text-foreground">Parent Event</label>
+              <select
+                className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
+                {...register('parent_id')}
+                value={parentId}
+                onChange={(e) => setParentId(parseInt(e.target.value))}
+              >
+                {events
+                  .filter((e) => e.id !== event.id)
+                  .map((event) => (
+                    <option key={event.id} value={event.id}>
+                      {event.name}
+                    </option>
+                  ))}
+              </select>
+            </div>
+          ) : (
+            <div></div>
+          )}
 
           {/* Date Picker (Single or Range) */}
 
