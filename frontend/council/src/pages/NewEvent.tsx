@@ -26,7 +26,7 @@ function dateToString(date: Date) {
 export default function NewEvent() {
   const navigate = useNavigate();
   const { id } = useParams();
-  const [event, setEvent] = useState<NewEventSchema | null>(null);
+  const [event, setEvent] = useState<EventData | null>(null);
 
   const { userData } = useContext(UserDataContext);
   const { refreshEventsData } = useContext(EventsDataContext);
@@ -527,6 +527,14 @@ export default function NewEvent() {
                 )}
               </select>
               <p className="text-red-500">{errors.state?.message}</p>
+            </div>
+          )}
+
+          {/* Comment */}
+          {event && event.state === 'DRAFT' && event.comment && (
+            <div className="text-foreground">
+              Comment from Dean:
+              <p className="text-primary">{event.comment}</p>
             </div>
           )}
 
