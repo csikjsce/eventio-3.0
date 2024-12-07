@@ -421,6 +421,7 @@ router.post(protected + "/get/:id", authCheck, async (req, res) => {
             in_event_activity: event.in_event_activity,
             ma_ppt: event.ma_ppt,
             min_ppt: event.min_ppt,
+            comment: event.comment,
         };
         res.json({ error: false, event: eventResponse });
     } catch (err) {

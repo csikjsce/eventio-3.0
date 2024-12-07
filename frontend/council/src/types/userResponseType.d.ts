@@ -42,6 +42,7 @@ interface EventData {
       };
   in_event_activity?: string;
   start_in_event_activity?: boolean;
+  comment?: string;
 }
 
 // Interface for the Events object
