@@ -17,6 +17,7 @@ import Home from '../screens/home/home';
 import Calendar from '../screens/calendar/Calendar';
 import Councils from '../screens/councils/Councils';
 import Profile from '../screens/profile/Profile';
+import MyEvents from '../screens/events/MyEvents';
 
 import EventDetails from '../screens/events/EventDetails';
 import Ticket from '../screens/ticket/tickets';
@@ -33,6 +34,7 @@ const router = createBrowserRouter(
             <Route index Component={Home} />
             <Route path="calendar" Component={Calendar} />
             <Route path="councils" Component={Councils} />
+            <Route path="profile/myevents" Component={MyEvents} />
           </Route>
           <Route path="profile" Component={Profile} />
         </Route>
