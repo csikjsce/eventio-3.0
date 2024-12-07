@@ -27,6 +27,7 @@ interface EventData {
   };
   organizer_id: number;
   parent_id: number | null;
+  children: { id: number }[];
   registration_type: string;
   state: string;
   state_history: string[];

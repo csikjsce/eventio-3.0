@@ -142,6 +142,8 @@ export const newEventSchema = yup.object({
     .url('Must be a valid URL')
     .required('Event page image URL is required'),
 
+  parent_id: yup.number().nullable().notRequired(),
+
   is_feedback_enabled: yup.boolean().default(false).notRequired(),
 
   is_only_somaiya: yup

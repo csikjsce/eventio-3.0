@@ -22,6 +22,7 @@ import EventDetails from '../screens/events/EventDetails';
 import Ticket from '../screens/ticket/tickets';
 import TeamRegister from '../screens/events/TeamRegister';
 import TeamDetails from '../screens/events/TeamDetails';
+import ChildEvents from '../screens/events/ChildEvents';
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -37,6 +38,7 @@ const router = createBrowserRouter(
         </Route>
         // TODO: rename the event routes
         <Route path="event-details/:id" Component={EventDetails} />
+        <Route path="child-events/:id" Component={ChildEvents} />
         <Route path="ticket/:id" Component={Ticket} />
         <Route path="team-register/:id" Component={TeamRegister} />
         <Route path="team-details/:id" Component={TeamDetails} />

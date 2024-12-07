@@ -7,21 +7,8 @@ import Calendar from '../components/calendar/Calendar.tsx';
 
 export default function Home() {
   const { userData } = useContext(UserDataContext);
-  const { eventsData } = useContext(EventsDataContext);
-  const temp = [
-    ...(eventsData?.DRAFT || []),
-    ...(eventsData?.APPLIED_FOR_APPROVAL || []),
-    ...(eventsData?.UNLISTED || []),
-    ...(eventsData?.UPCOMING || []),
-    ...(eventsData?.REGISTRATION_OPEN || []),
-    ...(eventsData?.REGISTRATION_CLOSED || []),
-    ...(eventsData?.TICKET_OPEN || []),
-    ...(eventsData?.TICKET_CLOSED || []),
-    ...(eventsData?.ONGOING || []),
-    ...(eventsData?.COMPLETED || []),
-    ...(eventsData?.PRIVATE || []),
-  ];
-  const events = temp.filter(
+  const { eventsList } = useContext(EventsDataContext);
+  const events = eventsList.filter(
     (event) => event.organizer_id === Number(userData?.id),
   );
   return (
