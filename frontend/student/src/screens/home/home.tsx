@@ -42,8 +42,8 @@ export default function Home() {
           ))}
         </div>
       </div>
-      {events?.UPCOMING.filter(parentFilterOut) &&
-        events?.UPCOMING.filter(parentFilterOut).length != 0 && (
+      {events?.UPCOMING?.filter(parentFilterOut) &&
+        events?.UPCOMING?.filter(parentFilterOut).length != 0 && (
           <div className="flex flex-col gap-4 z-10">
             <p className="text-lg font-medium font-fira text-left text-foreground ">
               Upcoming Events
@@ -55,8 +55,8 @@ export default function Home() {
             </div>
           </div>
         )}
-      {events?.REGISTRATION_OPEN.filter(parentFilterOut) &&
-        events?.REGISTRATION_OPEN.filter(parentFilterOut).length != 0 && (
+      {events?.REGISTRATION_OPEN?.filter(parentFilterOut) &&
+        events?.REGISTRATION_OPEN?.filter(parentFilterOut).length != 0 && (
           <div className="flex flex-col gap-4 z-10">
             <p className="text-lg font-medium font-fira text-left text-foreground ">
               Registration Open
