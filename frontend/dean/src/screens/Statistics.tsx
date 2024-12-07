@@ -1,0 +1,474 @@
+import { useMemo, useState, useEffect } from 'react';
+import axios from 'axios';
+import { useParams } from 'react-router-dom';
+import {
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  Tooltip,
+  Legend,
+  XAxis,
+  YAxis,
+} from 'recharts';
+import { Calendar2, Location, User } from 'iconsax-react';
+
+const branchAbbreviations = {
+  Computer_Engineering: 'COMP',
+  Information_Technology: 'IT',
+  Mechanical: 'Mech',
+  Artificial_Intelligence_And_Data_Science: 'AIDS',
+  Electronics_And_Computers: 'EXCP',
+  Computer_Science_And_Business_Systems: 'CSBS',
+  Electronics_And_Telecommunications: 'EXTC',
+  Robotics_And_Artificial_Intelligence: 'RAI',
+  Computer_And_Communication: 'CCE',
+  Electronics: 'ETRX',
+  Electronics_VLSI: 'VLSI',
+};
+
+const COLORS = {
+  primary: '#8884d8',
+  mute: '#aaaaaa',
+  branch: [
+    '#0088FE',
+    '#00C49F',
+    '#FFBB28',
+    '#FF8042',
+    '#8884D8',
+    '#82CA9D',
+    '#FFC658',
+    '#FF6B6B',
+    '#4ECDC4',
+    '#556FB5',
+    '#9B59B6',
+  ],
+  gender: ['#0088FE', '#FF8042'],
+  year: ['#8884d8', '#83a6ed', '#8dd1e1', '#82ca9d'],
+  barChart: ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#00c49f'],
+};
+
+const ComparisonMetrics = {
+  totalParticipants: 'Participants',
+  yearStats: 'Year Distribution',
+  branchStats: 'Branch Distribution',
+  genderStats: 'Gender Distribution',
+};
+
+const CustomTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-background p-2 rounded-md shadow-md">
+        <p className="font-fira text-foreground text-sm font-medium">{`${label}`}</p>
+        {payload.map((entry, index) => (
+          <p key={index} className="font-fira text-white text-sm">
+            {`${entry.name}: ${entry.value}`}
+          </p>
+        ))}
+      </div>
+    );
+  }
+  return null;
+};
+
+function Statistics() {
+  const { councilId } = useParams();
+  const [selectedEvents, setSelectedEvents] = useState([]);
+  const [filters, setFilters] = useState({
+    category: 'All',
+  });
+  const [activeTab, setActiveTab] = useState('overview');
+  const [statsData, setStatsData] = useState(null);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await axios.request({
+          baseURL: import.meta.env.VITE_APP_SERVER_ADDRESS,
+          url: `/api/v1/event/p/stats?councilId=${councilId}`,
+          method: 'GET',
+          headers: {
+            Authorization: 'Bearer ' + localStorage.getItem('accessToken'),
+          },
+        });
+        setStatsData(response.data);
+      } catch (error) {
+        console.error('Error fetching stats:', error);
+      }
+    };
+    fetchStats();
+  }, [councilId]);
+
+  const filteredEvents = useMemo(() => {
+    return statsData?.data || [];
+  }, [statsData]);
+
+  const comparisonData = useMemo(() => {
+    return Object.entries(ComparisonMetrics).map(([key, label]) => ({
+      metric: label,
+      ...selectedEvents.reduce(
+        (acc, event) => ({
+          ...acc,
+          [event.eventName]:
+            event[
+            key === 'totalParticipants' ? key : Object.keys(event[key]).length
+            ],
+        }),
+        {},
+      ),
+    }));
+  }, [selectedEvents]);
+
+  const keyInsights = useMemo(() => {
+    if (!statsData?.data) return {};
+
+    const events = statsData.data;
+    const totalEvents = events.length;
+    const totalParticipants = events.reduce(
+      (sum, event) => sum + event.totalParticipants,
+      0,
+    );
+    const averageAttendance = Math.round(totalParticipants / totalEvents);
+    const mostPopularEvent = events.reduce((max, event) =>
+      max.totalParticipants > event.totalParticipants ? max : event,
+    );
+
+    const allBranches = events.flatMap((event) =>
+      Object.entries(event.branchStats).map(([branch, count]) => ({
+        branch,
+        count,
+      })),
+    );
+
+    const branchTotals = allBranches.reduce((acc, { branch, count }) => {
+      acc[branch] = (acc[branch] || 0) + count;
+      return acc;
+    }, {});
+
+    const mostActiveBranch = Object.entries(branchTotals).reduce(
+      (max, [branch, count]) => (count > max.count ? { branch, count } : max),
+      { branch: '', count: 0 },
+    );
+
+    const totalMale = events.reduce(
+      (sum, event) => sum + (event.genderStats['Male'] || 0),
+      0,
+    );
+    const totalFemale = events.reduce(
+      (sum, event) => sum + (event.genderStats['Female'] || 0),
+      0,
+    );
+
+    const gcd = (a, b) => (b === 0 ? a : gcd(b, a % b));
+    const gcdValue = gcd(totalMale, totalFemale);
+    const genderRatio = `${totalMale / gcdValue}:${totalFemale / gcdValue}`;
+
+    return {
+      totalEvents,
+      mostPopularEvent: mostPopularEvent.eventName,
+      mostPopularEventParticipants: mostPopularEvent.totalParticipants,
+      averageAttendance,
+      mostActiveBranch: mostActiveBranch.branch,
+      genderRatio,
+    };
+  }, [statsData]);
+
+  return (
+    <div className="w-full min-h-screen bg-background">
+      <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <h1 className="font-fira text-foreground text-3xl font-bold mb-8">
+          Council Statistics
+        </h1>
+
+        <div className="mb-8">
+          <div className="flex space-x-4">
+            <button
+              className={`px-6 py-2 rounded-full font-fira text-lg ${activeTab === 'overview'
+                ? 'bg-primary text-white'
+                : 'bg-background text-foreground'
+                }`}
+              onClick={() => setActiveTab('overview')}
+            >
+              Overview
+            </button>
+            <button
+              className={`px-6 py-2 rounded-full font-fira text-lg ${activeTab === 'comparison'
+                ? 'bg-primary text-white'
+                : 'bg-background text-foreground'
+                }`}
+              onClick={() => setActiveTab('comparison')}
+            >
+              Event Comparison
+            </button>
+          </div>
+        </div>
+
+        {activeTab === 'overview' && statsData?.data && (
+          <>
+            <KeyInsights insights={keyInsights} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+              <EventCountChart
+                data={statsData.data.map((event) => ({
+                  name: event.eventName,
+                  value: event.totalParticipants,
+                }))}
+              />
+              <BranchDistributionChart
+                data={Object.entries(
+                  statsData.data.reduce((acc, event) => {
+                    Object.entries(event.branchStats).forEach(
+                      ([branch, count]) => {
+                        acc[branchAbbreviations[branch]] =
+                          (acc[branchAbbreviations[branch]] || 0) + count;
+                      },
+                    );
+                    return acc;
+                  }, {}),
+                ).map(([name, value]) => ({ name, value }))}
+              />
+              <GenderDistributionChart
+                data={Object.entries(
+                  statsData.data.reduce((acc, event) => {
+                    Object.entries(event.genderStats).forEach(
+                      ([gender, count]) => {
+                        acc[gender] = (acc[gender] || 0) + count;
+                      },
+                    );
+                    return acc;
+                  }, {}),
+                ).map(([name, value]) => ({ name, value }))}
+              />
+            </div>
+          </>
+        )}
+
+        {activeTab === 'comparison' && (
+          <>
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold text-white mb-4">
+                Event Comparison
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {filteredEvents.map((event) => (
+                  <div
+                    key={event.eventId}
+                    className={`bg-card p-4 rounded-md shadow-md cursor-pointer ${selectedEvents.includes(event)
+                      ? 'border-2 border-blue-500'
+                      : ''
+                      }`}
+                    onClick={() => {
+                      setSelectedEvents((prev) =>
+                        prev.includes(event)
+                          ? prev.filter((e) => e !== event)
+                          : [...prev, event],
+                      );
+                    }}
+                  >
+                    <h3 className="font-bold text-white text-lg mb-2">
+                      {event.eventName}
+                    </h3>
+                    <p className="text-white">
+                      Participants: {event.totalParticipants}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {selectedEvents.length > 0 && (
+              <ComparisonChart data={comparisonData} events={selectedEvents} />
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function KeyInsights({ insights }) {
+  return (
+    <div className="mb-8">
+      <h2 className="font-fira text-foreground text-2xl font-bold mb-4">
+        Key Insights
+      </h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <InsightCard
+          icon={Calendar2}
+          title="Total events organized"
+          value={insights.totalEvents}
+        />
+        <InsightCard
+          icon={User}
+          title="Most popular event"
+          value={insights.mostPopularEvent}
+          subvalue={`${insights.mostPopularEventParticipants} participants`}
+        />
+        <InsightCard
+          icon={User}
+          title="Average attendance per event"
+          value={insights.averageAttendance}
+        />
+        <InsightCard
+          icon={Location}
+          title="Most active branch"
+          value={insights.mostActiveBranch}
+        />
+        <InsightCard
+          icon={User}
+          title="Gender ratio (Male:Female)"
+          value={insights.genderRatio}
+        />
+      </div>
+    </div>
+  );
+}
+
+function InsightCard({ icon: Icon, title, value, subvalue }) {
+  return (
+    <div className="bg-card p-4 rounded-md shadow-md">
+      <div className="flex items-center mb-2">
+        <Icon size={24} color={COLORS.primary} variant="Bold" />
+        <h3 className="font-fira text-foreground text-lg font-bold ml-2">
+          {title}
+        </h3>
+      </div>
+      <p className="font-fira text-white text-2xl font-bold">{value}</p>
+      {subvalue && <p className="font-fira text-white text-sm">{subvalue}</p>}
+    </div>
+  );
+}
+
+function EventCountChart({ data }) {
+  return (
+    <div className="bg-card p-4 rounded-md shadow-md">
+      <h2 className="font-fira text-foreground text-xl font-bold mb-4">
+        Event Participation Count
+      </h2>
+      <ResponsiveContainer width="100%" height={300}>
+        <BarChart data={data}>
+          <XAxis dataKey="name" tick={{ fill: COLORS.mute }} />
+          <YAxis tick={{ fill: COLORS.mute }} />
+          <Tooltip content={<CustomTooltip />} />
+          <Bar dataKey="value">
+            {data.map((entry, index) => (
+              <Cell
+                key={`cell-${index}`}
+                fill={COLORS.barChart[index % COLORS.barChart.length]}
+              />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+function BranchDistributionChart({ data }) {
+  return (
+    <div className="bg-card p-4 rounded-md shadow-md">
+      <h2 className="font-fira text-foreground text-xl font-bold mb-4">
+        Branch Distribution
+      </h2>
+      <ResponsiveContainer width="100%" height={300}>
+        <PieChart>
+          <Pie
+            data={data}
+            cx="50%"
+            cy="50%"
+            outerRadius={80}
+            fill={COLORS.primary}
+            dataKey="value"
+            label
+          >
+            {data.map((entry, index) => (
+              <Cell
+                key={`cell-${index}`}
+                fill={COLORS.branch[index % COLORS.branch.length]}
+              />
+            ))}
+          </Pie>
+          <Tooltip content={<CustomTooltip />} />
+          <Legend />
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+function GenderDistributionChart({ data }) {
+  return (
+    <div className="bg-card p-4 rounded-md shadow-md">
+      <h2 className="font-fira text-foreground text-xl font-bold mb-4">
+        Gender Distribution
+      </h2>
+      <ResponsiveContainer width="100%" height={300}>
+        <PieChart>
+          <Pie
+            data={data}
+            cx="50%"
+            cy="50%"
+            outerRadius={80}
+            fill={COLORS.primary}
+            dataKey="value"
+            label
+          >
+            {data.map((entry, index) => (
+              <Cell
+                key={`cell-${index}`}
+                fill={COLORS.gender[index % COLORS.gender.length]}
+              />
+            ))}
+          </Pie>
+          <Tooltip content={<CustomTooltip />} />
+          <Legend />
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+function ComparisonChart({ data, events }) {
+  const COLORS_EXTENDED = [
+    COLORS.primary,
+    '#FF8042',
+    '#FFBB28',
+    '#00C49F',
+    '#0088FE',
+    '#FF6B6B',
+    '#4CAF50',
+    '#9C27B0',
+    '#FF9800',
+  ];
+
+  return (
+    <div className="bg-card p-4 rounded-md shadow-md overflow-x-auto">
+      <h2 className="font-fira text-foreground text-xl font-bold mb-4">
+        Event Comparison
+      </h2>
+      <ResponsiveContainer width="100%" height={400 + events.length * 30}>
+        <BarChart data={data} layout="vertical">
+          <XAxis type="number" tick={{ fill: COLORS.mute }} />
+          <YAxis
+            dataKey="metric"
+            type="category"
+            width={150}
+            tick={{ fill: COLORS.mute }}
+          />
+          <Tooltip content={<CustomTooltip />} />
+          <Legend />
+          {events.map((event, index) => (
+            <Bar
+              key={event.eventId}
+              dataKey={event.eventName}
+              fill={COLORS_EXTENDED[index % COLORS_EXTENDED.length]}
+            />
+          ))}
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+export { Statistics };
+export default Statistics;
