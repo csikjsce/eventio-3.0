@@ -544,6 +544,9 @@ router.get(protected + "/stats", authCheck, async (req, res) => {
     try {
         // Fetch all events with participant stats
         const eventsStats = await prisma.events.findMany({
+            // where: {
+            //     organizer_id: req.user.id,
+            // },
             select: {
                 id: true,
                 name: true,

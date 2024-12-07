@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import {
   BarChart,
   Bar,
@@ -9,17 +10,11 @@ import {
   Tooltip,
   Legend,
   XAxis,
-  YAxis
+  YAxis,
 } from 'recharts';
 
 interface StatsProps {
   eventId: string;
-}
-
-interface Data {
-  yearData: { name: string; value: number }[];
-  branchData: { name: string; value: number }[];
-  genderData: { name: string; value: number }[];
 }
 
 interface TooltipProps {
@@ -28,38 +23,76 @@ interface TooltipProps {
   label: string;
 }
 
+interface EventStats {
+  eventId: string;
+  eventName: string;
+  totalParticipants: number;
+  yearStats: { [key: string]: number };
+  branchStats: { [key: string]: number };
+  genderStats: { [key: string]: number };
+}
+
 const Stats: React.FC<StatsProps> = ({ eventId }) => {
-  const [data, setData] = useState<Data>({
-    yearData: [
-      { name: 'FY', value: 150 },
-      { name: 'SY', value: 120 },
-      { name: 'TY', value: 100 },
-      { name: 'LY', value: 80 }
-    ],
-    branchData: [
-      { name: 'CSE', value: 200 },
-      { name: 'IT', value: 150 },
-      { name: 'MECH', value: 120 },
-      { name: 'CIVIL', value: 100 }
-    ],
-    genderData: [
-      { name: 'Male', value: 300 },
-      { name: 'Female', value: 270 }
-    ]
-  });
+  const [statsData, setStatsData] = useState<EventStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.request({
+          baseURL: import.meta.env.VITE_APP_SERVER_ADDRESS,
+          url: '/api/v1/event/p/stats',
+          method: 'GET',
+          headers: {
+            Authorization: 'Bearer ' + localStorage.getItem('accessToken'),
+          },
+        });
+
+        // Find the specific event stats from the response
+        const eventStats = response.data.data.find(
+          (event: EventStats) => event.eventId == eventId,
+        );
+
+        if (!eventStats) {
+          setError('Event not found');
+          return;
+        }
+
+        setStatsData(eventStats);
+        setError(null);
+      } catch (error) {
+        console.error('Error fetching stats:', error);
+        setError('Failed to fetch event statistics');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (eventId) {
+      fetchStats();
+    }
+  }, [eventId]);
 
   const COLORS = {
     year: ['#8884d8', '#83a6ed', '#8dd1e1', '#82ca9d'],
     branch: ['#ff7c43', '#f95d6a', '#d45087', '#a05195'],
-    gender: ['#0088FE', '#FF8042']
+    gender: ['#0088FE', '#FF8042'],
   };
 
-  const totalRegistrations = data.yearData.reduce((acc, curr) => acc + curr.value, 0);
+  const formatDataForCharts = (stats: { [key: string]: number }) => {
+    return Object.entries(stats).map(([name, value]) => ({
+      name,
+      value,
+    }));
+  };
 
-  useEffect(() => {
-  }, [eventId]);
-
-  const CustomTooltip: React.FC<TooltipProps> = ({ active, payload, label }) => {
+  const CustomTooltip: React.FC<TooltipProps> = ({
+    active,
+    payload,
+    label,
+  }) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-card p-2 rounded-md shadow-md">
@@ -70,18 +103,38 @@ const Stats: React.FC<StatsProps> = ({ eventId }) => {
     return null;
   };
 
+  if (loading) {
+    return (
+      <div className="w-full h-96 flex items-center justify-center">
+        <p className="text-foreground">Loading statistics...</p>
+      </div>
+    );
+  }
+
+  if (error || !statsData) {
+    return (
+      <div className="w-full h-96 flex items-center justify-center">
+        <p className="text-red-500">{error || 'No data available'}</p>
+      </div>
+    );
+  }
+
+  const yearData = formatDataForCharts(statsData.yearStats);
+  const branchData = formatDataForCharts(statsData.branchStats);
+  const genderData = formatDataForCharts(statsData.genderStats);
+
   return (
     <div className="w-full bg-background rounded-lg shadow-lg">
       <div className="bg-card rounded-lg shadow-md overflow-hidden">
         <div className="p-4 md:p-6 border-b border-mute/20">
           <h2 className="font-marcellus text-2xl text-foreground">
-            Event Statistics
+            {statsData.eventName} Statistics
           </h2>
         </div>
 
         <div className="p-4 md:p-6 space-y-8">
           <div className="text-xl md:text-2xl font-fira font-bold text-center text-foreground">
-            Total Registrations: {totalRegistrations}
+            Total Registrations: {statsData.totalParticipants}
           </div>
 
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-2">
@@ -91,13 +144,16 @@ const Stats: React.FC<StatsProps> = ({ eventId }) => {
               </p>
               <div className="h-64 w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={data.yearData}>
+                  <BarChart data={yearData}>
                     <XAxis dataKey="name" />
                     <YAxis />
                     <Tooltip content={<CustomTooltip />} />
                     <Bar dataKey="value">
-                      {data.yearData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS.year[index % COLORS.year.length]} />
+                      {yearData.map((entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={COLORS.year[index % COLORS.year.length]}
+                        />
                       ))}
                     </Bar>
                   </BarChart>
@@ -113,20 +169,27 @@ const Stats: React.FC<StatsProps> = ({ eventId }) => {
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
-                      data={data.branchData}
+                      data={branchData}
                       cx="50%"
                       cy="50%"
                       outerRadius={80}
                       dataKey="value"
                       label
                     >
-                      {data.branchData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS.branch[index % COLORS.branch.length]} />
+                      {branchData.map((entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={COLORS.branch[index % COLORS.branch.length]}
+                        />
                       ))}
                     </Pie>
                     <Tooltip content={<CustomTooltip />} />
                     <Legend
-                      formatter={(value) => <span className="font-fira text-sm text-mute">{value}</span>}
+                      formatter={(value) => (
+                        <span className="font-fira text-sm text-mute">
+                          {value}
+                        </span>
+                      )}
                     />
                   </PieChart>
                 </ResponsiveContainer>
@@ -141,20 +204,27 @@ const Stats: React.FC<StatsProps> = ({ eventId }) => {
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
-                      data={data.genderData}
+                      data={genderData}
                       cx="50%"
                       cy="50%"
                       outerRadius={80}
                       dataKey="value"
                       label
                     >
-                      {data.genderData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS.gender[index % COLORS.gender.length]} />
+                      {genderData.map((entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={COLORS.gender[index % COLORS.gender.length]}
+                        />
                       ))}
                     </Pie>
                     <Tooltip content={<CustomTooltip />} />
                     <Legend
-                      formatter={(value) => <span className="font-fira text-sm text-mute">{value}</span>}
+                      formatter={(value) => (
+                        <span className="font-fira text-sm text-mute">
+                          {value}
+                        </span>
+                      )}
                     />
                   </PieChart>
                 </ResponsiveContainer>
