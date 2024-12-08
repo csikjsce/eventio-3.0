@@ -556,25 +556,23 @@ export default function NewEvent() {
             </div>
           ) : (
             <div>
-              {/* Checkbox for feedback */}
-              <label className="text-foreground flex items-center h-full gap-2 select-none hover:cursor-pointer">
-                <input
-                  type="checkbox"
-                  {...register('is_ticket_feature_enabled')}
-                />
-                Enable Tickets
+              {/* Ticket Count */}
+              <label className="block text-foreground">
+                Ticket Count <span className="text-red-500">*</span>
               </label>
-              <p className="text-red-500">
-                {errors.is_ticket_feature_enabled?.message}
-              </p>
+              <input
+                className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
+                {...register('ticket_count')}
+                placeholder="Enter ticket count"
+                defaultValue={500}
+              />
+              <p className="text-red-500">{errors.ticket_count?.message}</p>
             </div>
           )}
 
           {/* In-Event Activity */}
           <div>
-            <label className="block text-foreground">
-              In-Event Activity <span className="text-red-500">*</span>
-            </label>
+            <label className="block text-foreground">In-Event Activity</label>
             <input
               className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
               {...register('in_event_activity')}
@@ -593,20 +591,6 @@ export default function NewEvent() {
             <p className="text-red-500">
               {errors.start_in_event_activity?.message}
             </p>
-          </div>
-
-          {/* Ticket Count */}
-          <div>
-            <label className="block text-foreground">
-              Ticket Count <span className="text-red-500">*</span>
-            </label>
-            <input
-              className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
-              {...register('ticket_count')}
-              placeholder="Enter ticket count"
-              defaultValue={0}
-            />
-            <p className="text-red-500">{errors.ticket_count?.message}</p>
           </div>
 
           {/* State */}

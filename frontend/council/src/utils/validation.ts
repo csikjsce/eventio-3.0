@@ -194,7 +194,7 @@ export const newEventSchema = yup.object({
   ticket_count: yup
     .number()
     .min(1, 'Ticket count cannot be less than 1')
-    .default(0)
+    .default(500)
     .required('Ticket count required'),
 
   ma_ppt: yup
