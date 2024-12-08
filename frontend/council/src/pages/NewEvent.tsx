@@ -283,7 +283,7 @@ export default function NewEvent() {
             </div>
           </div>
 
-          {event && showParent ? (
+          {showParent ? (
             <div>
               <label className="block text-foreground">Parent Event</label>
               <select
@@ -293,7 +293,7 @@ export default function NewEvent() {
                 onChange={(e) => setParentId(parseInt(e.target.value))}
               >
                 {events
-                  .filter((e) => e.id !== event.id)
+                  .filter((e) => e.id !== event?.id)
                   .map((event) => (
                     <option key={event.id} value={event.id}>
                       {event.name}
@@ -564,6 +564,18 @@ export default function NewEvent() {
             <p className="text-red-500">
               {errors.start_in_event_activity?.message}
             </p>
+          </div>
+
+          {/* Ticket Count */}
+          <div>
+            <label className="block text-foreground">Ticket Count</label>
+            <input
+              className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
+              {...register('ticket_count')}
+              placeholder="Enter ticket count"
+              defaultValue={0}
+            />
+            <p className="text-red-500">{errors.ticket_count?.message}</p>
           </div>
 
           {/* State */}

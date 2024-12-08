@@ -186,6 +186,15 @@ export default function EventDetails() {
                     navigate('/ticket/' + res.data.event.id);
                   },
                 });
+              } else if (
+                res.data.event.tickets_sold >= res.data.event.ticket_count
+              ) {
+                setButtonState({
+                  text: 'Tickets Sold Out',
+                  loading: false,
+                  disabled: true,
+                  onClick: () => {},
+                });
               } else {
                 setButtonState({
                   text: 'RSVP for this event',

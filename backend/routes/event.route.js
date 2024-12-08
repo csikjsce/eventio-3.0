@@ -389,6 +389,13 @@ router.post(protected + "/get/:id", authCheck, async (req, res) => {
                         id: true,
                     },
                 },
+                _count: {
+                    select: {
+                        Participant: {
+                            where: { ticket_collected: true },
+                        },
+                    },
+                },
             },
         });
         console.log(event);
@@ -423,6 +430,8 @@ router.post(protected + "/get/:id", authCheck, async (req, res) => {
             min_ppt: event.min_ppt,
             comment: event.comment,
             parent_id: event.parent_id,
+            ticket_count: event.ticket_count,
+            tickets_sold: event._count.Participant,
         };
         res.json({ error: false, event: eventResponse });
     } catch (err) {
@@ -459,6 +468,9 @@ router.post(protected + "/create", authCheck, (req, res) => {
         is_ticket_feature_enabled,
         venue,
         dates,
+        ma_ppt,
+        min_ppt,
+        ticket_count,
     } = req.body;
     if (dates && dates.length) {
         dates = dates.map((d) => new Date(d));
@@ -488,6 +500,9 @@ router.post(protected + "/create", authCheck, (req, res) => {
                 organizer_id: req.user.id,
                 dates,
                 state_history: ["DRAFT"],
+                ma_ppt,
+                min_ppt,
+                ticket_count,
             },
         })
         .then((event) => {
@@ -741,7 +756,7 @@ router.post(protected + "/register-for-event", authCheck, async (req, res) => {
         if (event.ma_ppt > 1) {
             return res.status(403).json({
                 error: true,
-                message: "Team event registration not yet implmented",
+                message: "use /create-team to register for this event",
             });
         }
         if (!req.user.is_somaiya_student && event.is_only_somaiya) {
@@ -1239,6 +1254,20 @@ router.post(protected + "/claim-ticket", authCheck, async (req, res) => {
             message: "Ticket already collected",
         });
     }
+    const count = await prisma.participant.count({
+        where: {
+            event_id: parseInt(event_id),
+            ticket_collected: true,
+        },
+    });
+
+    if (count >= event.ticket_count) {
+        return res.status(400).json({
+            error: true,
+            message: "Tickets are sold out",
+        });
+    }
+
     try {
         await prisma.participant.update({
             where: {

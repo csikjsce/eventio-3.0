@@ -181,6 +181,12 @@ export const newEventSchema = yup.object({
 
   is_ticket_feature_enabled: yup.boolean().default(true).notRequired(),
 
+  ticket_count: yup
+    .number()
+    .min(1, 'Ticket count cannot be less than 1')
+    .default(0)
+    .required('Ticket count required'),
+
   ma_ppt: yup
     .number()
     .min(1, 'Max Paricipants cannot be less than 1')
