@@ -210,6 +210,8 @@ export default function NewEvent() {
     return <Loader />;
   }
 
+  console.log(errors);
+
   return (
     <FormProvider {...methods}>
       <div className="p-8 w-full relative">
@@ -220,7 +222,9 @@ export default function NewEvent() {
         >
           {/* Name */}
           <div>
-            <label className="block text-foreground">Event Name</label>
+            <label className="block text-foreground">
+              Event Name <span className="text-red-500">*</span>
+            </label>
             <input
               className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
               {...register('name')}
@@ -231,7 +235,9 @@ export default function NewEvent() {
 
           {/* Tagline */}
           <div>
-            <label className="block text-foreground">Tagline</label>
+            <label className="block text-foreground">
+              Tagline <span className="text-red-500">*</span>
+            </label>
             <input
               className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
               {...register('tag_line')}
@@ -242,7 +248,9 @@ export default function NewEvent() {
 
           {/* Description */}
           <div>
-            <label className="block text-foreground">Description</label>
+            <label className="block text-foreground">
+              Description <span className="text-red-500">*</span>
+            </label>
             <textarea
               className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
               {...register('description')}
@@ -253,7 +261,9 @@ export default function NewEvent() {
 
           {/* Long Description */}
           <div>
-            <label className="block text-foreground">Long Description</label>
+            <label className="block text-foreground">
+              Long Description <span className="text-red-500">*</span>
+            </label>
             <textarea
               className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
               {...register('long_description')}
@@ -287,7 +297,9 @@ export default function NewEvent() {
 
           {showParent ? (
             <div>
-              <label className="block text-foreground">Parent Event</label>
+              <label className="block text-foreground">
+                Parent Event<span className="text-red-500">*</span>
+              </label>
               <select
                 className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
                 {...register('parent_id')}
@@ -308,10 +320,10 @@ export default function NewEvent() {
           )}
 
           {/* Date Picker (Single or Range) */}
-
           <div>
             <label className="block text-foreground">
-              {isMultipleDates ? 'Start Date' : 'Event Date'}
+              {isMultipleDates ? 'Start Date' : 'Event Date'}{' '}
+              <span className="text-red-500">*</span>
             </label>
             <input
               type="datetime-local"
@@ -319,8 +331,6 @@ export default function NewEvent() {
               onChange={(e) => {
                 setStartDate(e.target.value);
               }}
-              // value={startDate?.toISOString().slice(0, 16)}
-              // defaultValue={startDate?.toLocaleString().slice(0, 16)}
               value={startDate}
             />
           </div>
@@ -328,7 +338,9 @@ export default function NewEvent() {
           {/* End Date (Only if multiple dates are allowed) */}
           {isMultipleDates ? (
             <div>
-              <label className="block text-foreground">End Date</label>
+              <label className="block text-foreground">
+                End Date <span className="text-red-500">*</span>
+              </label>
               <input
                 type="datetime-local"
                 className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
@@ -362,7 +374,9 @@ export default function NewEvent() {
 
           {/* Event Type */}
           <div>
-            <label className="block text-foreground">Event Type</label>
+            <label className="block text-foreground">
+              Event Type <span className="text-red-500">*</span>
+            </label>
             <select
               className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
               {...register('event_type')}
@@ -379,7 +393,8 @@ export default function NewEvent() {
           {/* Venue/Online Link */}
           <div>
             <label className="block text-foreground">
-              {eventType === 'ONLINE' ? 'Online Event Link' : 'Venue'}
+              {eventType === 'ONLINE' ? 'Online Event Link' : 'Venue'}{' '}
+              <span className="text-red-500">*</span>
             </label>
             <input
               className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
@@ -402,7 +417,7 @@ export default function NewEvent() {
           {/* Event Page Image URL */}
           <div>
             <label className="block text-foreground">
-              Events Page Image URL
+              Events Page Image URL <span className="text-red-500">*</span>
             </label>
             <input
               className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
@@ -416,7 +431,9 @@ export default function NewEvent() {
 
           {/* Banner Image URL */}
           <div>
-            <label className="block text-foreground">Banner Image URL</label>
+            <label className="block text-foreground">
+              Banner Image URL <span className="text-red-500">*</span>
+            </label>
             <input
               className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
               {...register('banner_url')}
@@ -441,7 +458,8 @@ export default function NewEvent() {
             <>
               <div>
                 <label className="block text-foreground">
-                  Maximum Particiapants per Team
+                  Maximum Particiapants per Team{' '}
+                  <span className="text-red-500">*</span>
                 </label>
                 <input
                   className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
@@ -452,7 +470,8 @@ export default function NewEvent() {
               </div>
               <div>
                 <label className="block text-foreground">
-                  Minimum Particiapants per Team
+                  Minimum Particiapants per Team{' '}
+                  <span className="text-red-500">*</span>
                 </label>
                 <input
                   className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
@@ -520,7 +539,8 @@ export default function NewEvent() {
           {isExternal ? (
             <div>
               <label className="block text-foreground">
-                External Registration Link
+                External Registration Link{' '}
+                <span className="text-red-500">*</span>
               </label>
               <input
                 className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
@@ -549,12 +569,15 @@ export default function NewEvent() {
 
           {/* In-Event Activity */}
           <div>
-            <label className="block text-foreground">In-Event Activity</label>
+            <label className="block text-foreground">
+              In-Event Activity <span className="text-red-500">*</span>
+            </label>
             <input
               className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
               {...register('in_event_activity')}
               placeholder="In event activity link"
             />
+
             <p className="text-red-500">{errors.in_event_activity?.message}</p>
           </div>
 

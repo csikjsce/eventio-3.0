@@ -1,13 +1,28 @@
 import React, { useEffect, useState, useContext } from 'react';
 import axios from 'axios';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Calendar2, CalendarAdd, Location, Send2, User } from 'iconsax-react';
+import {
+  ArrowLeft,
+  Calendar2,
+  CalendarAdd,
+  Location,
+  Send2,
+  User,
+} from 'iconsax-react';
 import { Icon as IconType } from 'iconsax-react';
 import Loader from '../components/Loader';
 import UserDataContext from '../contexts/UserDataContext';
 import Stats from '../components/Stats';
 
-function IconText({ Icon, line1, line2 }: { Icon: IconType; line1: string; line2: string }) {
+function IconText({
+  Icon,
+  line1,
+  line2,
+}: {
+  Icon: IconType;
+  line1: string;
+  line2: string;
+}) {
   return (
     <div className="flex flex-col items-center">
       <Icon size={30} color="#B61F2D" variant="Bold" />
@@ -17,7 +32,13 @@ function IconText({ Icon, line1, line2 }: { Icon: IconType; line1: string; line2
   );
 }
 
-function Passage({ title, children }: { title: string; children: React.ReactNode }) {
+function Passage({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="flex flex-col gap-2 items-start text-left">
       <p className="font-fira text-foreground text-lg">{title}</p>
@@ -79,22 +100,49 @@ export default function EventDetails() {
 
             <div className="space-y-6">
               <div className="space-y-2">
-                <h1 className="font-fira text-foreground text-3xl font-bold">{event?.name}</h1>
+                <h1 className="font-fira text-foreground text-3xl font-bold">
+                  {event?.name}
+                </h1>
                 <p className="font-fira text-mute text-sm">
-                  {event?.dates[0] && new Date(event?.dates[0]).toDateString().slice(0, -5)}{' '}
-                  at {event?.dates[0] && new Date(event?.dates[0]).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                  {event?.dates[0] &&
+                    new Date(event?.dates[0]).toDateString().slice(0, -5)}{' '}
+                  at{' '}
+                  {event?.dates[0] &&
+                    new Date(event?.dates[0]).toLocaleTimeString('en-US', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
                 </p>
               </div>
               <div className="flex justify-between py-4 border-y border-mute">
                 <IconText
                   Icon={Calendar2}
-                  line1={(event?.dates[0] && new Date(event?.dates[0]).toDateString().slice(0, -5)) || ''}
-                  line2={(event?.dates[0] && new Date(event?.dates[0]).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })) || ''}
+                  line1={
+                    (event?.dates[0] &&
+                      new Date(event?.dates[0]).toDateString().slice(0, -5)) ||
+                    ''
+                  }
+                  line2={
+                    (event?.dates[0] &&
+                      new Date(event?.dates[0]).toLocaleTimeString('en-US', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })) ||
+                    ''
+                  }
                 />
                 <IconText
                   Icon={Location}
-                  line1={event?.venue ? event.venue.split(' ')[0] : 'Location not specified'}
-                  line2={event?.venue ? event.venue.slice(event.venue.indexOf(' ')) : ''}
+                  line1={
+                    event?.venue
+                      ? event.venue.split(' ')[0]
+                      : 'Location not specified'
+                  }
+                  line2={
+                    event?.venue
+                      ? event.venue.slice(event.venue.indexOf(' '))
+                      : ''
+                  }
                 />
                 <IconText Icon={User} line1="500" line2="Participants" />
               </div>
@@ -105,7 +153,9 @@ export default function EventDetails() {
                   </a>
                 </Passage>
               )}
-              <Passage title="About the Event">{event?.long_description || ''}</Passage>
+              <Passage title="About the Event">
+                {event?.long_description || ''}
+              </Passage>
             </div>
 
             <div className="flex justify-between items-center">
@@ -127,10 +177,14 @@ export default function EventDetails() {
                 </button>
                 <button
                   onClick={() => {
-                    const date = (event?.dates[0] && new Date(event?.dates[0])) || new Date();
+                    const date =
+                      (event?.dates[0] && new Date(event?.dates[0])) ||
+                      new Date();
                     const eventTitle = event?.name || 'Eventio event';
                     const eventDetails = event?.description || 'Eventio event';
-                    const startDateTime = date.toISOString().replace(/[-:]/g, '').split('.')[0] + "Z";
+                    const startDateTime =
+                      date.toISOString().replace(/[-:]/g, '').split('.')[0] +
+                      'Z';
                     const timezone = 'Asia/Kolkata';
                     const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
                       eventTitle,
@@ -153,12 +207,13 @@ export default function EventDetails() {
               )}
             </div>
           </div>
-          <div className="w-full lg:w-1/2 lg:mt-0">
-            <Stats eventId={id} />
-          </div>
+          {event?.organizer_id === userData?.id && userData?.id && (
+            <div className="w-full lg:w-1/2 lg:mt-0">
+              <Stats eventId={id} />
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 }
-
