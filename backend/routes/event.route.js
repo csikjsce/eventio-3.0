@@ -171,6 +171,12 @@ router.post(protected + "/get", authCheck, async (req, res) => {
                     },
                     relationLoadStrategy: "join",
                     include: {
+                        Participant: {
+                            where: {
+                                user_id: req.user.id,
+                            },
+                            select: { attended: true, ticket_collected: true },
+                        },
                         organizer: {
                             select: {
                                 name: true,
@@ -202,6 +208,12 @@ router.post(protected + "/get", authCheck, async (req, res) => {
                     },
                     relationLoadStrategy: "join",
                     include: {
+                        Participant: {
+                            where: {
+                                user_id: req.user.id,
+                            },
+                            select: { attended: true, ticket_collected: true },
+                        },
                         organizer: {
                             select: {
                                 name: true,
@@ -220,7 +232,11 @@ router.post(protected + "/get", authCheck, async (req, res) => {
             }
             let event = {};
             events.forEach((e) => {
-                if (!event[e.state]) [(event[e.state] = [])];
+                if (!event[e.state]) {
+                    [(event[e.state] = [])];
+                }
+                e.Participant =
+                    e.Participant.length == 0 ? false : e.Participant[0];
                 event[e.state].push(e);
             });
             res.json({ error: false, events: event });
@@ -243,6 +259,12 @@ router.post(protected + "/get", authCheck, async (req, res) => {
                     },
                     relationLoadStrategy: "join",
                     include: {
+                        Participant: {
+                            where: {
+                                user_id: req.user.id,
+                            },
+                            select: { attended: true, ticket_collected: true },
+                        },
                         organizer: {
                             select: {
                                 name: true,
@@ -275,6 +297,12 @@ router.post(protected + "/get", authCheck, async (req, res) => {
                     },
                     relationLoadStrategy: "join",
                     include: {
+                        Participant: {
+                            where: {
+                                user_id: req.user.id,
+                            },
+                            select: { attended: true, ticket_collected: true },
+                        },
                         organizer: {
                             select: {
                                 name: true,
@@ -293,7 +321,12 @@ router.post(protected + "/get", authCheck, async (req, res) => {
             }
             let event = {};
             events.forEach((e) => {
-                if (!event[e.state]) [(event[e.state] = [])];
+                if (!event[e.state]) {
+                    [(event[e.state] = [])];
+                }
+                console.log("PART:", event.Participant);
+                e.Participant =
+                    e.Participant.length == 0 ? false : e.Participant[0];
                 event[e.state].push(e);
             });
             res.json({ error: false, events: event });

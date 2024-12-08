@@ -7,6 +7,7 @@ export default function TrendingCard({
   event: EventData;
   text: string;
 }) {
+  console.log(event);
   return (
     <Link
       to={

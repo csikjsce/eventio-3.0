@@ -217,7 +217,7 @@ export default function EventDetails() {
           ) {
             if (
               res.data.event.Participant &&
-              res.data.event.Participant.claimed_ticket
+              res.data.event.Participant.ticket_collected
             ) {
               setButtonState({
                 text: 'View Ticket',
