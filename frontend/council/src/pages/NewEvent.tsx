@@ -486,13 +486,14 @@ export default function NewEvent() {
             <p className="text-red-500">{errors.tags?.message}</p>
           </div>
 
+          <div></div>
           {/* Checkbox for feedback */}
-          <div>
+          {/* <div>
             <label className="text-foreground flex items-center gap-2 select-none hover:cursor-pointer">
               <input type="checkbox" {...register('is_feedback_enabled')} />
               Enable Feedback
             </label>
-          </div>
+          </div> */}
 
           {/* Checkbox for somaiya only */}
           <div>
