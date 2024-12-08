@@ -417,7 +417,8 @@ export default function NewEvent() {
           {/* Event Page Image URL */}
           <div>
             <label className="block text-foreground">
-              Events Page Image URL <span className="text-red-500">*</span>
+              Event Details Page Image (1:1 aspect ratio){' '}
+              <span className="text-red-500">*</span>
             </label>
             <input
               className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
@@ -432,7 +433,7 @@ export default function NewEvent() {
           {/* Banner Image URL */}
           <div>
             <label className="block text-foreground">
-              Banner Image URL <span className="text-red-500">*</span>
+              Trending Card Image <span className="text-red-500">*</span>
             </label>
             <input
               className="border border-mute p-2 w-full bg-background text-foreground rounded-md"

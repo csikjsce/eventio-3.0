@@ -39,8 +39,8 @@ export default function Councils() {
     <div className="flex flex-col gap-8">
       {/* <SearchBar Icon={SearchNormal1} className="mt-6" /> */}
 
-      <div className="flex flex-col gap-4 z-10">
-        <p className="text-lg font-medium font-fira text-left text-foreground ">
+      <div className="flex flex-col gap-2 z-10">
+        <p className="mt-2 text-lg font-medium font-fira text-left text-foreground ">
           Councils
         </p>
         <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3 overflow-x-auto mb-12">

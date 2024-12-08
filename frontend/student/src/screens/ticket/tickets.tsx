@@ -47,7 +47,7 @@ export default function Ticket() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center my-1">
                     <img
-                      src={eventData?.banner_url}
+                      src={eventData?.event_page_image_url}
                       alt="User"
                       className="aspect-square w-screen object-cover rounded-lg"
                     />

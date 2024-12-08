@@ -15,7 +15,7 @@ const EventList = ({ events, date }: Props) => {
           council={event.organizer.name}
           date={date}
           title={event.name}
-          image={event.banner_url}
+          image={event.event_page_image_url}
           id={event.id}
           startTime={dayjs(
             event.dates.find((d) => date.isSame(d, 'day')),

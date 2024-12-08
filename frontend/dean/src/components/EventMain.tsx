@@ -71,7 +71,7 @@ export default function EventMain({ event }: { event: EventData }) {
                 <img
                     src={event.banner_url}
                     alt={event.name}
-                    className="w-full rounded-t-lg max-h-48 object-cover"
+                    className="w-full rounded-t-lg max-h-56 object-cover"
                 />
             </div>
             <div className="p-4 bg-card rounded-b-lg flex gap-2">

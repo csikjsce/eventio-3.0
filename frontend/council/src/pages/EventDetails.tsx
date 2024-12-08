@@ -83,12 +83,12 @@ export default function EventDetails() {
     <div className="w-full min-h-screen bg-background">
       <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
-          <div className="w-full lg:w-1/2 space-y-8">
+          <div className="w-full lg:w-1/4 space-y-8">
             <div className="relative">
               <img
                 src={event?.event_page_image_url}
                 alt="Event Details"
-                className="w-full aspect-video object-cover rounded-lg shadow-lg"
+                className="w-full aspect-square object-cover rounded-lg shadow-lg"
               />
               <Link
                 to=".."
@@ -208,7 +208,7 @@ export default function EventDetails() {
             </div>
           </div>
           {event?.organizer_id === userData?.id && userData?.id && (
-            <div className="w-full lg:w-1/2 lg:mt-0">
+            <div className="w-full lg:w-3/4 lg:mt-0">
               <Stats eventId={id} />
             </div>
           )}

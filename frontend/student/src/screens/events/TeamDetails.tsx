@@ -183,7 +183,7 @@ export default function TeamDetails() {
           <p className="text-md text-mute">{event.description}</p>
         </div>
         <img
-          src={event.banner_url}
+          src={event.event_page_image_url}
           alt={event.name}
           className="w-20 h-20 rounded-lg object-cover outline outline-1 outline-mute"
         />

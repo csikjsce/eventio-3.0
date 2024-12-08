@@ -15,7 +15,7 @@ export default function EventCard({ event }: { event: EventData }) {
       {/* Event Image */}
 
       <img
-        src={event.banner_url}
+        src={event.event_page_image_url}
         alt={`${event.name} event`}
         className="h-full max-h-24 my-auto aspect-square object-cover rounded-lg"
       />
