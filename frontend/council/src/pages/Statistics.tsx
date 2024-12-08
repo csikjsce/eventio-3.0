@@ -13,6 +13,7 @@ import {
   YAxis,
   LineChart,
   Line,
+  RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis
 } from 'recharts';
 import { Calendar2, Location, User } from 'iconsax-react';
 
@@ -58,6 +59,8 @@ const ComparisonMetrics = {
   genderStats: 'Gender Distribution',
 };
 
+
+
 const CustomTooltip = ({
   active,
   payload,
@@ -70,17 +73,15 @@ const CustomTooltip = ({
   if (active && payload && payload.length) {
     return (
       <div className="bg-background p-2 rounded-md shadow-md">
-        <p className="font-fira text-foreground text-sm font-medium">{`${label}`}</p>
-        {payload.map((entry, index) => (
-          <p key={index} className="font-fira text-white text-sm">
-            {`${entry.name}: ${entry.value}`}
-          </p>
-        ))}
+        <p className="font-fira text-foreground text-sm font-medium">{`${payload[0].payload.name}`}</p>
+        <p className="font-fira text-white text-sm">{`${payload[0].value}`}</p>
       </div>
     );
   }
   return null;
 };
+
+
 
 function Statistics() {
   const [selectedEvents, setSelectedEvents] = useState([]);
@@ -118,13 +119,14 @@ function Statistics() {
           ...acc,
           [event.eventName]:
             event[
-              key === 'totalParticipants' ? key : Object.keys(event[key]).length
+            key === 'totalParticipants' ? key : Object.keys(event[key]).length
             ],
         }),
         {},
       ),
     }));
   }, [selectedEvents]);
+
 
   const keyInsights = useMemo(() => {
     if (!statsData?.data) return {};
@@ -174,10 +176,11 @@ function Statistics() {
       mostPopularEvent: mostPopularEvent.eventName,
       mostPopularEventParticipants: mostPopularEvent.totalParticipants,
       averageAttendance,
-      mostActiveBranch: mostActiveBranch.branch,
+      mostActiveBranch: branchAbbreviations[mostActiveBranch.branch], // Use abbreviation
       genderRatio,
     };
   }, [statsData]);
+
 
   return (
     <div className="w-full min-h-screen bg-background">
@@ -189,21 +192,19 @@ function Statistics() {
         <div className="mb-8">
           <div className="flex space-x-4">
             <button
-              className={`px-6 py-2 rounded-full font-fira text-lg ${
-                activeTab === 'overview'
-                  ? 'bg-primary text-white'
-                  : 'bg-background text-foreground'
-              }`}
+              className={`px-6 py-2 rounded-full font-fira text-lg ${activeTab === 'overview'
+                ? 'bg-primary text-white'
+                : 'bg-background text-foreground'
+                }`}
               onClick={() => setActiveTab('overview')}
             >
               Overview
             </button>
             <button
-              className={`px-6 py-2 rounded-full font-fira text-lg ${
-                activeTab === 'comparison'
-                  ? 'bg-primary text-white'
-                  : 'bg-background text-foreground'
-              }`}
+              className={`px-6 py-2 rounded-full font-fira text-lg ${activeTab === 'comparison'
+                ? 'bg-primary text-white'
+                : 'bg-background text-foreground'
+                }`}
               onClick={() => setActiveTab('comparison')}
             >
               Event Comparison
@@ -288,11 +289,10 @@ function Statistics() {
                 {filteredEvents.map((event) => (
                   <div
                     key={event.eventId}
-                    className={`bg-card p-4 rounded-md shadow-md cursor-pointer ${
-                      selectedEvents.includes(event)
-                        ? 'border-2 border-blue-500'
-                        : ''
-                    }`}
+                    className={`bg-card p-4 rounded-md shadow-md cursor-pointer ${selectedEvents.includes(event)
+                      ? 'border-2 border-blue-500'
+                      : ''
+                      }`}
                     onClick={() => {
                       setSelectedEvents((prev) =>
                         prev.includes(event)
@@ -399,6 +399,7 @@ function EventCountChart({ data }) {
   );
 }
 
+
 function BranchDistributionChart({ data }) {
   return (
     <div className="bg-card p-4 rounded-md shadow-md">
@@ -431,6 +432,57 @@ function BranchDistributionChart({ data }) {
   );
 }
 
+
+
+
+
+
+function BranchDistributionRadarChart({ data }) {
+  const CustomTooltip = ({ active, payload }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-background p-2 rounded-md shadow-md">
+          <p className="font-fira text-foreground text-sm font-medium mb-1">
+            {payload[0].payload.branch}
+          </p>
+          <p className="font-fira text-white text-sm">
+            {`Participants: ${payload[0].value}`}
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  return (
+    <div className="bg-card p-4 rounded-md shadow-md">
+      <h2 className="font-fira text-foreground text-xl font-bold mb-4">
+        Branch Distribution
+      </h2>
+      <ResponsiveContainer width="100%" height={400}>
+        <RadarChart data={data}>
+          <PolarGrid />
+          <PolarAngleAxis dataKey="branch" tick={{ fill: COLORS.mute }} />
+          <PolarRadiusAxis angle={30} domain={[0, 'auto']} tick={{ fill: COLORS.mute }} />
+          <Radar 
+            name="Participants" 
+            dataKey="count" 
+            stroke={COLORS.primary} 
+            fill={COLORS.primary} 
+            fillOpacity={0.6} 
+          />
+          <Tooltip content={CustomTooltip} />
+        </RadarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+
+
+
+
+
 function GenderDistributionChart({ data }) {
   return (
     <div className="bg-card p-4 rounded-md shadow-md">
@@ -462,6 +514,7 @@ function GenderDistributionChart({ data }) {
     </div>
   );
 }
+
 
 function ParticipationTrendChart({ data }) {
   const trendData = useMemo(() => {
@@ -522,6 +575,7 @@ function ParticipationTrendChart({ data }) {
   );
 }
 
+
 function YearDistributionChart({ data, eventDate }) {
   const yearData = useMemo(() => {
     const currentYear = new Date(eventDate).getFullYear();
@@ -564,6 +618,22 @@ function YearDistributionChart({ data, eventDate }) {
       });
   }, [data, eventDate]);
 
+  const CustomTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-background p-2 rounded-md shadow-md">
+        <p className="font-fira text-foreground text-sm font-medium mb-1">
+          {payload[0]?.payload.branch}
+        </p>
+        <p className="font-fira text-white text-sm">
+          {`Count: ${payload[0].value}`}
+        </p>
+      </div>
+    );
+  }
+  return null;
+};
+
   return (
     <ResponsiveContainer width="100%" height={300}>
       <BarChart data={yearData}>
@@ -583,6 +653,11 @@ function YearDistributionChart({ data, eventDate }) {
   );
 }
 
+
+
+
+
+
 function ComparisonChart({ data, events }) {
   const COLORS_EXTENDED = [
     COLORS.primary,
@@ -596,13 +671,43 @@ function ComparisonChart({ data, events }) {
     '#FF9800',
   ];
 
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-background p-2 rounded-md shadow-md">
+          <p className="font-fira text-foreground text-sm font-medium mb-1">
+            {label}
+          </p>
+          {payload.map((entry, index) => (
+            <p key={`tooltip-item-${index}`} className="font-fira text-white text-sm">
+              {`${entry.name}: ${entry.value}`}
+            </p>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
+
+  const filteredData = data.filter(item => item.metric === ComparisonMetrics.totalParticipants);
+
+  const branchDistributionData = useMemo(() => {
+    const branchData = {};
+    events.forEach(event => {
+      Object.entries(event.branchStats).forEach(([branch, count]) => {
+        branchData[branchAbbreviations[branch]] = (branchData[branchAbbreviations[branch]] || 0) + count;
+      });
+    });
+    return Object.entries(branchData).map(([branch, count]) => ({ branch, count }));
+  }, [events]);
+
   return (
     <div className="bg-card p-4 rounded-md shadow-md overflow-x-auto">
       <h2 className="font-fira text-foreground text-xl font-bold mb-4">
         Event Comparison
       </h2>
       <ResponsiveContainer width="100%" height={400 + events.length * 30}>
-        <BarChart data={data} layout="vertical">
+        <BarChart data={filteredData} layout="vertical">
           <XAxis type="number" tick={{ fill: COLORS.mute }} />
           <YAxis
             dataKey="metric"
@@ -621,9 +726,14 @@ function ComparisonChart({ data, events }) {
           ))}
         </BarChart>
       </ResponsiveContainer>
+      <BranchDistributionRadarChart data={branchDistributionData} />
     </div>
   );
 }
+
+
+
+
 
 export { Statistics };
 export default Statistics;
