@@ -439,7 +439,7 @@ export default function NewEvent() {
             <>
               <div>
                 <label className="block text-foreground">
-                  Maximum Particiapants per Team
+                  Maximum Participants per Team
                 </label>
                 <input
                   className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
@@ -466,9 +466,15 @@ export default function NewEvent() {
           <div>
             <label className="block text-foreground">Fee</label>
             <input
+              type="number"
               className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
-              {...register('fee')}
+              {...register('fee', { valueAsNumber: true, min: 0 })}
               placeholder="Enter event fee"
+              onKeyDown={(e) => {
+                if (e.key === '-' || e.key === 'e') {
+                  e.preventDefault();
+                }
+              }}
             />
             <p className="text-red-500">{errors.fee?.message}</p>
           </div>

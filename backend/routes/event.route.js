@@ -472,6 +472,13 @@ router.post(protected + "/create", authCheck, (req, res) => {
         min_ppt,
         ticket_count,
     } = req.body;
+
+    if (!(min_ppt <= ma_ppt && ma_ppt > 1)) {
+        return res.status(500).json({
+            error: true,
+            message: "Invalid participant count configuration",
+        });
+    }
     if (dates && dates.length) {
         dates = dates.map((d) => new Date(d));
     }
@@ -596,7 +603,7 @@ router.post(
                 message: "Error updating event",
             });
         }
-    },
+    }
 );
 router.get(protected + "/search/", authCheck, async (req, res) => {
     if (!req.user) {
@@ -877,7 +884,7 @@ router.post(protected + "/create-team", authCheck, async (req, res) => {
                 // unique constraint failed for the invite code, retry
                 retries++;
                 console.warn(
-                    `Retrying due to invite code collision: ${inviteCode}`,
+                    `Retrying due to invite code collision: ${inviteCode}`
                 );
             } else if (
                 error instanceof Prisma.PrismaClientKnownRequestError &&
