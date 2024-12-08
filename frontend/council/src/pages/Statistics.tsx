@@ -87,26 +87,6 @@ function Statistics() {
   const [selectedEvents, setSelectedEvents] = useState([]);
   const [activeTab, setActiveTab] = useState('overview');
   const [statsData, setStatsData] = useState<{} | null>(null);
-  const [currentUser, setCurrentUser] = useState(null);
-
-  useEffect(() => {
-    const fetchCurrentUser = async () => {
-      try {
-        const response = await axios.request({
-          baseURL: import.meta.env.VITE_APP_SERVER_ADDRESS,
-          url: '/api/v1/user/me',
-          method: 'GET',
-          headers: {
-            Authorization: 'Bearer ' + localStorage.getItem('accessToken'),
-          },
-        });
-        setCurrentUser(response.data);
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-      }
-    };
-    fetchCurrentUser();
-  }, []);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -128,9 +108,8 @@ function Statistics() {
   }, []);
 
   const filteredEvents = useMemo(() => {
-    if (!statsData?.data || !currentUser) return [];
-    return statsData.data.filter(event => event.organizer_id === currentUser.id);
-  }, [statsData, currentUser]);
+    return statsData?.data || [];
+  }, [statsData]);
 
   const comparisonData = useMemo(() => {
     return Object.entries(ComparisonMetrics).map(([key, label]) => ({
@@ -148,20 +127,22 @@ function Statistics() {
     }));
   }, [selectedEvents]);
 
-  const keyInsights = useMemo(() => {
-    if (!filteredEvents.length) return {};
 
-    const totalEvents = filteredEvents.length;
-    const totalParticipants = filteredEvents.reduce(
+  const keyInsights = useMemo(() => {
+    if (!statsData?.data) return {};
+
+    const events = statsData.data;
+    const totalEvents = events.length;
+    const totalParticipants = events.reduce(
       (sum, event) => sum + event.totalParticipants,
       0,
     );
     const averageAttendance = Math.round(totalParticipants / totalEvents);
-    const mostPopularEvent = filteredEvents.reduce((max, event) =>
+    const mostPopularEvent = events.reduce((max, event) =>
       max.totalParticipants > event.totalParticipants ? max : event,
     );
 
-    const allBranches = filteredEvents.flatMap((event) =>
+    const allBranches = events.flatMap((event) =>
       Object.entries(event.branchStats).map(([branch, count]) => ({
         branch,
         count,
@@ -178,11 +159,11 @@ function Statistics() {
       { branch: '', count: 0 },
     );
 
-    const totalMale = filteredEvents.reduce(
+    const totalMale = events.reduce(
       (sum, event) => sum + (event.genderStats['MALE'] || 0),
       0,
     );
-    const totalFemale = filteredEvents.reduce(
+    const totalFemale = events.reduce(
       (sum, event) => sum + (event.genderStats['FEMALE'] || 0),
       0,
     );
@@ -195,47 +176,35 @@ function Statistics() {
       mostPopularEvent: mostPopularEvent.eventName,
       mostPopularEventParticipants: mostPopularEvent.totalParticipants,
       averageAttendance,
-      mostActiveBranch: branchAbbreviations[mostActiveBranch.branch],
+      mostActiveBranch: branchAbbreviations[mostActiveBranch.branch], // Use abbreviation
       genderRatio,
     };
-  }, [filteredEvents]);
+  }, [statsData]);
 
-  if (!statsData?.data || !currentUser) {
-    return (
-      <div className="w-full min-h-screen bg-background flex items-center justify-center">
-        <p className="text-foreground text-xl">Loading...</p>
-      </div>
-    );
-  }
-
-  if (filteredEvents.length === 0) {
-    return (
-      <div className="w-full min-h-screen bg-background">
-        <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <h1 className="font-fira text-foreground text-3xl font-bold mb-8">My Events Statistics</h1>
-          <div className="bg-card p-8 rounded-lg shadow-md text-center">
-            <h2 className="text-2xl text-foreground mb-4">No Events Found</h2>
-            <p className="text-muted-foreground">You haven't organized any events yet.</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="w-full min-h-screen bg-background">
       <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="font-fira text-foreground text-3xl font-bold mb-8">My Events Statistics</h1>
+        <h1 className="font-fira text-foreground text-3xl font-bold mb-8">
+          Council Statistics
+        </h1>
+
         <div className="mb-8">
           <div className="flex space-x-4">
             <button
-              className={`px-6 py-2 rounded-full font-fira text-lg ${activeTab === 'overview' ? 'bg-primary text-white' : 'bg-background text-foreground'}`}
+              className={`px-6 py-2 rounded-full font-fira text-lg ${activeTab === 'overview'
+                ? 'bg-primary text-white'
+                : 'bg-background text-foreground'
+                }`}
               onClick={() => setActiveTab('overview')}
             >
               Overview
             </button>
             <button
-              className={`px-6 py-2 rounded-full font-fira text-lg ${activeTab === 'comparison' ? 'bg-primary text-white' : 'bg-background text-foreground'}`}
+              className={`px-6 py-2 rounded-full font-fira text-lg ${activeTab === 'comparison'
+                ? 'bg-primary text-white'
+                : 'bg-background text-foreground'
+                }`}
               onClick={() => setActiveTab('comparison')}
             >
               Event Comparison
@@ -243,25 +212,68 @@ function Statistics() {
           </div>
         </div>
 
-        {activeTab === 'overview' && (
+        {activeTab === 'overview' && statsData?.data && (
           <>
             <KeyInsights insights={keyInsights} />
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
               <div className="lg:col-span-2">
-                <ParticipationTrendChart data={filteredEvents} />
+                <ParticipationTrendChart data={statsData.data} />
               </div>
+
               <div className="h-[400px]">
-                <EventCountChart data={filteredEvents.map((event) => ({ name: event.eventName, value: event.totalParticipants }))} />
+                <EventCountChart
+                  data={statsData.data.map((event) => ({
+                    name: event.eventName,
+                    value: event.totalParticipants,
+                  }))}
+                />
               </div>
+
               <div className="h-[400px]">
-                <BranchDistributionChart data={Object.entries(filteredEvents.reduce((acc, event) => { Object.entries(event.branchStats).forEach(([branch, count]) => { acc[branchAbbreviations[branch]] = (acc[branchAbbreviations[branch]] || 0) + count }); return acc }, {})).map(([name, value]) => ({ name, value }))} />
+                <BranchDistributionChart
+                  data={Object.entries(
+                    statsData.data.reduce((acc, event) => {
+                      Object.entries(event.branchStats).forEach(
+                        ([branch, count]) => {
+                          acc[branchAbbreviations[branch]] =
+                            (acc[branchAbbreviations[branch]] || 0) + count;
+                        },
+                      );
+                      return acc;
+                    }, {}),
+                  ).map(([name, value]) => ({ name, value }))}
+                />
               </div>
+
               <div className="h-[400px]">
-                <GenderDistributionChart data={Object.entries(filteredEvents.reduce((acc, event) => { Object.entries(event.genderStats).forEach(([gender, count]) => { acc[gender] = (acc[gender] || 0) + count }); return acc }, {})).map(([name, value]) => ({ name, value }))} />
+                <GenderDistributionChart
+                  data={Object.entries(
+                    statsData.data.reduce((acc, event) => {
+                      Object.entries(event.genderStats).forEach(
+                        ([gender, count]) => {
+                          acc[gender] = (acc[gender] || 0) + count;
+                        },
+                      );
+                      return acc;
+                    }, {}),
+                  ).map(([name, value]) => ({ name, value }))}
+                />
               </div>
+
               <div className="h-[375px] bg-card p-4 rounded-md shadow-md">
-                <h2 className="font-fira text-foreground text-xl font-bold mb-4">Academic Year Distribution</h2>
-                <YearDistributionChart data={filteredEvents.reduce((acc, event) => { Object.entries(event.yearStats).forEach(([year, count]) => { acc[year] = (acc[year] || 0) + count }); return acc }, {})} eventDate={filteredEvents[0]?.dates[0]} />
+                <h2 className="font-fira text-foreground text-xl font-bold mb-4">
+                  Academic Year Distribution
+                </h2>
+                <YearDistributionChart
+                  data={statsData.data.reduce((acc, event) => {
+                    Object.entries(event.yearStats).forEach(([year, count]) => {
+                      acc[year] = (acc[year] || 0) + count;
+                    });
+                    return acc;
+                  }, {})}
+                  eventDate={statsData.data[0]?.dates[0]}
+                />
               </div>
             </div>
           </>
@@ -270,20 +282,31 @@ function Statistics() {
         {activeTab === 'comparison' && (
           <>
             <div className="mb-8">
-              <h2 className="text-2xl font-bold text-white mb-4">Event Comparison</h2>
+              <h2 className="text-2xl font-bold text-white mb-4">
+                Event Comparison
+              </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {filteredEvents.map((event) => (
                   <div
                     key={event.eventId}
-                    className={`bg-card p-4 rounded-md shadow-md cursor-pointer ${selectedEvents.includes(event) ? 'border-2 border-blue-500' : ''}`}
+                    className={`bg-card p-4 rounded-md shadow-md cursor-pointer ${selectedEvents.includes(event)
+                      ? 'border-2 border-blue-500'
+                      : ''
+                      }`}
                     onClick={() => {
                       setSelectedEvents((prev) =>
-                        prev.includes(event) ? prev.filter((e) => e !== event) : [...prev, event]
+                        prev.includes(event)
+                          ? prev.filter((e) => e !== event)
+                          : [...prev, event],
                       );
                     }}
                   >
-                    <h3 className="font-bold text-white text-lg mb-2">{event.eventName}</h3>
-                    <p className="text-white">Participants: {event.totalParticipants}</p>
+                    <h3 className="font-bold text-white text-lg mb-2">
+                      {event.eventName}
+                    </h3>
+                    <p className="text-white">
+                      Participants: {event.totalParticipants}
+                    </p>
                   </div>
                 ))}
               </div>
