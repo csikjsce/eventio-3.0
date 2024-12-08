@@ -169,10 +169,12 @@ export default function NewEvent() {
 
   const onSubmit = async (data: NewEventSchema) => {
     data.logo_image_url = data.event_page_image_url;
+    // @ts-expect-error no idea
+    delete data.tickets_sold;
     if (data.parent_id === -1 || !showParent) {
       data.parent_id = null;
     }
-    console.log(data);
+    console.log(JSON.stringify(data));
     try {
       setLoading(true);
       const endpoint = id ? `/event/p/update/${id}` : '/event/p/create';

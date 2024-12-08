@@ -43,6 +43,8 @@ interface EventData {
   in_event_activity?: string;
   start_in_event_activity?: boolean;
   comment?: string;
+  ticket_count: number;
+  tickets_sold: number;
 }
 
 // Interface for the Events object

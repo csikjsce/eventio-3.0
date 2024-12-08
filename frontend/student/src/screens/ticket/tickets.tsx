@@ -88,7 +88,7 @@ export default function Ticket() {
                     <div>
                       <div className="text-sm text-mute">Team</div>
                       <div className="font-semibold">
-                        {eventData?.Participant.team.name || 'Unknown'}
+                        {eventData?.Participant.team?.name || 'Unknown'}
                       </div>
                     </div>
                   )}
