@@ -699,6 +699,24 @@ function ComparisonChart({ data, events }) {
     '#FF9800',
   ];
 
+  const ComparisonTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-background p-2 rounded-md shadow-md">
+          <p className="font-fira text-foreground text-sm font-medium mb-1">
+            {label}
+          </p>
+          {payload.map((entry, index) => (
+            <p key={index} className="font-fira text-white text-sm">
+              {`${entry.name}: ${entry.value}`}
+            </p>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <div className="bg-card p-4 rounded-md shadow-md overflow-x-auto">
       <h2 className="font-fira text-foreground text-xl font-bold mb-4">
@@ -713,7 +731,7 @@ function ComparisonChart({ data, events }) {
             width={150}
             tick={{ fill: COLORS.mute }}
           />
-          <Tooltip content={<CustomTooltip />} />
+          <Tooltip content={<ComparisonTooltip />} />
           <Legend />
           {events.map((event, index) => (
             <Bar
@@ -728,7 +746,6 @@ function ComparisonChart({ data, events }) {
   );
 }
 
-
 function BranchRadarChart({ events }) {
   const radarData = useMemo(() => {
     const branches = Object.keys(branchAbbreviations);
@@ -740,6 +757,24 @@ function BranchRadarChart({ events }) {
       return data;
     });
   }, [events]);
+
+  const RadarTooltip = ({ active, payload }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-background p-2 rounded-md shadow-md">
+          <p className="font-fira text-foreground text-sm font-medium mb-1">
+            {payload[0].payload.branch}
+          </p>
+          {payload.map((entry, index) => (
+            <p key={index} className="font-fira text-white text-sm">
+              {`${entry.name}: ${entry.value}`}
+            </p>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
     <div className="bg-card p-4 rounded-md shadow-md">
@@ -761,7 +796,7 @@ function BranchRadarChart({ events }) {
               fillOpacity={0.6}
             />
           ))}
-          <Tooltip content={<CustomTooltip />} />
+          <Tooltip content={<RadarTooltip />} />
           <Legend />
         </RadarChart>
       </ResponsiveContainer>
