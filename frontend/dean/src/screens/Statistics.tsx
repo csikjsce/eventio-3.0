@@ -60,6 +60,9 @@ const ComparisonMetrics = {
   totalParticipants: 'Participants',
 };
 
+
+
+
 const CustomTooltip = ({
   active,
   payload,
@@ -72,17 +75,16 @@ const CustomTooltip = ({
   if (active && payload && payload.length) {
     return (
       <div className="bg-background p-2 rounded-md shadow-md">
-        <p className="font-fira text-foreground text-sm font-medium">{`${label}`}</p>
-        {payload.map((entry, index) => (
-          <p key={index} className="font-fira text-white text-sm">
-            {`${entry.name}: ${entry.value}`}
-          </p>
-        ))}
+        <p className="font-fira text-foreground text-sm font-medium">{`${payload[0].payload.name}`}</p>
+        <p className="font-fira text-white text-sm">{`${payload[0].value}`}</p>
       </div>
     );
   }
   return null;
 };
+
+
+
 
 function Statistics() {
   const [councils, setCouncils] = useState([]);
@@ -167,6 +169,7 @@ function Statistics() {
     }));
   }, [selectedEvents]);
 
+
   const keyInsights = useMemo(() => {
     if (!statsData?.data) return {};
 
@@ -219,10 +222,11 @@ function Statistics() {
       mostPopularEvent: mostPopularEvent.eventName,
       mostPopularEventParticipants: mostPopularEvent.totalParticipants,
       averageAttendance,
-      mostActiveBranch: mostActiveBranch.branch,
+      mostActiveBranch: branchAbbreviations[mostActiveBranch.branch] || 'N/A',
       genderRatio,
     };
   }, [statsData]);
+
 
   return (
     <div className="w-full min-h-screen bg-background">
@@ -486,6 +490,7 @@ function BranchDistributionChart({ data }) {
         Branch Distribution
       </h2>
       <ResponsiveContainer width="100%" height={300}>
+
         <PieChart>
           <Pie
             data={data}
@@ -506,6 +511,7 @@ function BranchDistributionChart({ data }) {
           <Tooltip content={<CustomTooltip />} />
           <Legend />
         </PieChart>
+
       </ResponsiveContainer>
     </div>
   );
