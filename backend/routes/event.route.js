@@ -171,6 +171,12 @@ router.post(protected + "/get", authCheck, async (req, res) => {
                     },
                     relationLoadStrategy: "join",
                     include: {
+                        Participant: {
+                            where: {
+                                user_id: req.user.id,
+                            },
+                            select: { attended: true, ticket_collected: true },
+                        },
                         organizer: {
                             select: {
                                 name: true,
@@ -202,6 +208,12 @@ router.post(protected + "/get", authCheck, async (req, res) => {
                     },
                     relationLoadStrategy: "join",
                     include: {
+                        Participant: {
+                            where: {
+                                user_id: req.user.id,
+                            },
+                            select: { attended: true, ticket_collected: true },
+                        },
                         organizer: {
                             select: {
                                 name: true,
@@ -220,7 +232,11 @@ router.post(protected + "/get", authCheck, async (req, res) => {
             }
             let event = {};
             events.forEach((e) => {
-                if (!event[e.state]) [(event[e.state] = [])];
+                if (!event[e.state]) {
+                    [(event[e.state] = [])];
+                }
+                e.Participant =
+                    e.Participant.length == 0 ? false : e.Participant[0];
                 event[e.state].push(e);
             });
             res.json({ error: false, events: event });
@@ -243,6 +259,12 @@ router.post(protected + "/get", authCheck, async (req, res) => {
                     },
                     relationLoadStrategy: "join",
                     include: {
+                        Participant: {
+                            where: {
+                                user_id: req.user.id,
+                            },
+                            select: { attended: true, ticket_collected: true },
+                        },
                         organizer: {
                             select: {
                                 name: true,
@@ -275,6 +297,12 @@ router.post(protected + "/get", authCheck, async (req, res) => {
                     },
                     relationLoadStrategy: "join",
                     include: {
+                        Participant: {
+                            where: {
+                                user_id: req.user.id,
+                            },
+                            select: { attended: true, ticket_collected: true },
+                        },
                         organizer: {
                             select: {
                                 name: true,
@@ -293,7 +321,12 @@ router.post(protected + "/get", authCheck, async (req, res) => {
             }
             let event = {};
             events.forEach((e) => {
-                if (!event[e.state]) [(event[e.state] = [])];
+                if (!event[e.state]) {
+                    [(event[e.state] = [])];
+                }
+                console.log("PART:", event.Participant);
+                e.Participant =
+                    e.Participant.length == 0 ? false : e.Participant[0];
                 event[e.state].push(e);
             });
             res.json({ error: false, events: event });
@@ -435,7 +468,7 @@ router.post(protected + "/get/:id", authCheck, async (req, res) => {
         };
         res.json({ error: false, event: eventResponse });
     } catch (err) {
-        logger.error(err);
+        console.error(err);
         return res.status(500).json({ error: true, message: "error fetching" });
     }
 });
@@ -666,6 +699,7 @@ router.get(protected + "/stats", authCheck, async (req, res) => {
                 id: true,
                 name: true,
                 organizer_id: true,
+                dates: true,
                 Participant: {
                     select: {
                         id: true,
@@ -711,6 +745,7 @@ router.get(protected + "/stats", authCheck, async (req, res) => {
                 eventId: event.id,
                 eventName: event.name,
                 organizerId: event.organizer_id,
+                dates: event.dates,
                 totalParticipants,
                 yearStats,
                 branchStats,

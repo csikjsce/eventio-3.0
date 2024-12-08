@@ -217,7 +217,7 @@ export default function EventDetails() {
           ) {
             if (
               res.data.event.Participant &&
-              res.data.event.Participant.claimed_ticket
+              res.data.event.Participant.ticket_collected
             ) {
               setButtonState({
                 text: 'View Ticket',
@@ -424,6 +424,11 @@ export default function EventDetails() {
             <Passage
               title="About the Event"
               content={event?.long_description || ''}
+            />
+            {/* event fee */}
+            <Passage
+              title="Fee"
+              content={event?.fee === 0 ? 'Free' : `₹${event?.fee}`}
             />
           </div>
 

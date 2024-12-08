@@ -32,6 +32,20 @@ interface EventStats {
   genderStats: { [key: string]: number };
 }
 
+const branchAbbreviations = {
+  Computer_Engineering: 'COMP',
+  Information_Technology: 'IT',
+  Mechanical: 'Mech',
+  Artificial_Intelligence_And_Data_Science: 'AIDS',
+  Electronics_And_Computers: 'EXCP',
+  Computer_Science_And_Business_Systems: 'CSBS',
+  Electronics_And_Telecommunications: 'EXTC',
+  Robotics_And_Artificial_Intelligence: 'RAI',
+  Computer_And_Communication: 'CCE',
+  Electronics: 'ETRX',
+  Electronics_VLSI: 'VLSI',
+};
+
 const Stats: React.FC<StatsProps> = ({ eventId }) => {
   const [statsData, setStatsData] = useState<EventStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -50,7 +64,6 @@ const Stats: React.FC<StatsProps> = ({ eventId }) => {
           },
         });
 
-        // Find the specific event stats from the response
         const eventStats = response.data.data.find(
           (event: EventStats) => event.eventId == eventId,
         );
@@ -83,7 +96,7 @@ const Stats: React.FC<StatsProps> = ({ eventId }) => {
 
   const formatDataForCharts = (stats: { [key: string]: number }) => {
     return Object.entries(stats).map(([name, value]) => ({
-      name,
+      name: branchAbbreviations[name] || name,
       value,
     }));
   };
@@ -115,6 +128,14 @@ const Stats: React.FC<StatsProps> = ({ eventId }) => {
     return (
       <div className="w-full h-96 flex items-center justify-center">
         <p className="text-red-500">{error || 'No data available'}</p>
+      </div>
+    );
+  }
+
+  if (statsData.totalParticipants <= 0) {
+    return (
+      <div className="w-full h-96 flex items-center justify-center">
+        <p className="text-foreground">No participants registered for this event.</p>
       </div>
     );
   }

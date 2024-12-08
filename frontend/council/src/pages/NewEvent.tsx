@@ -169,10 +169,12 @@ export default function NewEvent() {
 
   const onSubmit = async (data: NewEventSchema) => {
     data.logo_image_url = data.event_page_image_url;
+    // @ts-expect-error no idea
+    delete data.tickets_sold;
     if (data.parent_id === -1 || !showParent) {
       data.parent_id = null;
     }
-    console.log(data);
+    console.log(JSON.stringify(data));
     try {
       setLoading(true);
       const endpoint = id ? `/event/p/update/${id}` : '/event/p/create';
@@ -208,6 +210,8 @@ export default function NewEvent() {
     return <Loader />;
   }
 
+  console.log(errors);
+
   return (
     <FormProvider {...methods}>
       <div className="p-8 w-full relative">
@@ -218,7 +222,9 @@ export default function NewEvent() {
         >
           {/* Name */}
           <div>
-            <label className="block text-foreground">Event Name</label>
+            <label className="block text-foreground">
+              Event Name <span className="text-red-500">*</span>
+            </label>
             <input
               className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
               {...register('name')}
@@ -229,7 +235,9 @@ export default function NewEvent() {
 
           {/* Tagline */}
           <div>
-            <label className="block text-foreground">Tagline</label>
+            <label className="block text-foreground">
+              Tagline <span className="text-red-500">*</span>
+            </label>
             <input
               className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
               {...register('tag_line')}
@@ -240,7 +248,9 @@ export default function NewEvent() {
 
           {/* Description */}
           <div>
-            <label className="block text-foreground">Description</label>
+            <label className="block text-foreground">
+              Description <span className="text-red-500">*</span>
+            </label>
             <textarea
               className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
               {...register('description')}
@@ -251,7 +261,9 @@ export default function NewEvent() {
 
           {/* Long Description */}
           <div>
-            <label className="block text-foreground">Long Description</label>
+            <label className="block text-foreground">
+              Long Description <span className="text-red-500">*</span>
+            </label>
             <textarea
               className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
               {...register('long_description')}
@@ -285,7 +297,9 @@ export default function NewEvent() {
 
           {showParent ? (
             <div>
-              <label className="block text-foreground">Parent Event</label>
+              <label className="block text-foreground">
+                Parent Event<span className="text-red-500">*</span>
+              </label>
               <select
                 className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
                 {...register('parent_id')}
@@ -306,10 +320,10 @@ export default function NewEvent() {
           )}
 
           {/* Date Picker (Single or Range) */}
-
           <div>
             <label className="block text-foreground">
-              {isMultipleDates ? 'Start Date' : 'Event Date'}
+              {isMultipleDates ? 'Start Date' : 'Event Date'}{' '}
+              <span className="text-red-500">*</span>
             </label>
             <input
               type="datetime-local"
@@ -317,8 +331,6 @@ export default function NewEvent() {
               onChange={(e) => {
                 setStartDate(e.target.value);
               }}
-              // value={startDate?.toISOString().slice(0, 16)}
-              // defaultValue={startDate?.toLocaleString().slice(0, 16)}
               value={startDate}
             />
           </div>
@@ -326,7 +338,9 @@ export default function NewEvent() {
           {/* End Date (Only if multiple dates are allowed) */}
           {isMultipleDates ? (
             <div>
-              <label className="block text-foreground">End Date</label>
+              <label className="block text-foreground">
+                End Date <span className="text-red-500">*</span>
+              </label>
               <input
                 type="datetime-local"
                 className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
@@ -360,7 +374,9 @@ export default function NewEvent() {
 
           {/* Event Type */}
           <div>
-            <label className="block text-foreground">Event Type</label>
+            <label className="block text-foreground">
+              Event Type <span className="text-red-500">*</span>
+            </label>
             <select
               className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
               {...register('event_type')}
@@ -377,7 +393,8 @@ export default function NewEvent() {
           {/* Venue/Online Link */}
           <div>
             <label className="block text-foreground">
-              {eventType === 'ONLINE' ? 'Online Event Link' : 'Venue'}
+              {eventType === 'ONLINE' ? 'Online Event Link' : 'Venue'}{' '}
+              <span className="text-red-500">*</span>
             </label>
             <input
               className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
@@ -400,7 +417,7 @@ export default function NewEvent() {
           {/* Event Page Image URL */}
           <div>
             <label className="block text-foreground">
-              Events Page Image URL
+              Events Page Image URL <span className="text-red-500">*</span>
             </label>
             <input
               className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
@@ -414,7 +431,9 @@ export default function NewEvent() {
 
           {/* Banner Image URL */}
           <div>
-            <label className="block text-foreground">Banner Image URL</label>
+            <label className="block text-foreground">
+              Banner Image URL <span className="text-red-500">*</span>
+            </label>
             <input
               className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
               {...register('banner_url')}
@@ -439,7 +458,8 @@ export default function NewEvent() {
             <>
               <div>
                 <label className="block text-foreground">
-                  Maximum Participants per Team
+                  Maximum Particiapants per Team{' '}
+                  <span className="text-red-500">*</span>
                 </label>
                 <input
                   className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
@@ -450,7 +470,8 @@ export default function NewEvent() {
               </div>
               <div>
                 <label className="block text-foreground">
-                  Minimum Particiapants per Team
+                  Minimum Particiapants per Team{' '}
+                  <span className="text-red-500">*</span>
                 </label>
                 <input
                   className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
@@ -464,7 +485,9 @@ export default function NewEvent() {
 
           {/* Fee */}
           <div>
-            <label className="block text-foreground">Fee</label>
+            <label className="block text-foreground">
+              Fee <span className="text-red-500">*</span>
+            </label>
             <input
               type="number"
               className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
@@ -491,12 +514,12 @@ export default function NewEvent() {
           </div>
 
           {/* Checkbox for feedback */}
-          <div>
+          {/* <div>
             <label className="text-foreground flex items-center gap-2 select-none hover:cursor-pointer">
               <input type="checkbox" {...register('is_feedback_enabled')} />
               Enable Feedback
             </label>
-          </div>
+          </div> */}
 
           {/* Checkbox for somaiya only */}
           <div>
@@ -505,6 +528,8 @@ export default function NewEvent() {
               This a Somaiya-only Event
             </label>
           </div>
+
+          <div></div>
 
           {/* Event Type */}
           <div>
@@ -523,7 +548,7 @@ export default function NewEvent() {
           {isExternal ? (
             <div>
               <label className="block text-foreground">
-                External Registration Link
+                External Registration Link{' '}
               </label>
               <input
                 className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
@@ -552,12 +577,15 @@ export default function NewEvent() {
 
           {/* In-Event Activity */}
           <div>
-            <label className="block text-foreground">In-Event Activity</label>
+            <label className="block text-foreground">
+              In-Event Activity <span className="text-red-500">*</span>
+            </label>
             <input
               className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
               {...register('in_event_activity')}
               placeholder="In event activity link"
             />
+
             <p className="text-red-500">{errors.in_event_activity?.message}</p>
           </div>
 
@@ -574,7 +602,9 @@ export default function NewEvent() {
 
           {/* Ticket Count */}
           <div>
-            <label className="block text-foreground">Ticket Count</label>
+            <label className="block text-foreground">
+              Ticket Count <span className="text-red-500">*</span>
+            </label>
             <input
               className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
               {...register('ticket_count')}

@@ -84,14 +84,16 @@ export default function Ticket() {
                       {userData?.college || 'Unknown College'}
                     </div>
                   </div>
-                  {eventData && eventData.Participant && (
-                    <div>
-                      <div className="text-sm text-mute">Team</div>
-                      <div className="font-semibold">
-                        {eventData?.Participant.team.name || 'Unknown'}
+                  {eventData &&
+                    eventData.Participant &&
+                    eventData.Participant.team && (
+                      <div>
+                        <div className="text-sm text-mute">Team</div>
+                        <div className="font-semibold">
+                          {eventData?.Participant.team?.name || 'Unknown'}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
                 </div>
 
                 <div className="border-dashed border-mute border-b-2 my-5 pt-5">

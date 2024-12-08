@@ -13,19 +13,43 @@ function childFilterOut(event: EventData) {
   return event.parent_id === null;
 }
 
+function ticketFilter(event: EventData) {
+  return event.Participant !== false && event.Participant.ticket_collected;
+}
+
 export default function Home() {
   const { events } = useContext(EventsDataContext);
+
+  const ticketEvents = [
+    ...(events?.TICKET_CLOSED?.filter(ticketFilter) || []),
+    ...(events?.ONGOING?.filter(ticketFilter) || []),
+  ];
+
+  console.log(ticketEvents);
+  console.log(events?.TICKET_CLOSED);
 
   return (
     <div className="flex flex-col">
       {/* <SearchBar Icon={SearchNormal1} className="mt-6" /> */}
-      <div className="flex flex-col mt-6 gap-4 z-10">
+      {ticketEvents.length > 0 && (
+        <div className="mt-6 z-10">
+          <p className="text-lg font-medium font-fira text-left text-foreground ">
+            Your Tickets
+          </p>
+          <div className="mt-2 grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3 overflow-x-auto -mx-1">
+            {ticketEvents.map((event) => (
+              <EventCard key={event.id} event={event} />
+            ))}
+          </div>
+        </div>
+      )}
+      <div className="flex flex-col mt-4 gap-2 z-10">
         <p className="text-lg font-medium font-fira text-left text-foreground ">
           Trending Events
         </p>
         <div className="overflow-x-auto flex gap-4 pb-6 px-4 -mx-4">
           {events?.TICKET_OPEN?.filter(childFilterOut).map((event) => (
-            <TrendingCard key={event.id} event={event} text="RSVP Now!!" />
+            <TrendingCard key={event.id} event={event} text="RSVP Now" />
           ))}
           {events?.ONGOING?.filter(childFilterOut).map((event) => (
             <TrendingCard key={event.id} event={event} text="Ongoing" />

@@ -71,7 +71,17 @@ export const newEventSchema = yup.object({
         .required('Each date must be valid'),
     )
     .min(1, 'At least one event date is required')
-    .required('Event dates are required'),
+    .required('Event dates are required')
+    .test(
+      'start-before-end',
+      'Start date must be before end date',
+      function (value) {
+        console.log(value);
+        if (!value || value.length < 2) return true;
+        const [startDate, endDate] = value;
+        return new Date(startDate) < new Date(endDate);
+      },
+    ),
 
   venue: yup
     .string()
