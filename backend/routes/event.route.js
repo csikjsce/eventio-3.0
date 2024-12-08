@@ -643,6 +643,7 @@ router.get(protected + "/stats", authCheck, async (req, res) => {
         id: true,
         name: true,
         organizer_id: true,
+        dates: true,
         Participant: {
           select: {
             id: true,
@@ -688,6 +689,7 @@ router.get(protected + "/stats", authCheck, async (req, res) => {
         eventId: event.id,
         eventName: event.name,
         organizerId: event.organizer_id,
+        dates: event.dates,
         totalParticipants,
         yearStats,
         branchStats,

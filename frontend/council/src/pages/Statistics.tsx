@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import axios from 'axios';
 import {
   BarChart,
@@ -153,17 +153,22 @@ function Statistics() {
     );
 
     const totalMale = events.reduce(
-      (sum, event) => sum + (event.genderStats['Male'] || 0),
-      0,
+      (sum, event) => sum + (event.genderStats['MALE'] || 0), 0,
     );
     const totalFemale = events.reduce(
-      (sum, event) => sum + (event.genderStats['Female'] || 0),
+      (sum, event) => sum + (event.genderStats['FEMALE'] || 0),
       0,
     );
 
-    const gcd = (a, b) => (b === 0 ? a : gcd(b, a % b));
+    const gcd = (a, b) => {
+      if (!b) return a;
+      return gcd(b, a % b);
+    };
+
     const gcdValue = gcd(totalMale, totalFemale);
-    const genderRatio = `${totalMale / gcdValue}:${totalFemale / gcdValue}`;
+    const simplifiedMale = totalMale / gcdValue;
+    const simplifiedFemale = totalFemale / gcdValue;
+    const genderRatio = `${simplifiedMale}:${simplifiedFemale}`;
 
     return {
       totalEvents,
@@ -208,38 +213,66 @@ function Statistics() {
         {activeTab === 'overview' && statsData?.data && (
           <>
             <KeyInsights insights={keyInsights} />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
-              <EventCountChart
-                data={statsData.data.map((event) => ({
-                  name: event.eventName,
-                  value: event.totalParticipants,
-                }))}
-              />
-              <BranchDistributionChart
-                data={Object.entries(
-                  statsData.data.reduce((acc, event) => {
-                    Object.entries(event.branchStats).forEach(
-                      ([branch, count]) => {
-                        acc[branchAbbreviations[branch]] =
-                          (acc[branchAbbreviations[branch]] || 0) + count;
-                      },
-                    );
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+              <div className="lg:col-span-2">
+                <ParticipationTrendChart data={statsData.data} />
+              </div>
+
+              <div className="h-[400px]">
+                <EventCountChart
+                  data={statsData.data.map((event) => ({
+                    name: event.eventName,
+                    value: event.totalParticipants,
+                  }))}
+                />
+              </div>
+
+              <div className="h-[400px]">
+                <BranchDistributionChart
+                  data={Object.entries(
+                    statsData.data.reduce((acc, event) => {
+                      Object.entries(event.branchStats).forEach(
+                        ([branch, count]) => {
+                          acc[branchAbbreviations[branch]] =
+                            (acc[branchAbbreviations[branch]] || 0) + count;
+                        },
+                      );
+                      return acc;
+                    }, {}),
+                  ).map(([name, value]) => ({ name, value }))}
+                />
+              </div>
+
+              <div className="h-[400px]">
+                <GenderDistributionChart
+                  data={Object.entries(
+                    statsData.data.reduce((acc, event) => {
+                      Object.entries(event.genderStats).forEach(
+                        ([gender, count]) => {
+                          acc[gender] = (acc[gender] || 0) + count;
+                        },
+                      );
+                      return acc;
+                    }, {}),
+                  ).map(([name, value]) => ({ name, value }))}
+                />
+              </div>
+
+              <div className="h-[375px] bg-card p-4 rounded-md shadow-md">
+                <h2 className="font-fira text-foreground text-xl font-bold mb-4">
+                  Academic Year Distribution
+                </h2>
+                <YearDistributionChart
+                  data={statsData.data.reduce((acc, event) => {
+                    Object.entries(event.yearStats).forEach(([year, count]) => {
+                      acc[year] = (acc[year] || 0) + count;
+                    });
                     return acc;
-                  }, {}),
-                ).map(([name, value]) => ({ name, value }))}
-              />
-              <GenderDistributionChart
-                data={Object.entries(
-                  statsData.data.reduce((acc, event) => {
-                    Object.entries(event.genderStats).forEach(
-                      ([gender, count]) => {
-                        acc[gender] = (acc[gender] || 0) + count;
-                      },
-                    );
-                    return acc;
-                  }, {}),
-                ).map(([name, value]) => ({ name, value }))}
-              />
+                  }, {})}
+                  eventDate={statsData.data[0]?.dates[0]}
+                />
+              </div>
             </div>
           </>
         )}
@@ -425,6 +458,135 @@ function GenderDistributionChart({ data }) {
         </PieChart>
       </ResponsiveContainer>
     </div>
+  );
+}
+
+
+function ParticipationTrendChart({ data }) {
+  const trendData = useMemo(() => {
+    return [...data]
+      .sort((a, b) => new Date(a.dates[0]) - new Date(b.dates[0]))
+      .map(event => ({
+        name: event.eventName,
+        participants: event.totalParticipants,
+        date: new Date(event.dates[0]).toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric'
+        })
+      }));
+  }, [data]);
+
+  const CustomTrendTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-background p-2 rounded-md shadow-md">
+          <p className="font-fira text-foreground text-sm font-medium mb-1">{payload[0]?.payload.name}</p>
+          <p className="font-fira text-foreground text-sm">{`Date: ${label}`}</p>
+          <p className="font-fira text-white text-sm">
+            {`Participants: ${payload[0]?.value}`}
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  return (
+    <div className="bg-card p-4 rounded-md shadow-md">
+      <h2 className="font-fira text-foreground text-xl font-bold mb-4">
+        Participation Trend
+      </h2>
+      <ResponsiveContainer width="100%" height={300}>
+        <LineChart data={trendData}>
+          <XAxis
+            dataKey="date"
+            tick={{ fill: COLORS.mute }}
+            interval="preserveStartEnd"
+          />
+          <YAxis
+            tick={{ fill: COLORS.mute }}
+          />
+          <Tooltip content={<CustomTrendTooltip />} />
+          <Line
+            type="monotone"
+            dataKey="participants"
+            stroke={COLORS.primary}
+            strokeWidth={2}
+            dot={{ fill: COLORS.primary }}
+            name="Participants"
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+function YearDistributionChart({ data, eventDate }) {
+  const yearData = useMemo(() => {
+    const currentYear = new Date(eventDate).getFullYear();
+
+    const academicYearData = {};
+    Object.entries(data).forEach(([gradYear, count]) => {
+      const yearsToGrad = parseInt(gradYear) - currentYear;
+      let academicYear;
+
+      switch (yearsToGrad) {
+        case 4:
+          academicYear = 'FY';
+          break;
+        case 3:
+          academicYear = 'SY';
+          break;
+        case 2:
+          academicYear = 'TY';
+          break;
+        case 1:
+          academicYear = 'LY';
+          break;
+        default:
+          academicYear = 'Other';
+      }
+
+      academicYearData[academicYear] = (academicYearData[academicYear] || 0) + count;
+    });
+
+    return Object.entries(academicYearData)
+      .filter(([year]) => year !== 'Other')
+      .map(([year, count]) => ({
+        year,
+        count
+      }))
+      .sort((a, b) => {
+        const order = { 'FY': 1, 'SY': 2, 'TY': 3, 'LY': 4 };
+        return order[a.year] - order[b.year];
+      });
+  }, [data, eventDate]);
+
+  return (
+    <ResponsiveContainer width="100%" height={300}>
+      <BarChart data={yearData}>
+        <XAxis
+          dataKey="year"
+          tick={{ fill: COLORS.mute }}
+        />
+        <YAxis
+          tick={{ fill: COLORS.mute }}
+        />
+        <Tooltip content={<CustomTooltip />} />
+        <Bar
+          dataKey="count"
+          fill={COLORS.primary}
+          radius={[4, 4, 0, 0]}
+        >
+          {yearData.map((entry, index) => (
+            <Cell
+              key={`cell-${index}`}
+              fill={COLORS.barChart[index % COLORS.barChart.length]}
+            />
+          ))}
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
   );
 }
 
