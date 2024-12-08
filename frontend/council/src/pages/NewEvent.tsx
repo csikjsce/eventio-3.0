@@ -485,7 +485,9 @@ export default function NewEvent() {
 
           {/* Fee */}
           <div>
-            <label className="block text-foreground">Fee</label>
+            <label className="block text-foreground">
+              Fee <span className="text-red-500">*</span>
+            </label>
             <input
               className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
               {...register('fee')}
@@ -505,7 +507,6 @@ export default function NewEvent() {
             <p className="text-red-500">{errors.tags?.message}</p>
           </div>
 
-          <div></div>
           {/* Checkbox for feedback */}
           {/* <div>
             <label className="text-foreground flex items-center gap-2 select-none hover:cursor-pointer">
@@ -521,6 +522,8 @@ export default function NewEvent() {
               This a Somaiya-only Event
             </label>
           </div>
+
+          <div></div>
 
           {/* Event Type */}
           <div>
@@ -540,7 +543,6 @@ export default function NewEvent() {
             <div>
               <label className="block text-foreground">
                 External Registration Link{' '}
-                <span className="text-red-500">*</span>
               </label>
               <input
                 className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
@@ -594,7 +596,9 @@ export default function NewEvent() {
 
           {/* Ticket Count */}
           <div>
-            <label className="block text-foreground">Ticket Count</label>
+            <label className="block text-foreground">
+              Ticket Count <span className="text-red-500">*</span>
+            </label>
             <input
               className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
               {...register('ticket_count')}
