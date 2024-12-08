@@ -13,6 +13,11 @@ import {
   YAxis,
   LineChart,
   Line,
+  RadarChart,
+  Radar,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
 } from 'recharts';
 import { Calendar2, Location, User, ArrowDown2 } from 'iconsax-react';
 
@@ -53,9 +58,6 @@ const COLORS = {
 
 const ComparisonMetrics = {
   totalParticipants: 'Participants',
-  yearStats: 'Year Distribution',
-  branchStats: 'Branch Distribution',
-  genderStats: 'Gender Distribution',
 };
 
 const CustomTooltip = ({
@@ -115,6 +117,7 @@ function Statistics() {
     fetchCouncils();
   }, []);
 
+
   useEffect(() => {
     const fetchStats = async () => {
       if (!selectedCouncil) return;
@@ -134,6 +137,7 @@ function Statistics() {
         );
 
         setStatsData({ ...response.data, data: filteredEvents });
+        setSelectedEvents([]); // Reset selected events
       } catch (error) {
         console.error('Error fetching stats:', error);
       }
@@ -141,6 +145,7 @@ function Statistics() {
 
     fetchStats();
   }, [selectedCouncil]);
+  ;
 
   const filteredEvents = useMemo(() => {
     return statsData?.data || [];
@@ -205,8 +210,9 @@ function Statistics() {
       0,
     );
 
-    const simplifiedMale = totalMale / (totalFemale || 1);
-    const genderRatio = `${simplifiedMale.toFixed(2)}:1`;
+    const genderRatio = totalMale === 0 && totalFemale === 0
+      ? 'NA:NA'
+      : `${(totalMale / (totalFemale || 1)).toFixed(2)}:1`;
 
     return {
       totalEvents,
@@ -380,7 +386,13 @@ function Statistics() {
               </div>
             </div>
             {selectedEvents.length > 0 && (
-              <ComparisonChart data={comparisonData} events={selectedEvents} />
+              <>
+                <ComparisonChart data={comparisonData} events={selectedEvents} />
+                {/* <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2"> */}
+                <BranchRadarChart events={selectedEvents} />
+                {/* <GenderRadarChart events={selectedEvents} /> */}
+                {/* </div> */}
+              </>
             )}
           </>
         )}
@@ -650,7 +662,6 @@ function YearDistributionChart({ data, eventDate }) {
     </ResponsiveContainer>
   );
 }
-
 function ComparisonChart({ data, events }) {
   const COLORS_EXTENDED = [
     COLORS.primary,
@@ -693,5 +704,86 @@ function ComparisonChart({ data, events }) {
   );
 }
 
+
+function BranchRadarChart({ events }) {
+  const radarData = useMemo(() => {
+    const branches = Object.keys(branchAbbreviations);
+    return branches.map((branch) => {
+      const data = { branch: branchAbbreviations[branch] };
+      events.forEach((event) => {
+        data[event.eventName] = event.branchStats[branch] || 0;
+      });
+      return data;
+    });
+  }, [events]);
+
+  return (
+    <div className="bg-card p-4 rounded-md shadow-md">
+      <h2 className="font-fira text-foreground text-xl font-bold mb-4">
+        Branch-wise Distribution
+      </h2>
+      <ResponsiveContainer width="100%" height={400}>
+        <RadarChart data={radarData}>
+          <PolarGrid />
+          <PolarAngleAxis dataKey="branch" tick={{ fill: COLORS.mute }} />
+          <PolarRadiusAxis angle={30} domain={[0, 'auto']} tick={{ fill: COLORS.mute }} />
+          {events.map((event, index) => (
+            <Radar
+              key={event.eventId}
+              name={event.eventName}
+              dataKey={event.eventName}
+              stroke={COLORS.branch[index % COLORS.branch.length]}
+              fill={COLORS.branch[index % COLORS.branch.length]}
+              fillOpacity={0.6}
+            />
+          ))}
+          <Tooltip content={<CustomTooltip />} />
+          <Legend />
+        </RadarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+
+// function GenderRadarChart({ events }) {
+//   const radarData = useMemo(() => {
+//     const genders = ['MALE', 'FEMALE'];
+//     return genders.map((gender) => {
+//       const data = { gender };
+//       events.forEach((event) => {
+//         data[event.eventName] = event.genderStats[gender] || 0;
+//       });
+//       return data;
+//     });
+//   }, [events]);
+//
+//   return (
+//     <div className="bg-card p-4 rounded-md shadow-md">
+//       <h2 className="font-fira text-foreground text-xl font-bold mb-4">
+//         Gender-wise Distribution
+//       </h2>
+//       <ResponsiveContainer width="100%" height={400}>
+//         <RadarChart data={radarData}>
+//           <PolarGrid />
+//           <PolarAngleAxis dataKey="gender" tick={{ fill: COLORS.mute }} />
+//           <PolarRadiusAxis angle={30} domain={[0, 'auto']} tick={{ fill: COLORS.mute }} />
+//           {events.map((event, index) => (
+//             <Radar
+//               key={event.eventId}
+//               name={event.eventName}
+//               dataKey={event.eventName}
+//               stroke={COLORS.gender[index % COLORS.gender.length]}
+//               fill={COLORS.gender[index % COLORS.gender.length]}
+//               fillOpacity={0.6}
+//             />
+//           ))}
+//           <Tooltip content={<CustomTooltip />} />
+//           <Legend />
+//         </RadarChart>
+//       </ResponsiveContainer>
+//     </div>
+//   );
+// }
 export { Statistics };
 export default Statistics;
