@@ -51,6 +51,14 @@ export default function EventCard({ event }: { event: EventData }) {
             </p>
           </div>
         </div>
+        {/* event fee */}
+        <div className="font-fira text-sm text-mute dark:text-gray-300">
+          {event.fee === 0 ? (
+            <span className="text-green-500 font-semibold">Free</span>
+          ) : (
+            <span className="text-foreground font-semibold">₹{event.fee}</span>
+          )}
+        </div>
         {/* Event Tags */}
         <div className="flex flex-wrap gap-2">
           {event.tags.map((tag: string, index: number) => (
