@@ -140,7 +140,7 @@ function Statistics() {
           ...acc,
           [event.eventName]:
             event[
-              key === 'totalParticipants' ? key : Object.keys(event[key]).length
+            key === 'totalParticipants' ? key : Object.keys(event[key]).length
             ],
         }),
         {},
@@ -251,17 +251,17 @@ function Statistics() {
                 <ParticipationTrendChart data={filteredEvents} />
               </div>
               <div className="h-[400px]">
-                <EventCountChart data={filteredEvents.map((event) => ({name: event.eventName, value: event.totalParticipants}))} />
+                <EventCountChart data={filteredEvents.map((event) => ({ name: event.eventName, value: event.totalParticipants }))} />
               </div>
               <div className="h-[400px]">
-                <BranchDistributionChart data={Object.entries(filteredEvents.reduce((acc, event) => {Object.entries(event.branchStats).forEach(([branch, count]) => {acc[branchAbbreviations[branch]] = (acc[branchAbbreviations[branch]] || 0) + count}); return acc}, {})).map(([name, value]) => ({name, value}))} />
+                <BranchDistributionChart data={Object.entries(filteredEvents.reduce((acc, event) => { Object.entries(event.branchStats).forEach(([branch, count]) => { acc[branchAbbreviations[branch]] = (acc[branchAbbreviations[branch]] || 0) + count }); return acc }, {})).map(([name, value]) => ({ name, value }))} />
               </div>
               <div className="h-[400px]">
-                <GenderDistributionChart data={Object.entries(filteredEvents.reduce((acc, event) => {Object.entries(event.genderStats).forEach(([gender, count]) => {acc[gender] = (acc[gender] || 0) + count}); return acc}, {})).map(([name, value]) => ({name, value}))} />
+                <GenderDistributionChart data={Object.entries(filteredEvents.reduce((acc, event) => { Object.entries(event.genderStats).forEach(([gender, count]) => { acc[gender] = (acc[gender] || 0) + count }); return acc }, {})).map(([name, value]) => ({ name, value }))} />
               </div>
               <div className="h-[375px] bg-card p-4 rounded-md shadow-md">
                 <h2 className="font-fira text-foreground text-xl font-bold mb-4">Academic Year Distribution</h2>
-                <YearDistributionChart data={filteredEvents.reduce((acc, event) => {Object.entries(event.yearStats).forEach(([year, count]) => {acc[year] = (acc[year] || 0) + count}); return acc}, {})} eventDate={filteredEvents[0]?.dates[0]} />
+                <YearDistributionChart data={filteredEvents.reduce((acc, event) => { Object.entries(event.yearStats).forEach(([year, count]) => { acc[year] = (acc[year] || 0) + count }); return acc }, {})} eventDate={filteredEvents[0]?.dates[0]} />
               </div>
             </div>
           </>
