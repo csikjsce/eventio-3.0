@@ -1,4 +1,5 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useContext } from 'react';
+import UserDataContext from '../contexts/UserDataContext';
 import axios from 'axios';
 import {
   BarChart,
@@ -13,7 +14,11 @@ import {
   YAxis,
   LineChart,
   Line,
-  RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis
+  RadarChart,
+  Radar,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
 } from 'recharts';
 import { Calendar2, Location, User } from 'iconsax-react';
 
@@ -59,8 +64,6 @@ const ComparisonMetrics = {
   genderStats: 'Gender Distribution',
 };
 
-
-
 const CustomTooltip = ({
   active,
   payload,
@@ -81,16 +84,16 @@ const CustomTooltip = ({
   return null;
 };
 
-
-
 function Statistics() {
   const [selectedEvents, setSelectedEvents] = useState([]);
   const [activeTab, setActiveTab] = useState('overview');
   const [statsData, setStatsData] = useState<{} | null>(null);
+  const { userData } = useContext(UserDataContext);
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
+        if (!userData) return;
         const response = await axios.request({
           baseURL: import.meta.env.VITE_APP_SERVER_ADDRESS,
           url: '/api/v1/event/p/stats',
@@ -99,13 +102,18 @@ function Statistics() {
             Authorization: 'Bearer ' + localStorage.getItem('accessToken'),
           },
         });
-        setStatsData(response.data);
+        const d = response.data;
+        console.log(d);
+        let events = d.data;
+        events = d.data.filter((event) => event.organizerId === userData.id);
+        d.data = events;
+        setStatsData(d);
       } catch (error) {
         console.error('Error fetching stats:', error);
       }
     };
     fetchStats();
-  }, []);
+  }, [userData]);
 
   const filteredEvents = useMemo(() => {
     return statsData?.data || [];
@@ -119,14 +127,13 @@ function Statistics() {
           ...acc,
           [event.eventName]:
             event[
-            key === 'totalParticipants' ? key : Object.keys(event[key]).length
+              key === 'totalParticipants' ? key : Object.keys(event[key]).length
             ],
         }),
         {},
       ),
     }));
   }, [selectedEvents]);
-
 
   const keyInsights = useMemo(() => {
     if (!statsData?.data) return {};
@@ -138,9 +145,13 @@ function Statistics() {
       0,
     );
     const averageAttendance = Math.round(totalParticipants / totalEvents);
-    const mostPopularEvent = events.reduce((max, event) =>
-      max.totalParticipants > event.totalParticipants ? max : event,
-    );
+    console.log('EVENTS', events);
+    const mostPopularEvent =
+      events.length > 0
+        ? events.reduce((max, event) =>
+            max.totalParticipants > event.totalParticipants ? max : event,
+          )
+        : '';
 
     const allBranches = events.flatMap((event) =>
       Object.entries(event.branchStats).map(([branch, count]) => ({
@@ -181,7 +192,6 @@ function Statistics() {
     };
   }, [statsData]);
 
-
   return (
     <div className="w-full min-h-screen bg-background">
       <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -192,19 +202,21 @@ function Statistics() {
         <div className="mb-8">
           <div className="flex space-x-4">
             <button
-              className={`px-6 py-2 rounded-full font-fira text-lg ${activeTab === 'overview'
-                ? 'bg-primary text-white'
-                : 'bg-background text-foreground'
-                }`}
+              className={`px-6 py-2 rounded-full font-fira text-lg ${
+                activeTab === 'overview'
+                  ? 'bg-primary text-white'
+                  : 'bg-background text-foreground'
+              }`}
               onClick={() => setActiveTab('overview')}
             >
               Overview
             </button>
             <button
-              className={`px-6 py-2 rounded-full font-fira text-lg ${activeTab === 'comparison'
-                ? 'bg-primary text-white'
-                : 'bg-background text-foreground'
-                }`}
+              className={`px-6 py-2 rounded-full font-fira text-lg ${
+                activeTab === 'comparison'
+                  ? 'bg-primary text-white'
+                  : 'bg-background text-foreground'
+              }`}
               onClick={() => setActiveTab('comparison')}
             >
               Event Comparison
@@ -289,10 +301,11 @@ function Statistics() {
                 {filteredEvents.map((event) => (
                   <div
                     key={event.eventId}
-                    className={`bg-card p-4 rounded-md shadow-md cursor-pointer ${selectedEvents.includes(event)
-                      ? 'border-2 border-blue-500'
-                      : ''
-                      }`}
+                    className={`bg-card p-4 rounded-md shadow-md cursor-pointer ${
+                      selectedEvents.includes(event)
+                        ? 'border-2 border-blue-500'
+                        : ''
+                    }`}
                     onClick={() => {
                       setSelectedEvents((prev) =>
                         prev.includes(event)
@@ -399,7 +412,6 @@ function EventCountChart({ data }) {
   );
 }
 
-
 function BranchDistributionChart({ data }) {
   return (
     <div className="bg-card p-4 rounded-md shadow-md">
@@ -432,11 +444,6 @@ function BranchDistributionChart({ data }) {
   );
 }
 
-
-
-
-
-
 function BranchDistributionRadarChart({ data }) {
   const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
@@ -463,7 +470,11 @@ function BranchDistributionRadarChart({ data }) {
         <RadarChart data={data}>
           <PolarGrid />
           <PolarAngleAxis dataKey="branch" tick={{ fill: COLORS.mute }} />
-          <PolarRadiusAxis angle={30} domain={[0, 'auto']} tick={{ fill: COLORS.mute }} />
+          <PolarRadiusAxis
+            angle={30}
+            domain={[0, 'auto']}
+            tick={{ fill: COLORS.mute }}
+          />
           <Radar
             name="Participants"
             dataKey="count"
@@ -477,11 +488,6 @@ function BranchDistributionRadarChart({ data }) {
     </div>
   );
 }
-
-
-
-
-
 
 function GenderDistributionChart({ data }) {
   return (
@@ -514,7 +520,6 @@ function GenderDistributionChart({ data }) {
     </div>
   );
 }
-
 
 function ParticipationTrendChart({ data }) {
   const trendData = useMemo(() => {
@@ -574,7 +579,6 @@ function ParticipationTrendChart({ data }) {
     </div>
   );
 }
-
 
 function YearDistributionChart({ data, eventDate }) {
   const yearData = useMemo(() => {
@@ -653,11 +657,6 @@ function YearDistributionChart({ data, eventDate }) {
   );
 }
 
-
-
-
-
-
 function ComparisonChart({ data, events }) {
   const COLORS_EXTENDED = [
     COLORS.primary,
@@ -679,7 +678,10 @@ function ComparisonChart({ data, events }) {
             {label}
           </p>
           {payload.map((entry, index) => (
-            <p key={`tooltip-item-${index}`} className="font-fira text-white text-sm">
+            <p
+              key={`tooltip-item-${index}`}
+              className="font-fira text-white text-sm"
+            >
               {`${entry.name}: ${entry.value}`}
             </p>
           ))}
@@ -689,16 +691,22 @@ function ComparisonChart({ data, events }) {
     return null;
   };
 
-  const filteredData = data.filter(item => item.metric === ComparisonMetrics.totalParticipants);
+  const filteredData = data.filter(
+    (item) => item.metric === ComparisonMetrics.totalParticipants,
+  );
 
   const branchDistributionData = useMemo(() => {
     const branchData = {};
-    events.forEach(event => {
+    events.forEach((event) => {
       Object.entries(event.branchStats).forEach(([branch, count]) => {
-        branchData[branchAbbreviations[branch]] = (branchData[branchAbbreviations[branch]] || 0) + count;
+        branchData[branchAbbreviations[branch]] =
+          (branchData[branchAbbreviations[branch]] || 0) + count;
       });
     });
-    return Object.entries(branchData).map(([branch, count]) => ({ branch, count }));
+    return Object.entries(branchData).map(([branch, count]) => ({
+      branch,
+      count,
+    }));
   }, [events]);
 
   return (
@@ -730,10 +738,6 @@ function ComparisonChart({ data, events }) {
     </div>
   );
 }
-
-
-
-
 
 export { Statistics };
 export default Statistics;
