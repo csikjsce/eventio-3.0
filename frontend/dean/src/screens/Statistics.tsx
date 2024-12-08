@@ -608,6 +608,7 @@ function ParticipationTrendChart({ data }) {
   );
 }
 
+
 function YearDistributionChart({ data, eventDate }) {
   const yearData = useMemo(() => {
     const currentYear = new Date(eventDate).getFullYear();
@@ -650,6 +651,22 @@ function YearDistributionChart({ data, eventDate }) {
       });
   }, [data, eventDate]);
 
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-background p-2 rounded-md shadow-md">
+          <p className="font-fira text-foreground text-sm font-medium mb-1">
+            {label}
+          </p>
+          <p className="font-fira text-white text-sm">
+            {`Count: ${payload[0].value}`}
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <ResponsiveContainer width="100%" height={300}>
       <BarChart data={yearData}>
@@ -668,6 +685,7 @@ function YearDistributionChart({ data, eventDate }) {
     </ResponsiveContainer>
   );
 }
+
 function ComparisonChart({ data, events }) {
   const COLORS_EXTENDED = [
     COLORS.primary,
