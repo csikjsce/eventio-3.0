@@ -31,7 +31,7 @@ export default function EventCard({ event }: { event: EventData }) {
               <p className="font-fira font-medium text-md sm:text-lg text-foreground ">
                 {event.name}
               </p>
-              <p className="font-fira text-xs text-vitality">
+              <p className="font-fira text-xs text-primary">
                 By {event.organizer.name}
               </p>
             </div>

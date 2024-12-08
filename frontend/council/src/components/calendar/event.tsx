@@ -33,7 +33,7 @@ const Event = (props: Props) => {
   return (
     <div className="flex min-w-full my-2">
       <div className="bg-vitality w-[20%] rounded-l-[6px] flex items-center justify-center p-1">
-        <h2 className="font-fira font-normal not-italic text-foreground ">
+        <h2 className="font-fira font-normal not-italic text-white ">
           {props.date.date() + getOrdinalSuffix(props.date.date())}
         </h2>
       </div>
