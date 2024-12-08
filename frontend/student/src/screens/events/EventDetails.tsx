@@ -425,6 +425,11 @@ export default function EventDetails() {
               title="About the Event"
               content={event?.long_description || ''}
             />
+            {/* event fee */}
+            <Passage
+              title="Fee"
+              content={event?.fee === 0 ? 'Free' : `₹${event?.fee}`}
+            />
           </div>
 
           <div className="fixed bottom-0 left-0 w-screen p-4 bg-background flex gap-4">
