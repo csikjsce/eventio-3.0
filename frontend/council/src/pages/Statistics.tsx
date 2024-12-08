@@ -13,6 +13,7 @@ import {
   YAxis,
   LineChart,
   Line,
+  RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis
 } from 'recharts';
 import { Calendar2, Location, User } from 'iconsax-react';
 
@@ -58,6 +59,8 @@ const ComparisonMetrics = {
   genderStats: 'Gender Distribution',
 };
 
+
+
 const CustomTooltip = ({
   active,
   payload,
@@ -70,22 +73,40 @@ const CustomTooltip = ({
   if (active && payload && payload.length) {
     return (
       <div className="bg-background p-2 rounded-md shadow-md">
-        <p className="font-fira text-foreground text-sm font-medium">{`${label}`}</p>
-        {payload.map((entry, index) => (
-          <p key={index} className="font-fira text-white text-sm">
-            {`${entry.name}: ${entry.value}`}
-          </p>
-        ))}
+        <p className="font-fira text-foreground text-sm font-medium">{`${payload[0].payload.name}`}</p>
+        <p className="font-fira text-white text-sm">{`${payload[0].value}`}</p>
       </div>
     );
   }
   return null;
 };
 
+
+
 function Statistics() {
   const [selectedEvents, setSelectedEvents] = useState([]);
   const [activeTab, setActiveTab] = useState('overview');
   const [statsData, setStatsData] = useState<{} | null>(null);
+  const [currentUser, setCurrentUser] = useState(null);
+
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const response = await axios.request({
+          baseURL: import.meta.env.VITE_APP_SERVER_ADDRESS,
+          url: '/api/v1/user/me',
+          method: 'GET',
+          headers: {
+            Authorization: 'Bearer ' + localStorage.getItem('accessToken'),
+          },
+        });
+        setCurrentUser(response.data);
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+      }
+    };
+    fetchCurrentUser();
+  }, []);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -107,8 +128,9 @@ function Statistics() {
   }, []);
 
   const filteredEvents = useMemo(() => {
-    return statsData?.data || [];
-  }, [statsData]);
+    if (!statsData?.data || !currentUser) return [];
+    return statsData.data.filter(event => event.organizer_id === currentUser.id);
+  }, [statsData, currentUser]);
 
   const comparisonData = useMemo(() => {
     return Object.entries(ComparisonMetrics).map(([key, label]) => ({
@@ -118,7 +140,7 @@ function Statistics() {
           ...acc,
           [event.eventName]:
             event[
-              key === 'totalParticipants' ? key : Object.keys(event[key]).length
+            key === 'totalParticipants' ? key : Object.keys(event[key]).length
             ],
         }),
         {},
@@ -127,20 +149,19 @@ function Statistics() {
   }, [selectedEvents]);
 
   const keyInsights = useMemo(() => {
-    if (!statsData?.data) return {};
+    if (!filteredEvents.length) return {};
 
-    const events = statsData.data;
-    const totalEvents = events.length;
-    const totalParticipants = events.reduce(
+    const totalEvents = filteredEvents.length;
+    const totalParticipants = filteredEvents.reduce(
       (sum, event) => sum + event.totalParticipants,
       0,
     );
     const averageAttendance = Math.round(totalParticipants / totalEvents);
-    const mostPopularEvent = events.reduce((max, event) =>
+    const mostPopularEvent = filteredEvents.reduce((max, event) =>
       max.totalParticipants > event.totalParticipants ? max : event,
     );
 
-    const allBranches = events.flatMap((event) =>
+    const allBranches = filteredEvents.flatMap((event) =>
       Object.entries(event.branchStats).map(([branch, count]) => ({
         branch,
         count,
@@ -157,11 +178,11 @@ function Statistics() {
       { branch: '', count: 0 },
     );
 
-    const totalMale = events.reduce(
+    const totalMale = filteredEvents.reduce(
       (sum, event) => sum + (event.genderStats['MALE'] || 0),
       0,
     );
-    const totalFemale = events.reduce(
+    const totalFemale = filteredEvents.reduce(
       (sum, event) => sum + (event.genderStats['FEMALE'] || 0),
       0,
     );
@@ -174,36 +195,47 @@ function Statistics() {
       mostPopularEvent: mostPopularEvent.eventName,
       mostPopularEventParticipants: mostPopularEvent.totalParticipants,
       averageAttendance,
-      mostActiveBranch: mostActiveBranch.branch,
+      mostActiveBranch: branchAbbreviations[mostActiveBranch.branch],
       genderRatio,
     };
-  }, [statsData]);
+  }, [filteredEvents]);
+
+  if (!statsData?.data || !currentUser) {
+    return (
+      <div className="w-full min-h-screen bg-background flex items-center justify-center">
+        <p className="text-foreground text-xl">Loading...</p>
+      </div>
+    );
+  }
+
+  if (filteredEvents.length === 0) {
+    return (
+      <div className="w-full min-h-screen bg-background">
+        <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <h1 className="font-fira text-foreground text-3xl font-bold mb-8">My Events Statistics</h1>
+          <div className="bg-card p-8 rounded-lg shadow-md text-center">
+            <h2 className="text-2xl text-foreground mb-4">No Events Found</h2>
+            <p className="text-muted-foreground">You haven't organized any events yet.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full min-h-screen bg-background">
       <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="font-fira text-foreground text-3xl font-bold mb-8">
-          Council Statistics
-        </h1>
-
+        <h1 className="font-fira text-foreground text-3xl font-bold mb-8">My Events Statistics</h1>
         <div className="mb-8">
           <div className="flex space-x-4">
             <button
-              className={`px-6 py-2 rounded-full font-fira text-lg ${
-                activeTab === 'overview'
-                  ? 'bg-primary text-white'
-                  : 'bg-background text-foreground'
-              }`}
+              className={`px-6 py-2 rounded-full font-fira text-lg ${activeTab === 'overview' ? 'bg-primary text-white' : 'bg-background text-foreground'}`}
               onClick={() => setActiveTab('overview')}
             >
               Overview
             </button>
             <button
-              className={`px-6 py-2 rounded-full font-fira text-lg ${
-                activeTab === 'comparison'
-                  ? 'bg-primary text-white'
-                  : 'bg-background text-foreground'
-              }`}
+              className={`px-6 py-2 rounded-full font-fira text-lg ${activeTab === 'comparison' ? 'bg-primary text-white' : 'bg-background text-foreground'}`}
               onClick={() => setActiveTab('comparison')}
             >
               Event Comparison
@@ -211,68 +243,25 @@ function Statistics() {
           </div>
         </div>
 
-        {activeTab === 'overview' && statsData?.data && (
+        {activeTab === 'overview' && (
           <>
             <KeyInsights insights={keyInsights} />
-
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
               <div className="lg:col-span-2">
-                <ParticipationTrendChart data={statsData.data} />
+                <ParticipationTrendChart data={filteredEvents} />
               </div>
-
               <div className="h-[400px]">
-                <EventCountChart
-                  data={statsData.data.map((event) => ({
-                    name: event.eventName,
-                    value: event.totalParticipants,
-                  }))}
-                />
+                <EventCountChart data={filteredEvents.map((event) => ({ name: event.eventName, value: event.totalParticipants }))} />
               </div>
-
               <div className="h-[400px]">
-                <BranchDistributionChart
-                  data={Object.entries(
-                    statsData.data.reduce((acc, event) => {
-                      Object.entries(event.branchStats).forEach(
-                        ([branch, count]) => {
-                          acc[branchAbbreviations[branch]] =
-                            (acc[branchAbbreviations[branch]] || 0) + count;
-                        },
-                      );
-                      return acc;
-                    }, {}),
-                  ).map(([name, value]) => ({ name, value }))}
-                />
+                <BranchDistributionChart data={Object.entries(filteredEvents.reduce((acc, event) => { Object.entries(event.branchStats).forEach(([branch, count]) => { acc[branchAbbreviations[branch]] = (acc[branchAbbreviations[branch]] || 0) + count }); return acc }, {})).map(([name, value]) => ({ name, value }))} />
               </div>
-
               <div className="h-[400px]">
-                <GenderDistributionChart
-                  data={Object.entries(
-                    statsData.data.reduce((acc, event) => {
-                      Object.entries(event.genderStats).forEach(
-                        ([gender, count]) => {
-                          acc[gender] = (acc[gender] || 0) + count;
-                        },
-                      );
-                      return acc;
-                    }, {}),
-                  ).map(([name, value]) => ({ name, value }))}
-                />
+                <GenderDistributionChart data={Object.entries(filteredEvents.reduce((acc, event) => { Object.entries(event.genderStats).forEach(([gender, count]) => { acc[gender] = (acc[gender] || 0) + count }); return acc }, {})).map(([name, value]) => ({ name, value }))} />
               </div>
-
               <div className="h-[375px] bg-card p-4 rounded-md shadow-md">
-                <h2 className="font-fira text-foreground text-xl font-bold mb-4">
-                  Academic Year Distribution
-                </h2>
-                <YearDistributionChart
-                  data={statsData.data.reduce((acc, event) => {
-                    Object.entries(event.yearStats).forEach(([year, count]) => {
-                      acc[year] = (acc[year] || 0) + count;
-                    });
-                    return acc;
-                  }, {})}
-                  eventDate={statsData.data[0]?.dates[0]}
-                />
+                <h2 className="font-fira text-foreground text-xl font-bold mb-4">Academic Year Distribution</h2>
+                <YearDistributionChart data={filteredEvents.reduce((acc, event) => { Object.entries(event.yearStats).forEach(([year, count]) => { acc[year] = (acc[year] || 0) + count }); return acc }, {})} eventDate={filteredEvents[0]?.dates[0]} />
               </div>
             </div>
           </>
@@ -281,32 +270,20 @@ function Statistics() {
         {activeTab === 'comparison' && (
           <>
             <div className="mb-8">
-              <h2 className="text-2xl font-bold text-white mb-4">
-                Event Comparison
-              </h2>
+              <h2 className="text-2xl font-bold text-white mb-4">Event Comparison</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {filteredEvents.map((event) => (
                   <div
                     key={event.eventId}
-                    className={`bg-card p-4 rounded-md shadow-md cursor-pointer ${
-                      selectedEvents.includes(event)
-                        ? 'border-2 border-blue-500'
-                        : ''
-                    }`}
+                    className={`bg-card p-4 rounded-md shadow-md cursor-pointer ${selectedEvents.includes(event) ? 'border-2 border-blue-500' : ''}`}
                     onClick={() => {
                       setSelectedEvents((prev) =>
-                        prev.includes(event)
-                          ? prev.filter((e) => e !== event)
-                          : [...prev, event],
+                        prev.includes(event) ? prev.filter((e) => e !== event) : [...prev, event]
                       );
                     }}
                   >
-                    <h3 className="font-bold text-white text-lg mb-2">
-                      {event.eventName}
-                    </h3>
-                    <p className="text-white">
-                      Participants: {event.totalParticipants}
-                    </p>
+                    <h3 className="font-bold text-white text-lg mb-2">{event.eventName}</h3>
+                    <p className="text-white">Participants: {event.totalParticipants}</p>
                   </div>
                 ))}
               </div>
@@ -399,6 +376,7 @@ function EventCountChart({ data }) {
   );
 }
 
+
 function BranchDistributionChart({ data }) {
   return (
     <div className="bg-card p-4 rounded-md shadow-md">
@@ -431,6 +409,57 @@ function BranchDistributionChart({ data }) {
   );
 }
 
+
+
+
+
+
+function BranchDistributionRadarChart({ data }) {
+  const CustomTooltip = ({ active, payload }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-background p-2 rounded-md shadow-md">
+          <p className="font-fira text-foreground text-sm font-medium mb-1">
+            {payload[0].payload.branch}
+          </p>
+          <p className="font-fira text-white text-sm">
+            {`Participants: ${payload[0].value}`}
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  return (
+    <div className="bg-card p-4 rounded-md shadow-md">
+      <h2 className="font-fira text-foreground text-xl font-bold mb-4">
+        Branch Distribution
+      </h2>
+      <ResponsiveContainer width="100%" height={400}>
+        <RadarChart data={data}>
+          <PolarGrid />
+          <PolarAngleAxis dataKey="branch" tick={{ fill: COLORS.mute }} />
+          <PolarRadiusAxis angle={30} domain={[0, 'auto']} tick={{ fill: COLORS.mute }} />
+          <Radar
+            name="Participants"
+            dataKey="count"
+            stroke={COLORS.primary}
+            fill={COLORS.primary}
+            fillOpacity={0.6}
+          />
+          <Tooltip content={CustomTooltip} />
+        </RadarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+
+
+
+
+
 function GenderDistributionChart({ data }) {
   return (
     <div className="bg-card p-4 rounded-md shadow-md">
@@ -462,6 +491,7 @@ function GenderDistributionChart({ data }) {
     </div>
   );
 }
+
 
 function ParticipationTrendChart({ data }) {
   const trendData = useMemo(() => {
@@ -522,6 +552,7 @@ function ParticipationTrendChart({ data }) {
   );
 }
 
+
 function YearDistributionChart({ data, eventDate }) {
   const yearData = useMemo(() => {
     const currentYear = new Date(eventDate).getFullYear();
@@ -564,6 +595,22 @@ function YearDistributionChart({ data, eventDate }) {
       });
   }, [data, eventDate]);
 
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-background p-2 rounded-md shadow-md">
+          <p className="font-fira text-foreground text-sm font-medium mb-1">
+            {payload[0]?.payload.branch}
+          </p>
+          <p className="font-fira text-white text-sm">
+            {`Count: ${payload[0].value}`}
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <ResponsiveContainer width="100%" height={300}>
       <BarChart data={yearData}>
@@ -583,6 +630,11 @@ function YearDistributionChart({ data, eventDate }) {
   );
 }
 
+
+
+
+
+
 function ComparisonChart({ data, events }) {
   const COLORS_EXTENDED = [
     COLORS.primary,
@@ -596,13 +648,43 @@ function ComparisonChart({ data, events }) {
     '#FF9800',
   ];
 
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-background p-2 rounded-md shadow-md">
+          <p className="font-fira text-foreground text-sm font-medium mb-1">
+            {label}
+          </p>
+          {payload.map((entry, index) => (
+            <p key={`tooltip-item-${index}`} className="font-fira text-white text-sm">
+              {`${entry.name}: ${entry.value}`}
+            </p>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
+
+  const filteredData = data.filter(item => item.metric === ComparisonMetrics.totalParticipants);
+
+  const branchDistributionData = useMemo(() => {
+    const branchData = {};
+    events.forEach(event => {
+      Object.entries(event.branchStats).forEach(([branch, count]) => {
+        branchData[branchAbbreviations[branch]] = (branchData[branchAbbreviations[branch]] || 0) + count;
+      });
+    });
+    return Object.entries(branchData).map(([branch, count]) => ({ branch, count }));
+  }, [events]);
+
   return (
     <div className="bg-card p-4 rounded-md shadow-md overflow-x-auto">
       <h2 className="font-fira text-foreground text-xl font-bold mb-4">
         Event Comparison
       </h2>
       <ResponsiveContainer width="100%" height={400 + events.length * 30}>
-        <BarChart data={data} layout="vertical">
+        <BarChart data={filteredData} layout="vertical">
           <XAxis type="number" tick={{ fill: COLORS.mute }} />
           <YAxis
             dataKey="metric"
@@ -621,9 +703,14 @@ function ComparisonChart({ data, events }) {
           ))}
         </BarChart>
       </ResponsiveContainer>
+      <BranchDistributionRadarChart data={branchDistributionData} />
     </div>
   );
 }
+
+
+
+
 
 export { Statistics };
 export default Statistics;
