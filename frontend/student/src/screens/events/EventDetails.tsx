@@ -397,7 +397,7 @@ export default function EventDetails() {
                       : 'Location not specified'
                   }
                   line2={
-                    event?.venue
+                    event?.venue && event.venue.split(' ').length > 1
                       ? event.venue.slice(event.venue.indexOf(' '))
                       : ''
                   }
