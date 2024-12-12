@@ -12,15 +12,14 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import { TooltipProps } from 'recharts';
+import {
+  ValueType,
+  NameType,
+} from 'recharts/types/component/DefaultTooltipContent';
 
 interface StatsProps {
   eventId: string;
-}
-
-interface TooltipProps {
-  active: boolean;
-  payload: { value: number }[];
-  label: string;
 }
 
 interface EventStats {
@@ -95,17 +94,21 @@ const Stats: React.FC<StatsProps> = ({ eventId }) => {
   };
 
   const formatDataForCharts = (stats: { [key: string]: number }) => {
-    return Object.entries(stats).map(([name, value]) => ({
-      name: branchAbbreviations[name] || name,
-      value,
-    }));
+    return Object.entries(stats).map(([name, value]) => {
+      // Type assertion to narrow `name` to keys of branchAbbreviations
+      const key = name as keyof typeof branchAbbreviations;
+      return {
+        name: branchAbbreviations[key] || name,
+        value,
+      };
+    });
   };
 
-  const CustomTooltip: React.FC<TooltipProps> = ({
+  const CustomTooltip = ({
     active,
     payload,
     label,
-  }) => {
+  }: TooltipProps<ValueType, NameType>) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-card p-2 rounded-md shadow-md">
@@ -135,7 +138,9 @@ const Stats: React.FC<StatsProps> = ({ eventId }) => {
   if (statsData.totalParticipants <= 0) {
     return (
       <div className="w-full h-96 flex items-center justify-center">
-        <p className="text-foreground">No participants registered for this event.</p>
+        <p className="text-foreground">
+          No participants registered for this event.
+        </p>
       </div>
     );
   }

@@ -19,7 +19,12 @@ import {
     PolarAngleAxis,
     PolarRadiusAxis,
 } from "recharts";
-import { Calendar2, Location, User, ArrowDown2 } from "iconsax-react";
+import { TooltipProps } from "recharts";
+import {
+    ValueType,
+    NameType,
+} from "recharts/types/component/DefaultTooltipContent";
+import { Calendar2, Location, User, Icon as IconType } from "iconsax-react";
 
 const branchAbbreviations = {
     Computer_Engineering: "COMP",
@@ -63,12 +68,7 @@ const ComparisonMetrics = {
 const CustomTooltip = ({
     active,
     payload,
-    label,
-}: {
-    active?: boolean;
-    payload?: { name: string; value: string }[];
-    label?: string;
-}) => {
+}: TooltipProps<ValueType, NameType>) => {
     if (active && payload && payload.length) {
         return (
             <div className="bg-background p-2 rounded-md shadow-md">
@@ -81,11 +81,11 @@ const CustomTooltip = ({
 };
 
 function Statistics() {
-    const [councils, setCouncils] = useState([]);
+    const [councils, setCouncils] = useState<Council[]>([]);
     const [selectedCouncil, setSelectedCouncil] = useState(null);
-    const [selectedEvents, setSelectedEvents] = useState([]);
+    const [selectedEvents, setSelectedEvents] = useState<StatsData[]>([]);
     const [activeTab, setActiveTab] = useState("overview");
-    const [statsData, setStatsData] = useState<{} | null>(null);
+    const [statsData, setStatsData] = useState<StatsResponse | null>(null);
 
     useEffect(() => {
         const fetchCouncils = async () => {
@@ -119,7 +119,7 @@ function Statistics() {
             if (!selectedCouncil) return;
 
             try {
-                const response = await axios.request({
+                const response = await axios.request<StatsResponse>({
                     baseURL: import.meta.env.VITE_APP_SERVER_ADDRESS,
                     url: "/api/v1/event/p/stats",
                     method: "GET",
@@ -471,28 +471,28 @@ function KeyInsights({ insights }) {
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <InsightCard
-                    icon={Calendar2}
+                    Icon={Calendar2}
                     title="Total events organized"
                     value={insights.totalEvents}
                 />
                 <InsightCard
-                    icon={User}
+                    Icon={User}
                     title="Most popular event"
                     value={insights.mostPopularEvent}
                     subvalue={`${insights.mostPopularEventParticipants} participants`}
                 />
                 <InsightCard
-                    icon={User}
+                    Icon={User}
                     title="Average attendance per event"
                     value={insights.averageAttendance}
                 />
                 <InsightCard
-                    icon={Location}
+                    Icon={Location}
                     title="Most active branch"
                     value={insights.mostActiveBranch}
                 />
                 <InsightCard
-                    icon={User}
+                    Icon={User}
                     title="Gender ratio (Male:Female)"
                     value={insights.genderRatio}
                 />
@@ -501,7 +501,17 @@ function KeyInsights({ insights }) {
     );
 }
 
-function InsightCard({ icon: Icon, title, value, subvalue }) {
+function InsightCard({
+    Icon,
+    title,
+    value,
+    subvalue,
+}: {
+    Icon: IconType;
+    title: string;
+    value: string | number;
+    subvalue?: string;
+}) {
     return (
         <div className="bg-card p-4 rounded-md shadow-md">
             <div className="flex items-center mb-2">
@@ -520,7 +530,11 @@ function InsightCard({ icon: Icon, title, value, subvalue }) {
     );
 }
 
-function EventCountChart({ data }) {
+function EventCountChart({
+    data,
+}: {
+    data: { name: string; value: number }[];
+}) {
     return (
         <div className="bg-card p-4 rounded-md shadow-md">
             <h2 className="font-fira text-foreground text-xl font-bold mb-4">
@@ -617,10 +631,14 @@ function GenderDistributionChart({ data }) {
     );
 }
 
-function ParticipationTrendChart({ data }) {
+function ParticipationTrendChart({ data }: { data: StatsData[] }) {
     const trendData = useMemo(() => {
         return [...data]
-            .sort((a, b) => new Date(a.dates[0]) - new Date(b.dates[0]))
+            .sort(
+                (a, b) =>
+                    new Date(a.dates[0]).getMilliseconds() -
+                    new Date(b.dates[0]).getMilliseconds(),
+            )
             .map((event) => ({
                 name: event.eventName,
                 participants: event.totalParticipants,
@@ -631,7 +649,11 @@ function ParticipationTrendChart({ data }) {
             }));
     }, [data]);
 
-    const CustomTrendTooltip = ({ active, payload, label }) => {
+    const CustomTrendTooltip = ({
+        active,
+        payload,
+        label,
+    }: TooltipProps<ValueType, NameType>) => {
         if (active && payload && payload.length) {
             return (
                 <div className="bg-background p-2 rounded-md shadow-md">

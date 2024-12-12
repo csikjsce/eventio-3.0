@@ -58,7 +58,7 @@ interface Events {
 
 // TypeScript Interface for User Data
 type User = {
-    id: string;
+    id: number;
     name: string;
     email: string;
     role: string;
@@ -81,3 +81,38 @@ type UserResponse = {
     user?: User;
     events?: Events;
 };
+
+interface StatsData {
+    eventId: number;
+    eventName: string;
+    organizerId: number;
+    dates: string[];
+    totalParticipants: number;
+    yearStats: {
+        [year: string]: number;
+    };
+    branchStats: {
+        [branch: string]: number;
+    };
+    genderStats: {
+        [gender: string]: number;
+    };
+}
+
+interface StatsResponse {
+    error: boolean;
+    data: StatsData[];
+}
+
+interface Council {
+    name: string;
+    photo_url: string;
+    id: number;
+    email: string;
+    phone_number: string?;
+}
+
+interface CouncilsResponse {
+    error: boolean;
+    councils: Council[];
+}
