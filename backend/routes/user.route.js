@@ -4,20 +4,19 @@ const authCheck = require("../middleware/auth.middleware");
 const prisma = require("../utils/prisma_client");
 const logger = require("../utils/logger");
 
-let protected = "/p";
-router.post(protected + "/me", authCheck, (req, res) => {
-    delete req.user['google_id']
-    delete req.user['refresh_token']
-    delete req.user['updated_at']
-    delete req.user['created_at']
-    delete req.user['council_type']
-    delete req.user['about']
+router.get("/me", authCheck, (req, res) => {
+    delete req.user["google_id"];
+    delete req.user["refresh_token"];
+    delete req.user["updated_at"];
+    delete req.user["created_at"];
+    delete req.user["council_type"];
+    delete req.user["about"];
     res.json({
         error: false,
         user: req.user,
     });
 });
-router.post(protected + "/update", authCheck, (req, res) => {
+router.put("/me", authCheck, (req, res) => {
     const {
         degree,
         branch,

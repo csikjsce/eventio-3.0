@@ -15,7 +15,7 @@ async function authCheck(req, res, next) {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
         try {
-            let user = await prisma.user.findUnique({
+            let user = await prisma.user.findUniqueOrThrow({
                 where: { google_id: decoded.user_id },
             });
             req.user = user;
@@ -27,6 +27,9 @@ async function authCheck(req, res, next) {
         }
     } catch (err) {
         return res.status(401).json({ error: true, message: "Invalid Token" });
+    }
+    if (!req.user) {
+        return res.status(401).json({ error: "Unauthorized" });
     }
     return next();
 }

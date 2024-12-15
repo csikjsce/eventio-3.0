@@ -3,12 +3,7 @@ const authCheck = require("../middleware/auth.middleware");
 const prisma = require("../utils/prisma_client");
 const router = express.Router();
 
-let protected = "/p";
-
-router.post(protected + "/get", authCheck, async (req, res) => {
-    if (!req.user) {
-        return res.status(401).json({ error: "Unauthorized" });
-    }
+router.get("/", authCheck, async (req, res) => {
     const councils = await prisma.user.findMany({
         where: {
             role: "COUNCIL",
