@@ -17,39 +17,56 @@ router.get(
         failureRedirect: `${process.env.CLIENT_URL}?failure=${400}`,
     }),
     async (req, res) => {
-        const user = req.user;
+        const googleUser = req.user; // google user object
+        let user = null;
+        try {
+            user = await prisma.user.findUniqueOrThrow({
+                where: { google_id: googleUser.id },
+            });
+        } catch (err) {
+            logger.error(err);
+            res.redirect(`${process.env.CLIENT_URL}?failure=${500}`);
+        }
 
         const accessToken = jwt.sign(
-            { user_id: user.id },
+            {
+                id: user.id,
+                role: user.role,
+                google_id: user.google_id,
+                is_somaiya_student: user.is_somaiya_student,
+            },
             process.env.JWT_SECRET,
             { expiresIn: process.env.AT_EXPIRATION },
         );
         const refreshToken = jwt.sign(
-            { user_id: user.id },
+            {
+                id: user.id,
+                google_id: user.google_id,
+            },
             process.env.JWT_SECRET,
             { expiresIn: process.env.RT_EXPIRATION },
         );
 
-        const userDB = await prisma.user
+        await prisma.user
             .update({
-                where: { google_id: user.id },
+                where: { google_id: googleUser.id },
                 data: { refresh_token: refreshToken },
             })
             .catch((e) => {
                 logger.error(e);
                 res.redirect(`${process.env.CLIENT_URL}?failure=${500}`);
             });
-            let redirectURL;
-            switch (userDB.role) {
-                case "FACULTY":
-                    redirectURL = process.env.FACULTY_CLIENT_URL;
-                    break;
-                case "COUNCIL":
-                    redirectURL = process.env.COUNCIL_CLIENT_URL;
-                    break;
-                default:
-                    redirectURL = process.env.CLIENT_URL;
-            }
+        let redirectURL;
+        switch (user.role) {
+            case "FACULTY":
+                redirectURL = process.env.FACULTY_CLIENT_URL;
+                break;
+            case "COUNCIL":
+                redirectURL = process.env.COUNCIL_CLIENT_URL;
+                break;
+            default:
+                redirectURL = process.env.CLIENT_URL;
+        }
         res.redirect(
             `${
                 redirectURL + process.env.FRONTEND_REDIRECT_PATH
@@ -69,8 +86,8 @@ router.post("/refresh-token", async (req, res) => {
 
     try {
         const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET);
-        const user = await prisma.user.findUnique({
-            where: { google_id: decoded.user_id },
+        const user = await prisma.user.findUniqueOrThrow({
+            where: { google_id: decoded.google_id },
         });
 
         if (!user || user.refresh_token !== refreshToken) {
@@ -80,7 +97,12 @@ router.post("/refresh-token", async (req, res) => {
         }
 
         const accessToken = jwt.sign(
-            { user_id: user.google_id },
+            {
+                id: user.id,
+                role: user.role,
+                google_id: user.google_id,
+                is_somaiya_student: user.is_somaiya_student,
+            },
             process.env.JWT_SECRET,
             { expiresIn: process.env.AT_EXPIRATION },
         );

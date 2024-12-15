@@ -13,18 +13,7 @@ async function authCheck(req, res, next) {
     try {
         token = token.split(" ")[1];
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-        try {
-            let user = await prisma.user.findUniqueOrThrow({
-                where: { google_id: decoded.user_id },
-            });
-            req.user = user;
-        } catch (err) {
-            logger.error(err);
-            return res
-                .status(401)
-                .json({ error: true, message: "User not found" });
-        }
+        req.user = decoded;
     } catch (err) {
         return res.status(401).json({ error: true, message: "Invalid Token" });
     }
