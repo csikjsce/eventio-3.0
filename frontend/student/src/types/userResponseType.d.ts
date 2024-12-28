@@ -86,9 +86,11 @@ type User = {
   is_somaiya_student: boolean;
 };
 
-type UserResponse = {
+interface BaseResponse {
   error: boolean;
   message?: string;
+}
+
+interface UserResponse extends BaseResponse {
   user?: User;
-  events?: Events;
-};
+}

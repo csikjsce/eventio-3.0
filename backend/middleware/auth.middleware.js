@@ -18,7 +18,7 @@ async function authCheck(req, res, next) {
         return res.status(401).json({ error: true, message: "Invalid Token" });
     }
     if (!req.user) {
-        return res.status(401).json({ error: "Unauthorized" });
+        return res.status(401).json({ error: true, message: "Unauthorized" });
     }
     return next();
 }
