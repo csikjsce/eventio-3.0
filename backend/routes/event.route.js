@@ -603,8 +603,7 @@ router.post(
     if (field.dates && field.dates.length) {
       field.dates = field.dates.map((d) => new Date(d));
     }
-    console.log(field);
-    console.log(req.body);
+    
 
     try {
       if (field.state != state) {
@@ -761,7 +760,8 @@ router.post(protected + "/register-for-event", authCheck, async (req, res) => {
   if (!req.user) {
     return res.status(401).json({ error: true, message: "Unauthorized" });
   }
-  let { event_id } = req.body;
+  
+  let { event_id, more_details } = req.body;
   let event = null;
   try {
     event = await prisma.events.findUnique({
@@ -814,6 +814,7 @@ router.post(protected + "/register-for-event", authCheck, async (req, res) => {
           user_id: req.user.id,
           amount: event.fee,
           payment_status: event.fee == 0 ? "SUCCESS" : "PENDING",
+          more_details: more_details
         },
       });
       res.json({
@@ -833,7 +834,7 @@ router.post(protected + "/create-team", authCheck, async (req, res) => {
   if (!req.user) {
     return res.status(401).json({ error: true, message: "Unauthorized" });
   }
-  let { event_id, team_name } = req.body;
+  let { event_id, team_name, more_details } = req.body;
   let event = null;
   try {
     event = await prisma.events.findUnique({
@@ -940,6 +941,7 @@ router.post(protected + "/create-team", authCheck, async (req, res) => {
         team_id: team.id,
         amount: event.fee,
         payment_status: event.fee == 0 ? "SUCCESS" : "PENDING",
+        more_details: more_details
       },
     });
   } catch (err) {
@@ -959,7 +961,7 @@ router.post(protected + "/join-team", authCheck, async (req, res) => {
   if (!req.user) {
     return res.status(401).json({ error: true, message: "Unauthorized" });
   }
-  let { event_id, invite_code } = req.body;
+  let { event_id, invite_code,more_details } = req.body;
   let event = null;
   try {
     event = await prisma.events.findUnique({
@@ -1056,6 +1058,7 @@ router.post(protected + "/join-team", authCheck, async (req, res) => {
         team_id: team.id,
         amount: event.fee,
         payment_status: event.fee == 0 ? "SUCCESS" : "PENDING",
+        more_details: more_details
       },
     });
     res.json({
