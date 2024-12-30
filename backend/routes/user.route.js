@@ -6,12 +6,12 @@ const logger = require("../utils/logger");
 
 let protected = "/p";
 router.post(protected + "/me", authCheck, (req, res) => {
-    delete req.user['google_id']
-    delete req.user['refresh_token']
-    delete req.user['updated_at']
-    delete req.user['created_at']
-    delete req.user['council_type']
-    delete req.user['about']
+    delete req.user["google_id"];
+    delete req.user["refresh_token"];
+    delete req.user["updated_at"];
+    delete req.user["created_at"];
+    delete req.user["council_type"];
+    delete req.user["about"];
     res.json({
         error: false,
         user: req.user,
@@ -28,15 +28,7 @@ router.post(protected + "/update", authCheck, (req, res) => {
         year,
         college,
     } = req.body;
-    if (
-        !degree ||
-        !branch ||
-        !gender ||
-        !interests ||
-        !phone_number ||
-        !year ||
-        !college
-    ) {
+    if (!degree || !branch || !gender || !phone_number || !year || !college) {
         return res
             .status(400)
             .json({ error: true, message: "All fields are required" });
@@ -51,7 +43,7 @@ router.post(protected + "/update", authCheck, (req, res) => {
                 interests,
                 phone_number,
                 roll_number,
-                year,
+                year: parseInt(year),
                 college,
             },
         })
