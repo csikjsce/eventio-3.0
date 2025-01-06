@@ -5,7 +5,11 @@ const passport = require("passport");
 const prisma = require("../utils/prisma_client");
 const logger = require("../utils/logger");
 const { OAuth2Client } = require("google-auth-library");
-const client = new OAuth2Client();
+const client = new OAuth2Client(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET,
+    "postmessage",
+);
 
 router.get("/google", (req, res, next) => {
     passport.authenticate("google", {
@@ -59,11 +63,11 @@ router.get(
         );
     },
 );
-router.get("/googleToken", async (req, res) => {
-    const { id_token } = req.query;
+router.post("/googleToken", async (req, res) => {
     try {
+        const { tokens } = await client.getToken(req.body.code);
         const ticket = await client.verifyIdToken({
-            idToken: id_token,
+            idToken: tokens.id_token,
             audience: process.env.GOOGLE_CLIENT_ID,
         });
         const payload = ticket.getPayload();
