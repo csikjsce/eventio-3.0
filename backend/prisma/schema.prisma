@@ -118,7 +118,7 @@ model User {
   email              String             @unique
   google_id          String             @unique
   degree             String?
-  branch             BRANCH?
+  branch             String?
   gender             GENDER?
   interests          String[]
   name               String
@@ -178,6 +178,7 @@ model Team {
   Participant       Participant[]
   approved          Boolean            @default(false)
   submissions       Json?
+
   @@unique([name, event_id])
   @@unique([invite_code, event_id])
 }
