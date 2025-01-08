@@ -1037,7 +1037,7 @@ router.post(protected + "/join-team", authCheck, async (req, res) => {
   }
 
   // count the number of participants in the team
-  let teamMembers = await prisma.participant.count({
+  let participants = await prisma.participant.findMany({
     where: {
       AND: [
         {
@@ -1050,10 +1050,25 @@ router.post(protected + "/join-team", authCheck, async (req, res) => {
     },
   });
 
+  let teamMembers = participants.length;
+
   if (teamMembers >= event.ma_ppt) {
     return res.status(403).json({
       error: true,
       message: "Team is full",
+    });
+  }
+
+  // count the number of female participants in the team
+  let femaleParticipants = participants.filter(participant => participant.gender === "FEMALE").length;
+
+  if (req.user.gender === "MALE" && femaleParticipants < event.female_requirement && teamMembers + 1 >= event.ma_ppt) {
+    console.log(req.user.gender)
+    console.log(femaleParticipants)
+    console.log(event.ma_ppt , event.female_requirement)
+    return res.status(403).json({
+      error: true,
+      message: "Female requirements not met and no additional space for female participants",
     });
   }
 
@@ -1334,5 +1349,38 @@ router.post(protected + "/claim-ticket", authCheck, async (req, res) => {
     });
   }
 });
+router.get("/get-event-participants/:id", async (req, res) => {
+  let { id } = req.params;
+  try {
+    let teams = await prisma.team.findMany({
+      where: {
+        event_id: parseInt(id),
+      },
+      include: {
+        Participant: {
+          include: {
+            user: true,
+          },
+        },
+      },
+    });
 
+    // Ensure each participant has a user object
+    teams = teams.map(team => ({
+      ...team,
+      Participant: team.Participant.map(participant => ({
+        ...participant,
+        user: participant.user || {},
+      })),
+    }));
+
+    res.json({ error: false, teams });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({
+      error: true,
+      message: "Error fetching participants",
+    });
+  }
+});
 module.exports = router;
