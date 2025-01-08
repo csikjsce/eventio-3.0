@@ -5,7 +5,7 @@ const { Prisma } = require("@prisma/client");
 const logger = require("../utils/logger");
 const validateUpdateFields = require("../middleware/field-validator.middlware");
 const router = express.Router();
-
+const sendMail= require("../utils/nmail");
 let protected = "/p";
 
 function generateRandomCode() {
@@ -956,6 +956,13 @@ router.post(protected + "/create-team", authCheck, async (req, res) => {
     message: "Team created successfully",
     team,
   });
+  try {
+    await sendMail(req.user.email, 'Team Creation Details', "Team Code is "+ team.invite_code + "for Team Name " + team.name);
+     console.log('Email sent successfully');
+  } catch (err) {
+    logger.error(err);
+    console.log("Error sending email");
+  }
 });
 router.post(protected + "/join-team", authCheck, async (req, res) => {
   if (!req.user) {
