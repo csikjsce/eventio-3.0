@@ -1248,6 +1248,10 @@ router.post(protected + "/team-submission", authCheck, async (req, res) => {
             where: {
                 id: parseInt(team_id),
             },
+            include: {
+                event: true,
+                Participant: true,
+            },
         });
     } catch (err) {
         logger.error(err);
@@ -1257,13 +1261,19 @@ router.post(protected + "/team-submission", authCheck, async (req, res) => {
             .json({ error: true, message: "Error fetching team" });
     }
 
-    // if (team.leader_id !== req.user.id) {
-    //     return res.status(403).json({
-    //         error: true,
-    //         message: "Not authorized to submit for team",
-    //     });
-    // }
-
+    // Check if the team has the minimum required participants
+    if (team.Participant.length < team.event.min_ppt) {
+        return res.status(403).json({
+            error: true,
+            message: `Team must have at least ${team.event.min_ppt} participants to submit`,
+        });
+    }
+    if (team.leader_id !== req.user.id) {
+        return res.status(403).json({
+            error: true,
+            message: "Not authorized to submit for team",
+        });
+    }
     try {
         await prisma.team.update({
             where: {
