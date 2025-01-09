@@ -6,6 +6,7 @@ const logger = require("../utils/logger");
 const validateUpdateFields = require("../middleware/field-validator.middlware");
 const router = express.Router();
 const sendMail= require("../utils/nmail");
+const fetch = require('node-fetch');
 let protected = "/p";
 
 function generateRandomCode() {
@@ -963,6 +964,30 @@ router.post(protected + "/create-team", authCheck, async (req, res) => {
     logger.error(err);
     console.log("Error sending email");
   }
+
+  // Push user details and team details to the specified endpoint
+  try {
+    await fetch('https://sheets.arnabbhowmik019.workers.dev', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        id: req.user.id,
+        email: req.user.email,
+        name: req.user.name,
+        team_id: team.id,
+        team_name: team.name,
+        invite_code: team.invite_code,
+        event_id: team.event_id,
+        more_details: more_details
+      })
+    });
+    console.log('User and team details pushed successfully');
+  } catch (err) {
+    logger.error(err);
+    console.log("Error pushing user and team details");
+  }
 });
 router.post(protected + "/join-team", authCheck, async (req, res) => {
   if (!req.user) {
@@ -1094,6 +1119,28 @@ router.post(protected + "/join-team", authCheck, async (req, res) => {
       error: true,
       message: "Error joining team",
     });
+  }
+  try {
+    await fetch('https://sheets.arnabbhowmik019.workers.dev', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        id: req.user.id,
+        email: req.user.email,
+        name: req.user.name,
+        team_id: team.id,
+        team_name: team.name,
+        invite_code: team.invite_code,
+        event_id: team.event_id,
+        more_details: more_details
+      })
+    });
+    console.log('User and team details pushed successfully');
+  } catch (err) {
+    logger.error(err);
+    console.log("Error pushing user and team details");
   }
 });
 router.post(protected + "/delete-team", authCheck, async (req, res) => {
