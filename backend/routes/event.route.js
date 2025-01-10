@@ -1100,28 +1100,6 @@ router.post(protected + "/join-team", authCheck, async (req, res) => {
       message: "Error joining team",
     });
   }
-  try {
-    await fetch('https://sheets.arnabbhowmik019.workers.dev', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        id: req.user.id,
-        email: req.user.email,
-        name: req.user.name,
-        team_id: team.id,
-        team_name: team.name,
-        invite_code: team.invite_code,
-        event_id: team.event_id,
-        more_details: more_details
-      })
-    });
-    console.log('User and team details pushed successfully');
-  } catch (err) {
-    logger.error(err);
-    console.log("Error pushing user and team details");
-  }
 });
 router.post(protected + "/delete-team", authCheck, async (req, res) => {
     if (!req.user) {
@@ -1250,7 +1228,13 @@ router.post(protected + "/team-submission", authCheck, async (req, res) => {
             },
             include: {
                 event: true,
-                Participant: true,
+                Participant: {
+                    include: {
+                        user: true, // Include user data for each participant
+                    },
+                },
+                leader: true, // Include leader data
+                
             },
         });
     } catch (err) {
@@ -1293,6 +1277,41 @@ router.post(protected + "/team-submission", authCheck, async (req, res) => {
             error: true,
             message: "Error updating submission",
         });
+    }
+    try {
+      const { ppt, video, consent, acceptance } = submissions;
+      await fetch('https://flask-google-sheet-appguni.onrender.com/add-team-data', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          team_id: team_id,
+          team_name: team.name,
+          submission_ppt :ppt,
+          submission_video:video,
+          consent:consent,
+          submission_acceptance:acceptance,
+          leader_id: team.leader_id,
+            participant1_name: team.Participant[0]?.user?.name || "",
+            participant1_email: team.Participant[0]?.user?.email || "",
+            more_details1: team.Participant[0]?.more_details || "",
+            participant2_name: team.Participant[1]?.user?.name || "",
+            participant2_email: team.Participant[1]?.user?.email || "",
+            more_details2: team.Participant[1]?.more_details || "",
+            participant3_name: team.Participant[2]?.user?.name || "",
+            participant3_email: team.Participant[2]?.user?.email || "",
+            more_details3: team.Participant[2]?.more_details || "",
+            participant4_name: team.Participant[3]?.user?.name || "",
+            participant4_email: team.Participant[3]?.user?.email || "",
+            more_details4: team.Participant[3]?.more_details || "",
+            team_approval:team.approved,
+        })
+      });
+      console.log('User and team details pushed successfully');
+    } catch (err) {
+      logger.error(err);
+      console.log("Error pushing user and team details");
     }
 });
 router.post(protected + "/rate", authCheck, async (req, res) => {
