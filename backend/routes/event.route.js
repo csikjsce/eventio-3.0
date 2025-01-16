@@ -961,7 +961,8 @@ router.post(protected + "/create-team", authCheck, async (req, res) => {
         await sendMail(
             req.user.email,
             "Team Creation Details",
-            "Team Code is " + team.invite_code + "for Team Name " + team.name,
+            team.name,
+            team.invite_code
         );
         console.log("Email sent successfully");
     } catch (err) {
