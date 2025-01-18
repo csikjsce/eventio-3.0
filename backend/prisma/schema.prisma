@@ -86,6 +86,8 @@ model Events {
   Participant                Participant[]
   Teams                      Team[]
   female_requirement         Int?
+  more_details_enabled       Boolean           @default(false)
+  is_submission_enabled      Boolean           @default(false)
 }
 
 enum BRANCH {
