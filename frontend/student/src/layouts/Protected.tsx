@@ -6,6 +6,7 @@ import { useNavigate, Outlet } from 'react-router-dom';
 
 import { axiosCall } from '../utils/api';
 import axios from 'axios';
+import SplashScreen from '../screens/splashScreen/SplashScreen';
 
 export default function Protected() {
   const [events, setEvents] = useState<Events | null>(null);
@@ -86,6 +87,10 @@ export default function Protected() {
 
     handler();
   }, []);
+
+  if(!userData){
+    return <SplashScreen/>
+  }
 
   return (
     <UserDataContext.Provider value={{ userData, setUserData }}>

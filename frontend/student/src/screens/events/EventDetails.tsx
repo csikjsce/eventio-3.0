@@ -7,6 +7,7 @@ import {
   Send2,
   User,
   TickCircle,
+  Profile2User,
 } from 'iconsax-react';
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
@@ -128,6 +129,7 @@ export default function EventDetails() {
           },
         })
         .then((res) => {
+          console.log(res.data.event.ma_ppt);
           setEvent(res.data.event);
           setLoading(false);
           if (res.data.event.state == 'REGISTRATION_OPEN') {
@@ -402,7 +404,23 @@ export default function EventDetails() {
                       : ''
                   }
                 />
-                <IconText Icon={User} line1="500" line2="Participants" />
+                {event?.ma_ppt > 1 ? (
+                  event?.ma_ppt != event?.min_ppt ? (
+                    <IconText
+                      Icon={Profile2User}
+                      line1={`TEAM SIZE`}
+                      line2={`${event?.min_ppt} - ${event?.ma_ppt}`}
+                    />
+                  ) : (
+                    <IconText
+                      Icon={Profile2User}
+                      line1={`TEAM SIZE`}
+                      line2={`${event?.ma_ppt}`}
+                    />
+                  )
+                ) : (
+                  <IconText Icon={User} line1={`500`} line2={`PARTICIPANTS`} />
+                )}
               </div>
               <hr className="border-1 border-mute" />
             </div>

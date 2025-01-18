@@ -1,9 +1,8 @@
-import { useContext } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import EventCard from '../../components/EventCard';
-
 import TrendingCard from '../../components/TrendingCard';
-
 import EventsDataContext from '../../contexts/EventsDataContext';
+import Loader from '../../components/Loader';
 
 function parentFilterOut(event: EventData) {
   return event.children.length === 0;
@@ -18,15 +17,23 @@ function ticketFilter(event: EventData) {
 }
 
 export default function Home() {
-  const { events } = useContext(EventsDataContext);
+  const { events } =  useContext(EventsDataContext);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    if (events) {
+      setIsLoaded(true);
+    }
+  }, [events]);
+
+  if (!isLoaded) {
+    return <Loader/>;
+  }
 
   const ticketEvents = [
     ...(events?.TICKET_CLOSED?.filter(ticketFilter) || []),
     ...(events?.ONGOING?.filter(ticketFilter) || []),
   ];
-
-  console.log(ticketEvents);
-  console.log(events?.TICKET_CLOSED);
 
   return (
     <div className="flex flex-col">
@@ -45,7 +52,7 @@ export default function Home() {
       )}
       <div className="flex flex-col mt-4 gap-2 z-10">
         <p className="text-lg font-medium font-fira text-left text-foreground ">
-          Trending Events
+          Trending Events 
         </p>
         <div className="overflow-x-auto flex gap-4 pb-6 px-4 -mx-4">
           {events?.TICKET_OPEN?.filter(childFilterOut).map((event) => (

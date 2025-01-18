@@ -1,19 +1,17 @@
 import { useState, useEffect } from 'react';
 import { RouterProvider } from 'react-router-dom';
 import router from './routes/router';
-import SplashScreen from './screens/splashScreen/SplashScreen';
-
 import Loader from './components/Loader';
 
 function App() {
   const [isMobile, setIsMobile] = useState<boolean | null>(null);
-  const [isSplash, setIsSplash] = useState(true);
+  // const [isSplash, setIsSplash] = useState(true);
 
-  useEffect(() => {
-    setTimeout(() => {
-      setIsSplash(false);
-    }, 1500);
-  }, []);
+  // useEffect(() => {
+  //   setTimeout(() => {
+  //     setIsSplash(false);
+  //   }, 1500);
+  // }, []);
 
   useEffect(() => {
     const handleResize = () => {
@@ -29,21 +27,27 @@ function App() {
   }, []);
 
   if (isMobile === null) {
-    return <Loader />;
+    return (
+      <Loader />
+    );
   } else if (isMobile) {
     return (
       <div className="flex flex-col h-screen justify-center items-center gap-8">
-        <p className="font-poppins text-3xl text-primary ">Mobile Required</p>
-        <p className="font-poppins text-xl text-foreground ">
+        <p className="font-poppins text-3xl text-primary">Mobile Required</p>
+        <p className="font-poppins text-xl text-foreground">
           Please use a mobile device and install the app to continue.
         </p>
       </div>
     );
   }
 
-  if (isSplash) {
-    return <SplashScreen />;
-  }
+  // if (isSplash) {
+  //   return (
+  //     <Suspense fallback={<div>Loading...</div>}>
+  //       <SplashScreen />
+  //     </Suspense>
+  //   );
+  // }
 
   return <RouterProvider router={router} />;
 }
