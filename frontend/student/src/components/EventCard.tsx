@@ -41,7 +41,9 @@ export default function EventCard({ event }: { event: EventData }) {
           <div className="flex flex-row items-center gap-1">
             <Calendar className="stroke-current text-vitality" size="20" />
             <p className="font-fira text-sm text-mute dark:text-gray-300">
-              {event.dates[0] && new Date(event.dates[0]).toDateString()}
+              {event.dates[0]
+                ? new Date(event.dates[0]).toDateString()
+                : 'To be announced'}
             </p>
           </div>
           <div className="flex flex-row items-center gap-1">
