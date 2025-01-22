@@ -467,6 +467,8 @@ router.post(protected + "/get/:id", authCheck, async (req, res) => {
             parent_id: event.parent_id,
             ticket_count: event.ticket_count,
             tickets_sold: event._count.Participant,
+            more_details_enabled: event.more_details_enabled,
+            is_submission_enabled: event.is_submission_enabled,
         };
         res.json({ error: false, event: eventResponse });
     } catch (err) {
