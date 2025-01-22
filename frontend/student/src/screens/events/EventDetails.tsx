@@ -360,14 +360,14 @@ export default function EventDetails() {
                 {event?.name}
               </p>
               <p className="font-fira text-mute text-sm">
-                {event?.dates[0] &&
-                  new Date(event?.dates[0]).toDateString().slice(0, -5)}{' '}
-                at{' '}
-                {event?.dates[0] &&
-                  new Date(event?.dates[0]).toLocaleTimeString('en-US', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
+                {event?.dates[0]
+                  ? new Date(event?.dates[0]).toDateString().slice(0, -5) +
+                    ' at ' +
+                    new Date(event?.dates[0]).toLocaleTimeString('en-US', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })
+                  : 'Dates to be Announced'}
               </p>
             </div>
             <div className="h-28 flex flex-col justify-between">
@@ -376,17 +376,17 @@ export default function EventDetails() {
                 <IconText
                   Icon={Calendar2}
                   line1={
-                    (event?.dates[0] &&
-                      new Date(event?.dates[0]).toDateString().slice(0, -5)) ||
-                    ''
+                    event?.dates[0]
+                      ? new Date(event?.dates[0]).toDateString().slice(0, -5)
+                      : 'To be'
                   }
                   line2={
-                    (event?.dates[0] &&
-                      new Date(event?.dates[0]).toLocaleTimeString('en-US', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })) ||
-                    ''
+                    event?.dates[0]
+                      ? new Date(event?.dates[0]).toLocaleTimeString('en-US', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })
+                      : 'Announced'
                   }
                 />
                 <IconText
