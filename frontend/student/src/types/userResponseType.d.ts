@@ -55,6 +55,7 @@ interface EventData {
       };
   in_event_activity?: string;
   start_in_event_activity?: boolean;
+  more_details_enabled: boolean;
 }
 
 // Interface for the Events object
