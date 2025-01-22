@@ -433,7 +433,6 @@ router.post(protected + "/get/:id", authCheck, async (req, res) => {
                 },
             },
         });
-        console.log(event);
         let eventResponse = {
             id: event.id,
             title: event.title,
