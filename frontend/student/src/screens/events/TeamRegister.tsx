@@ -4,6 +4,13 @@ import { Navigate, useParams, useNavigate } from 'react-router-dom';
 import Loader from '../../components/Loader';
 import Spinner from '../../components/Spinner';
 
+interface FormData {
+  linkedin: string;
+  github: string;
+  techStack: string;
+  whyHackathon: string;
+}
+
 export default function TeamRegister() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -12,6 +19,28 @@ export default function TeamRegister() {
   const [loading, setLoading] = useState(false);
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
+
+  const [formData, setFormData] = useState<FormData>({
+    linkedin: '',
+    github: '',
+    techStack: '',
+    whyHackathon: '',
+  });
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log(formData);
+  };
 
   useEffect(() => {
     const fetchEvent = async () => {
@@ -50,6 +79,7 @@ export default function TeamRegister() {
         data: {
           event_id: id,
           team_name: teamName,
+          more_details: formData,
         },
       });
     } catch (error) {
@@ -82,6 +112,7 @@ export default function TeamRegister() {
         data: {
           event_id: id,
           invite_code: inviteCode,
+          more_details: formData,
         },
       });
     } catch (error) {
@@ -120,6 +151,60 @@ export default function TeamRegister() {
           className="w-20 h-20 rounded-lg object-cover"
         />
       </div>
+
+      {event.more_details_enabled && (
+        <form onSubmit={handleSubmit} className="space-y-4 mt-5 mb-6">
+          <div>
+            <input
+              type="url"
+              name="linkedin"
+              value={formData.linkedin}
+              onChange={handleChange}
+              placeholder="LinkedIn Profile URL"
+              className="w-full px-4 py-3 rounded-lg bg-[#2a2a2a] text-white placeholder-gray-400 border border-gray-600 focus:border-red-500 focus:ring-1 focus:ring-red-500 focus:outline-none"
+              required
+            />
+          </div>
+
+          <div>
+            <input
+              type="url"
+              name="github"
+              value={formData.github}
+              onChange={handleChange}
+              placeholder="GitHub Profile URL"
+              className="w-full px-4 py-3 rounded-lg bg-[#2a2a2a] text-white placeholder-gray-400 border border-gray-600 focus:border-red-500 focus:ring-1 focus:ring-red-500 focus:outline-none"
+              required
+            />
+          </div>
+
+          <div>
+            <input
+              type="text"
+              name="techStack"
+              value={formData.techStack}
+              onChange={handleChange}
+              placeholder="Tech Stack (e.g., React, Node.js, Python)"
+              className="w-full px-4 py-3 rounded-lg bg-[#2a2a2a] text-white placeholder-gray-400 border border-gray-600 focus:border-red-500 focus:ring-1 focus:ring-red-500 focus:outline-none"
+              required
+            />
+          </div>
+
+          <div>
+            <textarea
+              name="whyHackathon"
+              value={formData.whyHackathon}
+              onChange={handleChange}
+              placeholder="Why do you want to participate in this hackathon?"
+              rows={3}
+              className="w-full px-4 py-3 rounded-lg bg-[#2a2a2a] text-white placeholder-gray-400 border border-gray-600 focus:border-red-500 focus:ring-1 focus:ring-red-500 focus:outline-none resize-none"
+              required
+            />
+          </div>
+          {/* <button type="submit">Submit</button> */}
+        </form>
+      )}
+
       <div
         className="mt-6 flex justify-center items-center h-12 bg-primary text-white rounded-full hover:cursor-pointer active:bg-primary/70"
         onClick={() => setChoice('create')}

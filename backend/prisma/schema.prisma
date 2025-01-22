@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["driverAdapters", "relationJoins"]
@@ -13,6 +7,124 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model Events {
+  id                         Int               @id @default(autoincrement())
+  name                       String
+  description                String
+  long_description           String
+  tag_line                   String
+  created_at                 DateTime          @default(now())
+  fee                        Float             @default(0.0)
+  event_type                 EVENT_TYPE
+  online_event_link          String?
+  dates                      DateTime[]
+  venue                      String
+  organizer_id               Int
+  ma_ppt                     Int               @default(1)
+  min_ppt                    Int               @default(1)
+  tags                       String[]
+  state                      STATE             @default(DRAFT)
+  state_history              STATE[]
+  updated_at                 DateTime          @updatedAt
+  banner_url                 String
+  logo_image__url            String
+  event_page_image_url       String
+  parent_id                  Int?
+  is_feedback_enabled        Boolean           @default(false)
+  is_only_somaiya            Boolean           @default(true)
+  attendance_type            ATTENDANCE_TYPE?
+  registration_type          REGISTRATION_TYPE @default(ONPLATFORM)
+  external_registration_link String?
+  is_ticket_feature_enabled  Boolean           @default(true)
+  in_event_activity          String?
+  start_in_event_activity    Boolean?
+  comment                    String?
+  ticket_count               Int?
+  female_requirement         Int?
+  organizer                  User              @relation(fields: [organizer_id], references: [id])
+  parent                     Events?           @relation("EventToEvent", fields: [parent_id], references: [id])
+  children                   Events[]          @relation("EventToEvent")
+  Participant                Participant[]
+  Teams                      Team[]
+}
+
+model User {
+  id                 Int                @id @default(autoincrement())
+  email              String             @unique
+  google_id          String             @unique
+  degree             String?
+  gender             GENDER?
+  interests          String[]
+  name               String
+  phone_number       String?            @unique
+  photo_url          String
+  roll_number        String?
+  year               Int?
+  role               ROLE               @default(USER)
+  about              String?
+  college            String?
+  is_somaiya_student Boolean
+  council_type       String?
+  created_at         DateTime           @default(now())
+  updated_at         DateTime           @updatedAt
+  refresh_token      String?            @unique
+  branch             String?
+  Events             Events[]
+  Participant        Participant[]
+  participant_users  Participant_user[]
+  Team               Team[]
+}
+
+model Participant {
+  id               Int            @id @default(autoincrement())
+  user_id          Int?
+  team_id          Int?
+  event_id         Int
+  attended         Boolean        @default(false)
+  paid_on          DateTime       @default(now())
+  registered_on    DateTime       @default(now())
+  payment_status   PAYMENT_STATUS
+  amount           Float          @default(0.0)
+  ticket_collected Boolean?       @default(false)
+  rating           Int?
+  more_details     Json?
+  event            Events         @relation(fields: [event_id], references: [id])
+  team             Team?          @relation(fields: [team_id], references: [id], onDelete: Cascade)
+  user             User?          @relation(fields: [user_id], references: [id])
+}
+
+model Team {
+  id                Int                @id @default(autoincrement())
+  name              String
+  leader_id         Int
+  event_id          Int
+  invite_code       String
+  approved          Boolean            @default(false)
+  submissions       Json?
+  Participant       Participant[]
+  participant_users Participant_user[]
+  event             Events             @relation(fields: [event_id], references: [id])
+  leader            User               @relation(fields: [leader_id], references: [id])
+
+  @@unique([name, event_id])
+  @@unique([invite_code, event_id])
+}
+
+model Participant_user {
+  participant_id Int
+  user_id        Int
+  participant    Team @relation(fields: [participant_id], references: [id])
+  user           User @relation(fields: [user_id], references: [id])
+
+  @@id([participant_id, user_id])
+}
+
+model Admins {
+  id    Int    @id @default(autoincrement())
+  email String @unique
+  role  ROLE   @default(COUNCIL)
 }
 
 enum EVENT_TYPE {
@@ -47,47 +159,6 @@ enum REGISTRATION_TYPE {
   ONPLATFORM
 }
 
-model Events {
-  id                         Int               @id @default(autoincrement())
-  name                       String
-  description                String
-  long_description           String
-  tag_line                   String
-  created_at                 DateTime          @default(now())
-  fee                        Float             @default(0.0)
-  event_type                 EVENT_TYPE
-  online_event_link          String?
-  dates                      DateTime[]
-  venue                      String
-  organizer                  User              @relation(fields: [organizer_id], references: [id])
-  organizer_id               Int
-  ma_ppt                     Int               @default(1)
-  min_ppt                    Int               @default(1)
-  tags                       String[]
-  state                      STATE             @default(DRAFT)
-  state_history              STATE[]
-  updated_at                 DateTime          @updatedAt
-  banner_url                 String
-  logo_image__url            String
-  event_page_image_url       String
-  parent                     Events?           @relation("EventToEvent", fields: [parent_id], references: [id])
-  parent_id                  Int?
-  children                   Events[]          @relation("EventToEvent")
-  is_feedback_enabled        Boolean           @default(false)
-  is_only_somaiya            Boolean           @default(true)
-  in_event_activity          String?
-  start_in_event_activity    Boolean?
-  attendance_type            ATTENDANCE_TYPE?
-  registration_type          REGISTRATION_TYPE @default(ONPLATFORM)
-  external_registration_link String?
-  is_ticket_feature_enabled  Boolean           @default(true)
-  ticket_count               Int?
-  comment                    String?
-  Participant                Participant[]
-  Teams                      Team[]
-  female_requirement         Int?
-}
-
 enum BRANCH {
   Artificial_Intelligence_And_Data_Science
   Computer_Engineering
@@ -114,87 +185,9 @@ enum ROLE {
   FACULTY
 }
 
-model User {
-  id                 Int                @id @default(autoincrement())
-  email              String             @unique
-  google_id          String             @unique
-  degree             String?
-  branch             String?
-  gender             GENDER?
-  interests          String[]
-  name               String
-  phone_number       String?            @unique
-  photo_url          String
-  roll_number        String?
-  year               Int?
-  role               ROLE               @default(USER)
-  about              String?
-  college            String?
-  is_somaiya_student Boolean
-  council_type       String?
-  created_at         DateTime           @default(now())
-  updated_at         DateTime           @updatedAt
-  refresh_token      String?            @unique
-  Events             Events[]
-  Participant        Participant[]
-  participant_users  Participant_user[]
-
-  Team Team[]
-}
-
 enum PAYMENT_STATUS {
   PENDING
   SUCCESS
   FAILED
   MANUAL
-}
-
-model Participant {
-  id               Int            @id @default(autoincrement())
-  user             User?          @relation(fields: [user_id], references: [id])
-  user_id          Int?
-  team             Team?          @relation(fields: [team_id], references: [id], onDelete: Cascade)
-  team_id          Int?
-  event            Events         @relation(fields: [event_id], references: [id])
-  event_id         Int
-  attended         Boolean        @default(false)
-  paid_on          DateTime       @default(now())
-  registered_on    DateTime       @default(now())
-  payment_status   PAYMENT_STATUS
-  amount           Float          @default(0.0)
-  ticket_collected Boolean?       @default(false)
-  rating           Int?
-  more_details     Json?
-}
-
-model Team {
-  id                Int                @id @default(autoincrement())
-  name              String
-  invite_code       String
-  event_id          Int
-  event             Events             @relation(fields: [event_id], references: [id])
-  leader            User               @relation(fields: [leader_id], references: [id])
-  leader_id         Int
-  participant_users Participant_user[]
-  Participant       Participant[]
-  approved          Boolean            @default(false)
-  submissions       Json?
-
-  @@unique([name, event_id])
-  @@unique([invite_code, event_id])
-}
-
-model Participant_user {
-  participant_id Int
-  user_id        Int
-  participant    Team @relation(fields: [participant_id], references: [id])
-  user           User @relation(fields: [user_id], references: [id])
-
-  @@id([participant_id, user_id])
-}
-
-model Admins {
-  id    Int    @id @default(autoincrement())
-  email String @unique
-  role  ROLE   @default(COUNCIL)
 }

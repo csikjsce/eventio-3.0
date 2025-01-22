@@ -129,8 +129,9 @@ export default function EventDetails() {
           },
         })
         .then((res) => {
-          console.log(res.data.event.ma_ppt);
+          // console.log(res.data.event);
           setEvent(res.data.event);
+          console.log(res.data.event);
           setLoading(false);
           if (res.data.event.state == 'REGISTRATION_OPEN') {
             if (res.data.event.ma_ppt > 1) {
