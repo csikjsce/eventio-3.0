@@ -159,6 +159,52 @@ enum REGISTRATION_TYPE {
   ONPLATFORM
 }
 
+<<<<<<< HEAD
+=======
+model Events {
+  id                         Int               @id @default(autoincrement())
+  name                       String
+  description                String
+  long_description           String
+  tag_line                   String
+  created_at                 DateTime          @default(now())
+  fee                        Float             @default(0.0)
+  event_type                 EVENT_TYPE
+  online_event_link          String?
+  dates                      DateTime[]
+  venue                      String
+  organizer                  User              @relation(fields: [organizer_id], references: [id])
+  organizer_id               Int
+  ma_ppt                     Int               @default(1)
+  min_ppt                    Int               @default(1)
+  tags                       String[]
+  state                      STATE             @default(DRAFT)
+  state_history              STATE[]
+  updated_at                 DateTime          @updatedAt
+  banner_url                 String
+  logo_image__url            String
+  event_page_image_url       String
+  parent                     Events?           @relation("EventToEvent", fields: [parent_id], references: [id])
+  parent_id                  Int?
+  children                   Events[]          @relation("EventToEvent")
+  is_feedback_enabled        Boolean           @default(false)
+  is_only_somaiya            Boolean           @default(true)
+  in_event_activity          String?
+  start_in_event_activity    Boolean?
+  attendance_type            ATTENDANCE_TYPE?
+  registration_type          REGISTRATION_TYPE @default(ONPLATFORM)
+  external_registration_link String?
+  is_ticket_feature_enabled  Boolean           @default(true)
+  ticket_count               Int?
+  comment                    String?
+  Participant                Participant[]
+  Teams                      Team[]
+  female_requirement         Int?
+  more_details_enabled       Boolean           @default(false)
+  is_submission_enabled      Boolean           @default(false)
+}
+
+>>>>>>> a765e5a7dfca916a8d773b5952e827af5c3a5909
 enum BRANCH {
   Artificial_Intelligence_And_Data_Science
   Computer_Engineering
@@ -191,3 +237,56 @@ enum PAYMENT_STATUS {
   FAILED
   MANUAL
 }
+<<<<<<< HEAD
+=======
+
+model Participant {
+  id               Int            @id @default(autoincrement())
+  user             User?          @relation(fields: [user_id], references: [id])
+  user_id          Int?
+  team             Team?          @relation(fields: [team_id], references: [id], onDelete: Cascade)
+  team_id          Int?
+  event            Events         @relation(fields: [event_id], references: [id] , onDelete: Cascade)
+  event_id         Int
+  attended         Boolean        @default(false)
+  paid_on          DateTime       @default(now())
+  registered_on    DateTime       @default(now())
+  payment_status   PAYMENT_STATUS
+  amount           Float          @default(0.0)
+  ticket_collected Boolean?       @default(false)
+  rating           Int?
+  more_details     Json?
+}
+
+model Team {
+  id                Int                @id @default(autoincrement())
+  name              String
+  invite_code       String
+  event_id          Int
+  event             Events             @relation(fields: [event_id], references: [id] , onDelete: Cascade)
+  leader            User               @relation(fields: [leader_id], references: [id])
+  leader_id         Int
+  participant_users Participant_user[]
+  Participant       Participant[]
+  approved          Boolean            @default(false)
+  submissions       Json?
+
+  @@unique([name, event_id])
+  @@unique([invite_code, event_id])
+}
+
+model Participant_user {
+  participant_id Int
+  user_id        Int
+  participant    Team @relation(fields: [participant_id], references: [id])
+  user           User @relation(fields: [user_id], references: [id])
+
+  @@id([participant_id, user_id])
+}
+
+model Admins {
+  id    Int    @id @default(autoincrement())
+  email String @unique
+  role  ROLE   @default(COUNCIL)
+}
+>>>>>>> a765e5a7dfca916a8d773b5952e827af5c3a5909
