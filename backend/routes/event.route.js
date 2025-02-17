@@ -404,6 +404,7 @@ router.post(protected + "/get/:id", authCheck, async (req, res) => {
                                 leader_id: true,
                                 invite_code: true,
                                 submissions: true,
+                                approved: true,
                                 Participant: {
                                     select: {
                                         user: {
