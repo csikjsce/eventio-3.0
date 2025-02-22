@@ -397,6 +397,7 @@ router.post(protected + "/get/:id", authCheck, async (req, res) => {
                     },
                     select: {
                         ticket_collected: true,
+                        id : true,
                         team: {
                             select: {
                                 id: true,
