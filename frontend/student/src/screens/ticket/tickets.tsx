@@ -3,6 +3,7 @@ import { useContext, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { UserDataContext } from '../../contexts/userContext';
 import axios from 'axios';
+import QRCode from 'react-qr-code';
 
 export default function Ticket() {
   const navigate = useNavigate();
@@ -10,6 +11,8 @@ export default function Ticket() {
   const userContext = useContext(UserDataContext);
   const userData = userContext?.userData;
   const [eventData, setEventData] = useState<EventData>();
+  const [participantId, setParticipantId] = useState<string | undefined>();
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(false); // Example state for dark mode
 
   const handleClose = () => {
     navigate('/event-details/' + id);
@@ -28,6 +31,7 @@ export default function Ticket() {
         });
         if (response.data && response.data.event) {
           setEventData(response.data.event);
+          setParticipantId(response.data.event.Participant.id);
         }
       } catch (error) {
         console.error('Error fetching events:', error);
@@ -35,6 +39,19 @@ export default function Ticket() {
     };
 
     fetchEvents();
+  }, [id]);
+
+  // Example: Determine if dark mode is enabled (replace with your actual logic)
+  useEffect(() => {
+    const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    setIsDarkMode(darkModeMediaQuery.matches);
+
+    const handleChange = (e: MediaQueryListEvent) => {
+      setIsDarkMode(e.matches);
+    };
+
+    darkModeMediaQuery.addEventListener('change', handleChange);
+    return () => darkModeMediaQuery.removeEventListener('change', handleChange);
   }, []);
 
   return (
@@ -101,10 +118,15 @@ export default function Ticket() {
                   <div className="absolute rounded-full w-6 h-6 bg-background -mt-2.5 -right-2"></div>
                 </div>
 
-                <img
-                  src="https://www.shutterstock.com/image-vector/long-bar-code-600nw-1043015362.jpg"
-                  alt="Barcode"
-                />
+                {participantId && (
+                  <div className="flex justify-center">
+                    <QRCode
+                      value={participantId.toString()}
+                      bgColor="transparent"
+                      fgColor={isDarkMode ? 'white' : 'black'}
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </div>
