@@ -405,7 +405,7 @@ export default function EventDetails() {
                       : ''
                   }
                 />
-                {event?.ma_ppt > 1 ? (
+                {event?.ma_ppt && event?.ma_ppt > 1 ? (
                   event?.ma_ppt != event?.min_ppt ? (
                     <IconText
                       Icon={Profile2User}

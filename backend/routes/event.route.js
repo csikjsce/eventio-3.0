@@ -397,6 +397,7 @@ router.post(protected + "/get/:id", authCheck, async (req, res) => {
                     },
                     select: {
                         ticket_collected: true,
+                        id : true,
                         team: {
                             select: {
                                 id: true,
@@ -404,6 +405,7 @@ router.post(protected + "/get/:id", authCheck, async (req, res) => {
                                 leader_id: true,
                                 invite_code: true,
                                 submissions: true,
+                                approved: true,
                                 Participant: {
                                     select: {
                                         user: {
