@@ -5,8 +5,8 @@ const { Prisma } = require("@prisma/client");
 const logger = require("../utils/logger");
 const validateUpdateFields = require("../middleware/field-validator.middlware");
 const router = express.Router();
-const sendMail= require("../utils/nmail");
-const fetch = require('node-fetch');
+const sendMail = require("../utils/nmail");
+const fetch = require("node-fetch");
 let protected = "/p";
 
 function generateRandomCode() {
@@ -630,7 +630,7 @@ router.post(
                 message: "Error updating event",
             });
         }
-    },
+    }
 );
 router.get(protected + "/search/", authCheck, async (req, res) => {
     if (!req.user) {
@@ -915,7 +915,7 @@ router.post(protected + "/create-team", authCheck, async (req, res) => {
                 // unique constraint failed for the invite code, retry
                 retries++;
                 console.warn(
-                    `Retrying due to invite code collision: ${inviteCode}`,
+                    `Retrying due to invite code collision: ${inviteCode}`
                 );
             } else if (
                 error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -1043,65 +1043,72 @@ router.post(protected + "/join-team", authCheck, async (req, res) => {
         return res.status(404).json({ error: true, message: "Team not found" });
     }
 
-  // count the number of participants in the team
-  let participants = await prisma.participant.findMany({
-    where: {
-      AND: [
-        {
-          event_id: parseInt(event_id),
+    // count the number of participants in the team
+    let participants = await prisma.participant.findMany({
+        where: {
+            AND: [
+                {
+                    event_id: parseInt(event_id),
+                },
+                {
+                    team_id: team.id,
+                },
+            ],
         },
-        {
-          team_id: team.id,
-        },
-      ],
-    },
-  });
-
-  let teamMembers = participants.length;
-
-  if (teamMembers >= event.ma_ppt) {
-    return res.status(403).json({
-      error: true,
-      message: "Team is full",
     });
-  }
 
-  // count the number of female participants in the team
-  let femaleParticipants = participants.filter(participant => participant.gender === "FEMALE").length;
+    let teamMembers = participants.length;
 
-  if (req.user.gender === "MALE" && femaleParticipants < event.female_requirement && teamMembers + 1 >= event.ma_ppt) {
-    console.log(req.user.gender)
-    console.log(femaleParticipants)
-    console.log(event.ma_ppt , event.female_requirement)
-    return res.status(403).json({
-      error: true,
-      message: "Female requirements not met and no additional space for female participants",
-    });
-  }
+    if (teamMembers >= event.ma_ppt) {
+        return res.status(403).json({
+            error: true,
+            message: "Team is full",
+        });
+    }
 
-  try {
-    await prisma.participant.create({
-      data: {
-        event_id: parseInt(event_id),
-        user_id: req.user.id,
-        team_id: team.id,
-        amount: event.fee,
-        payment_status: event.fee == 0 ? "SUCCESS" : "PENDING",
-        more_details: more_details
-      },
-    });
-    res.json({
-      error: false,
-      message: "Joined team successfully",
-      team,
-    });
-  } catch (err) {
-    logger.error(err);
-    return res.status(500).json({
-      error: true,
-      message: "Error joining team",
-    });
-  }
+    // count the number of female participants in the team
+    let femaleParticipants = participants.filter(
+        (participant) => participant.gender === "FEMALE"
+    ).length;
+
+    if (
+        req.user.gender === "MALE" &&
+        femaleParticipants < event.female_requirement &&
+        teamMembers + 1 >= event.ma_ppt
+    ) {
+        console.log(req.user.gender);
+        console.log(femaleParticipants);
+        console.log(event.ma_ppt, event.female_requirement);
+        return res.status(403).json({
+            error: true,
+            message:
+                "Female requirements not met and no additional space for female participants",
+        });
+    }
+
+    try {
+        await prisma.participant.create({
+            data: {
+                event_id: parseInt(event_id),
+                user_id: req.user.id,
+                team_id: team.id,
+                amount: event.fee,
+                payment_status: event.fee == 0 ? "SUCCESS" : "PENDING",
+                more_details: more_details,
+            },
+        });
+        res.json({
+            error: false,
+            message: "Joined team successfully",
+            team,
+        });
+    } catch (err) {
+        logger.error(err);
+        return res.status(500).json({
+            error: true,
+            message: "Error joining team",
+        });
+    }
 });
 router.post(protected + "/delete-team", authCheck, async (req, res) => {
     if (!req.user) {
@@ -1236,7 +1243,6 @@ router.post(protected + "/team-submission", authCheck, async (req, res) => {
                     },
                 },
                 leader: true, // Include leader data
-                
             },
         });
     } catch (err) {
@@ -1281,39 +1287,42 @@ router.post(protected + "/team-submission", authCheck, async (req, res) => {
         });
     }
     try {
-      const { ppt, video, consent, acceptance } = submissions;
-      await fetch('https://flask-google-sheet-appguni.onrender.com/add-team-data', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          team_id: team_id,
-          team_name: team.name,
-          submission_ppt :ppt,
-          submission_video:video,
-          consent:consent,
-          submission_acceptance:acceptance,
-          leader_id: team.leader_id,
-            participant1_name: team.Participant[0]?.user?.name || "",
-            participant1_email: team.Participant[0]?.user?.email || "",
-            more_details1: team.Participant[0]?.more_details || "",
-            participant2_name: team.Participant[1]?.user?.name || "",
-            participant2_email: team.Participant[1]?.user?.email || "",
-            more_details2: team.Participant[1]?.more_details || "",
-            participant3_name: team.Participant[2]?.user?.name || "",
-            participant3_email: team.Participant[2]?.user?.email || "",
-            more_details3: team.Participant[2]?.more_details || "",
-            participant4_name: team.Participant[3]?.user?.name || "",
-            participant4_email: team.Participant[3]?.user?.email || "",
-            more_details4: team.Participant[3]?.more_details || "",
-            team_approval:team.approved,
-        })
-      });
-      console.log('User and team details pushed successfully');
+        const { ppt, video, consent, acceptance } = submissions;
+        await fetch(
+            "https://flask-google-sheet-appguni.onrender.com/add-team-data",
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    team_id: team_id,
+                    team_name: team.name,
+                    submission_ppt: ppt,
+                    submission_video: video,
+                    consent: consent,
+                    submission_acceptance: acceptance,
+                    leader_id: team.leader_id,
+                    participant1_name: team.Participant[0]?.user?.name || "",
+                    participant1_email: team.Participant[0]?.user?.email || "",
+                    more_details1: team.Participant[0]?.more_details || "",
+                    participant2_name: team.Participant[1]?.user?.name || "",
+                    participant2_email: team.Participant[1]?.user?.email || "",
+                    more_details2: team.Participant[1]?.more_details || "",
+                    participant3_name: team.Participant[2]?.user?.name || "",
+                    participant3_email: team.Participant[2]?.user?.email || "",
+                    more_details3: team.Participant[2]?.more_details || "",
+                    participant4_name: team.Participant[3]?.user?.name || "",
+                    participant4_email: team.Participant[3]?.user?.email || "",
+                    more_details4: team.Participant[3]?.more_details || "",
+                    team_approval: team.approved,
+                }),
+            }
+        );
+        console.log("User and team details pushed successfully");
     } catch (err) {
-      logger.error(err);
-      console.log("Error pushing user and team details");
+        logger.error(err);
+        console.log("Error pushing user and team details");
     }
 });
 router.post(protected + "/rate", authCheck, async (req, res) => {
@@ -1456,37 +1465,80 @@ router.post(protected + "/claim-ticket", authCheck, async (req, res) => {
     }
 });
 router.get("/get-event-participants/:id", async (req, res) => {
-  let { id } = req.params;
-  try {
-    let teams = await prisma.team.findMany({
-      where: {
-        event_id: parseInt(id),
-      },
-      include: {
-        Participant: {
-          include: {
-            user: true,
-          },
-        },
-      },
-    });
+    let { id } = req.params;
+    try {
+        let teams = await prisma.team.findMany({
+            where: {
+                event_id: parseInt(id),
+            },
+            include: {
+                Participant: {
+                    include: {
+                        user: true,
+                    },
+                },
+            },
+        });
 
-    // Ensure each participant has a user object
-    teams = teams.map(team => ({
-      ...team,
-      Participant: team.Participant.map(participant => ({
-        ...participant,
-        user: participant.user || {},
-      })),
-    }));
+        // Ensure each participant has a user object
+        teams = teams.map((team) => ({
+            ...team,
+            Participant: team.Participant.map((participant) => ({
+                ...participant,
+                user: participant.user || {},
+            })),
+        }));
 
-    res.json({ error: false, teams });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({
-      error: true,
-      message: "Error fetching participants",
-    });
-  }
+        res.json({ error: false, teams });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            error: true,
+            message: "Error fetching participants",
+        });
+    }
 });
+
+router.post("/checkin", async (req, res) => {
+    try {
+        let { event_id, participant_id } = req.body;
+
+        event_id = parseInt(event_id);
+        participant_id = parseInt(participant_id);
+
+        if (isNaN(event_id) || isNaN(participant_id)) {
+            return res.status(400).json({
+                error: true,
+                message: "Invalid event_id or participant_id",
+            });
+        }
+        const participant_attendend = await prisma.participant.update({
+            where: {
+                id: participant_id,
+            },
+            data: {
+                attended: true,
+            },
+        });
+
+        if (!participant_attendend) {
+            return res.status(404).json({
+                error: true,
+                message: "Participant not found for the given event",
+            });
+        }
+
+        return res.json({
+            error: false,
+            participant_attendend,
+        });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            error: true,
+            message: "Error checking in",
+        });
+    }
+});
+
 module.exports = router;
