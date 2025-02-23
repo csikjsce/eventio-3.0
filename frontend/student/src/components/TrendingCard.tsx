@@ -8,6 +8,7 @@ export default function TrendingCard({
   text: string;
 }) {
   console.log(event);
+  console.log(event.dates);
   return (
     <Link
       to={
@@ -38,9 +39,13 @@ export default function TrendingCard({
               {event.name}
             </p>
             <p className="font-fira text-xs text-foreground ">
-              {event.dates
-                .map((dateString) => new Date(dateString).toLocaleDateString())
-                .join(', ')}
+              {event.dates[0]
+                ? event.dates
+                    .map((dateString) =>
+                      new Date(dateString).toLocaleDateString(),
+                    )
+                    .join(', ')
+                : 'Date to be announced'}
             </p>
           </div>
         </div>
