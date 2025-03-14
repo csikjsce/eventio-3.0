@@ -175,7 +175,7 @@ const Stats: React.FC<StatsProps> = ({ eventId }) => {
                     <YAxis />
                     <Tooltip content={<CustomTooltip />} />
                     <Bar dataKey="value">
-                      {yearData.map((entry, index) => (
+                      {yearData.map((_, index) => (
                         <Cell
                           key={`cell-${index}`}
                           fill={COLORS.year[index % COLORS.year.length]}
@@ -202,7 +202,7 @@ const Stats: React.FC<StatsProps> = ({ eventId }) => {
                       dataKey="value"
                       label
                     >
-                      {branchData.map((entry, index) => (
+                      {branchData.map((_, index) => (
                         <Cell
                           key={`cell-${index}`}
                           fill={COLORS.branch[index % COLORS.branch.length]}
@@ -237,7 +237,7 @@ const Stats: React.FC<StatsProps> = ({ eventId }) => {
                       dataKey="value"
                       label
                     >
-                      {genderData.map((entry, index) => (
+                      {genderData.map((_, index) => (
                         <Cell
                           key={`cell-${index}`}
                           fill={COLORS.gender[index % COLORS.gender.length]}

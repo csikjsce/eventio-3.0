@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext } from 'react';
 import axios from 'axios';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
   Calendar2,
@@ -74,6 +74,10 @@ export default function EventDetails() {
     };
     if (id) fetchEvent(id);
   }, [id, navigate]);
+
+  if (!id) {
+    return <Navigate to="/" />;
+  }
 
   if (loading && event == null) {
     return <Loader />;
