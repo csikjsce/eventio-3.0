@@ -1,33 +1,20 @@
 import { useState } from 'react';
-import { Scanner } from '@yudiel/react-qr-scanner';
+import { Scanner, IDetectedBarcode } from '@yudiel/react-qr-scanner';
 import Snackbar from '../components/Snackbar';
 import axios from 'axios';
 
-interface ScanResult {
-  rawValue: string;
-  boundingBox: {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-    top: number;
-    right: number;
-    bottom: number;
-    left: number;
-  };
-  format: string;
-  cornerPoints: { x: number; y: number }[];
+interface SnackbarData {
+  message: string;
+  type: 'success' | 'error';
 }
 
 const ScannerPage = () => {
-  const [scannedValue, setScannedValue] = useState<string | null>(null);
-  const [snackbarMessage, setSnackbarMessage] = useState<string | null>(null);
-  const [snackbarType, setSnackbarType] = useState<'success' | 'error' | null>(null);
+  const [snackbarData, setSnackbarData] = useState<SnackbarData | null>(null);
 
-  const handleScan = async (result: ScanResult[]) => {
+  const handleScan = async (result: IDetectedBarcode[]) => {
     if (result.length > 0 && result[0].rawValue) {
       const scannedId = result[0].rawValue;
-      setScannedValue(scannedId);
+      // setScannedValue(scannedId);
 
       try {
         const participantId = parseInt(scannedId, 10);
@@ -36,44 +23,45 @@ const ScannerPage = () => {
           {
             event_id: 47,
             participant_id: participantId,
-          }
+          },
         );
 
         if (response.status === 200) {
-          setSnackbarMessage(`Participant ID: ${scannedId} checked in successfully!`);
-          setSnackbarType('success');
+          setSnackbarData({
+            message: `Participant ID: ${scannedId} checked in successfully!`,
+            type: 'success',
+          });
         } else {
-          setSnackbarMessage('Failed to check in participant.');
-          setSnackbarType('error');
+          setSnackbarData({
+            message: `Failed to check in participant ID: ${scannedId}`,
+            type: 'error',
+          });
         }
       } catch (error) {
-        setSnackbarMessage('Error checking in participant.');
-        setSnackbarType('error');
+        setSnackbarData({
+          message: `Error checking in participant ID: ${scannedId}`,
+          type: 'error',
+        });
+        console.error(error);
       }
     }
   };
 
   const handleCloseSnackbar = () => {
-    setSnackbarMessage(null);
-    setSnackbarType(null);
+    setSnackbarData(null);
   };
 
   return (
     <div className="flex flex-col items-center justify-center h-screen text-white">
       <h2 className="text-2xl font-bold">Check-In</h2>
       <div className="flex justify-center items-center w-[300px] h-[300px] border-2 border-red-500 relative">
-        <Scanner
-          onScan={handleScan}
-          allowMultiple={true}
-          scanDelay={3000}
-          className="absolute inset-0"
-        />
+        <Scanner onScan={handleScan} allowMultiple={true} scanDelay={3000} />
       </div>
 
-      {snackbarMessage && (
+      {snackbarData && (
         <Snackbar
-          message={snackbarMessage}
-          type={snackbarType}
+          message={snackbarData.message}
+          type={snackbarData.type}
           onClose={handleCloseSnackbar}
         />
       )}

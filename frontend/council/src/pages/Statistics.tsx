@@ -27,6 +27,9 @@ import {
 } from 'recharts/types/component/DefaultTooltipContent';
 import { Calendar2, Location, User, Icon as IconType } from 'iconsax-react';
 
+// Define type for branch abbreviations
+type BranchKey = keyof typeof branchAbbreviations;
+
 const branchAbbreviations = {
   Computer_Engineering: 'COMP',
   Information_Technology: 'IT',
@@ -69,6 +72,32 @@ const ComparisonMetrics = {
   genderStats: 'Gender Distribution',
 };
 
+// Define types for stats data
+interface StatsData {
+  eventId: string;
+  eventName: string;
+  organizerId: string;
+  totalParticipants: number;
+  branchStats: Record<string, number>;
+  genderStats: Record<string, number>;
+  yearStats: Record<string, number>;
+  dates: string[];
+}
+
+interface StatsResponse {
+  data: StatsData[];
+}
+
+interface UserData {
+  id: string;
+  [key: string]: any; // eslint-disable-line
+}
+
+interface UserDataContextType {
+  userData: UserData | null;
+}
+
+// Custom tooltip component
 const CustomTooltip = ({
   active,
   payload,
@@ -86,9 +115,11 @@ const CustomTooltip = ({
 
 function Statistics() {
   const [selectedEvents, setSelectedEvents] = useState<StatsData[]>([]);
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'comparison'>(
+    'overview',
+  );
   const [statsData, setStatsData] = useState<StatsResponse | null>(null);
-  const { userData } = useContext(UserDataContext);
+  const { userData } = useContext(UserDataContext) as UserDataContextType;
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -122,13 +153,15 @@ function Statistics() {
   const comparisonData = useMemo(() => {
     return Object.entries(ComparisonMetrics).map(([key, label]) => ({
       metric: label,
-      ...selectedEvents.reduce(
+      ...selectedEvents.reduce<Record<string, number>>(
         (acc, event) => ({
           ...acc,
           [event.eventName]:
-            event[
-              key === 'totalParticipants' ? key : Object.keys(event[key]).length
-            ],
+            key === 'totalParticipants'
+              ? event.totalParticipants
+              : Object.keys(
+                  event[key as keyof StatsData] as Record<string, number>,
+                ).length,
         }),
         {},
       ),
@@ -146,12 +179,15 @@ function Statistics() {
     );
     const averageAttendance = Math.round(totalParticipants / totalEvents);
     console.log('EVENTS', events);
+
     const mostPopularEvent =
       events.length > 0
-        ? events.reduce((max, event) =>
-            max.totalParticipants > event.totalParticipants ? max : event,
+        ? events.reduce(
+            (max, event) =>
+              max.totalParticipants > event.totalParticipants ? max : event,
+            events[0],
           )
-        : {};
+        : { eventName: 'N/A', totalParticipants: 0 };
 
     const allBranches = events.flatMap((event) =>
       Object.entries(event.branchStats).map(([branch, count]) => ({
@@ -160,10 +196,13 @@ function Statistics() {
       })),
     );
 
-    const branchTotals = allBranches.reduce((acc, { branch, count }) => {
-      acc[branch] = (acc[branch] || 0) + count;
-      return acc;
-    }, {});
+    const branchTotals = allBranches.reduce<Record<string, number>>(
+      (acc, { branch, count }) => {
+        acc[branch] = (acc[branch] || 0) + count;
+        return acc;
+      },
+      {},
+    );
 
     const mostActiveBranch = Object.entries(branchTotals).reduce(
       (max, [branch, count]) => (count > max.count ? { branch, count } : max),
@@ -179,16 +218,16 @@ function Statistics() {
       0,
     );
 
-    const simplifiedMale = totalMale / totalFemale;
+    const simplifiedMale = totalFemale > 0 ? totalMale / totalFemale : 0;
     const genderRatio = `${simplifiedMale.toFixed(2)}:1`;
-    const mostActiveBranchName =
-      mostActiveBranch.branch as keyof typeof branchAbbreviations;
+    const mostActiveBranchName = mostActiveBranch.branch as BranchKey;
+
     return {
       totalEvents,
       mostPopularEvent: mostPopularEvent.eventName,
       mostPopularEventParticipants: mostPopularEvent.totalParticipants,
       averageAttendance,
-      mostActiveBranch: branchAbbreviations[mostActiveBranchName], // Use abbreviation
+      mostActiveBranch: branchAbbreviations[mostActiveBranchName] || 'N/A',
       genderRatio,
     };
   }, [statsData]);
@@ -246,17 +285,20 @@ function Statistics() {
               <div className="h-[400px]">
                 <BranchDistributionChart
                   data={Object.entries(
-                    statsData.data.reduce((acc, event) => {
-                      Object.entries(event.branchStats).forEach(
-                        ([branch, count]) => {
-                          const branchName =
-                            branch as keyof typeof branchAbbreviations;
-                          acc[branchAbbreviations[branchName]] =
-                            (acc[branchAbbreviations[branchName]] || 0) + count;
-                        },
-                      );
-                      return acc;
-                    }, {}),
+                    statsData.data.reduce<Record<string, number>>(
+                      (acc, event) => {
+                        Object.entries(event.branchStats).forEach(
+                          ([branch, count]) => {
+                            const branchName = branch as BranchKey;
+                            const abbr =
+                              branchAbbreviations[branchName] || branch;
+                            acc[abbr] = (acc[abbr] || 0) + count;
+                          },
+                        );
+                        return acc;
+                      },
+                      {},
+                    ),
                   ).map(([name, value]) => ({ name, value }))}
                 />
               </div>
@@ -264,14 +306,17 @@ function Statistics() {
               <div className="h-[400px]">
                 <GenderDistributionChart
                   data={Object.entries(
-                    statsData.data.reduce((acc, event) => {
-                      Object.entries(event.genderStats).forEach(
-                        ([gender, count]) => {
-                          acc[gender] = (acc[gender] || 0) + count;
-                        },
-                      );
-                      return acc;
-                    }, {}),
+                    statsData.data.reduce<Record<string, number>>(
+                      (acc, event) => {
+                        Object.entries(event.genderStats).forEach(
+                          ([gender, count]) => {
+                            acc[gender] = (acc[gender] || 0) + count;
+                          },
+                        );
+                        return acc;
+                      },
+                      {},
+                    ),
                   ).map(([name, value]) => ({ name, value }))}
                 />
               </div>
@@ -281,13 +326,20 @@ function Statistics() {
                   Academic Year Distribution
                 </h2>
                 <YearDistributionChart
-                  data={statsData.data.reduce((acc, event) => {
-                    Object.entries(event.yearStats).forEach(([year, count]) => {
-                      acc[year] = (acc[year] || 0) + count;
-                    });
-                    return acc;
-                  }, {})}
-                  eventDate={statsData.data[0]?.dates[0]}
+                  data={statsData.data.reduce<Record<string, number>>(
+                    (acc, event) => {
+                      Object.entries(event.yearStats).forEach(
+                        ([year, count]) => {
+                          acc[year] = (acc[year] || 0) + count;
+                        },
+                      );
+                      return acc;
+                    },
+                    {},
+                  )}
+                  eventDate={
+                    statsData.data[0]?.dates[0] || new Date().toISOString()
+                  }
                 />
               </div>
             </div>
@@ -337,7 +389,19 @@ function Statistics() {
   );
 }
 
-function KeyInsights({ insights }) {
+interface KeyInsightsProps {
+  insights: {
+    totalEvents?: number;
+    mostPopularEvent?: string;
+    mostPopularEventParticipants?: number;
+    averageAttendance?: number;
+    mostActiveBranch?: string;
+    genderRatio?: string;
+    [key: string]: any; // eslint-disable-line
+  };
+}
+
+function KeyInsights({ insights }: KeyInsightsProps) {
   return (
     <div className="mb-8">
       <h2 className="font-fira text-foreground text-2xl font-bold mb-4">
@@ -375,17 +439,14 @@ function KeyInsights({ insights }) {
   );
 }
 
-function InsightCard({
-  Icon,
-  title,
-  value,
-  subvalue,
-}: {
+interface InsightCardProps {
   Icon: IconType;
   title: string;
-  value: string | number;
+  value: string | number | undefined;
   subvalue?: string;
-}) {
+}
+
+function InsightCard({ Icon, title, value, subvalue }: InsightCardProps) {
   return (
     <div className="bg-card p-4 rounded-md shadow-md">
       <div className="flex items-center mb-2">
@@ -400,7 +461,16 @@ function InsightCard({
   );
 }
 
-function EventCountChart({ data }) {
+interface ChartDataItem {
+  name: string;
+  value: number;
+}
+
+interface EventCountChartProps {
+  data: ChartDataItem[];
+}
+
+function EventCountChart({ data }: EventCountChartProps) {
   return (
     <div className="bg-card p-4 rounded-md shadow-md">
       <h2 className="font-fira text-foreground text-xl font-bold mb-4">
@@ -412,7 +482,7 @@ function EventCountChart({ data }) {
           <YAxis tick={{ fill: COLORS.mute }} />
           <Tooltip content={<CustomTooltip />} />
           <Bar dataKey="value">
-            {data.map((entry, index) => (
+            {data.map((_, index) => (
               <Cell
                 key={`cell-${index}`}
                 fill={COLORS.barChart[index % COLORS.barChart.length]}
@@ -425,7 +495,11 @@ function EventCountChart({ data }) {
   );
 }
 
-function BranchDistributionChart({ data }) {
+interface BranchDistributionChartProps {
+  data: ChartDataItem[];
+}
+
+function BranchDistributionChart({ data }: BranchDistributionChartProps) {
   return (
     <div className="bg-card p-4 rounded-md shadow-md">
       <h2 className="font-fira text-foreground text-xl font-bold mb-4">
@@ -442,7 +516,7 @@ function BranchDistributionChart({ data }) {
             dataKey="value"
             label
           >
-            {data.map((entry, index) => (
+            {data.map((_, index) => (
               <Cell
                 key={`cell-${index}`}
                 fill={COLORS.branch[index % COLORS.branch.length]}
@@ -457,8 +531,22 @@ function BranchDistributionChart({ data }) {
   );
 }
 
-function BranchDistributionRadarChart({ data }) {
-  const CustomTooltip = ({ active, payload }) => {
+interface BranchRadarItem {
+  branch: string;
+  count: number;
+}
+
+interface BranchDistributionRadarChartProps {
+  data: BranchRadarItem[];
+}
+
+function BranchDistributionRadarChart({
+  data,
+}: BranchDistributionRadarChartProps) {
+  const CustomTooltip = ({
+    active,
+    payload,
+  }: TooltipProps<ValueType, NameType>) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-background p-2 rounded-md shadow-md">
@@ -502,7 +590,11 @@ function BranchDistributionRadarChart({ data }) {
   );
 }
 
-function GenderDistributionChart({ data }) {
+interface GenderDistributionChartProps {
+  data: ChartDataItem[];
+}
+
+function GenderDistributionChart({ data }: GenderDistributionChartProps) {
   return (
     <div className="bg-card p-4 rounded-md shadow-md">
       <h2 className="font-fira text-foreground text-xl font-bold mb-4">
@@ -519,7 +611,7 @@ function GenderDistributionChart({ data }) {
             dataKey="value"
             label
           >
-            {data.map((entry, index) => (
+            {data.map((_, index) => (
               <Cell
                 key={`cell-${index}`}
                 fill={COLORS.gender[index % COLORS.gender.length]}
@@ -534,13 +626,16 @@ function GenderDistributionChart({ data }) {
   );
 }
 
-function ParticipationTrendChart({ data }) {
+interface ParticipationTrendChartProps {
+  data: StatsData[];
+}
+
+function ParticipationTrendChart({ data }: ParticipationTrendChartProps) {
   const trendData = useMemo(() => {
     return [...data]
       .sort(
         (a, b) =>
-          new Date(a.dates[0]).getMilliseconds() -
-          new Date(b.dates[0]).getMilliseconds(),
+          new Date(a.dates[0]).getTime() - new Date(b.dates[0]).getTime(),
       )
       .map((event) => ({
         name: event.eventName,
@@ -601,11 +696,19 @@ function ParticipationTrendChart({ data }) {
   );
 }
 
-function YearDistributionChart({ data, eventDate }) {
+interface YearDistributionChartProps {
+  data: Record<string, number>;
+  eventDate: string;
+}
+
+function YearDistributionChart({
+  data,
+  eventDate,
+}: YearDistributionChartProps) {
   const yearData = useMemo(() => {
     const currentYear = new Date(eventDate).getFullYear();
 
-    const academicYearData = {};
+    const academicYearData: Record<string, number> = {};
     Object.entries(data).forEach(([gradYear, count]) => {
       const yearsToGrad = parseInt(gradYear) - currentYear;
       let academicYear;
@@ -639,7 +742,10 @@ function YearDistributionChart({ data, eventDate }) {
       }))
       .sort((a, b) => {
         const order = { FY: 1, SY: 2, TY: 3, LY: 4 };
-        return order[a.year] - order[b.year];
+        return (
+          order[a.year as keyof typeof order] -
+          order[b.year as keyof typeof order]
+        );
       });
   }, [data, eventDate]);
 
@@ -651,7 +757,7 @@ function YearDistributionChart({ data, eventDate }) {
       return (
         <div className="bg-background p-2 rounded-md shadow-md">
           <p className="font-fira text-foreground text-sm font-medium mb-1">
-            {payload[0]?.payload.branch}
+            {payload[0]?.payload.year}
           </p>
           <p className="font-fira text-white text-sm">
             {`Count: ${payload[0].value}`}
@@ -669,7 +775,7 @@ function YearDistributionChart({ data, eventDate }) {
         <YAxis tick={{ fill: COLORS.mute }} />
         <Tooltip content={<CustomTooltip />} />
         <Bar dataKey="count" fill={COLORS.primary} radius={[4, 4, 0, 0]}>
-          {yearData.map((entry, index) => (
+          {yearData.map((_, index) => (
             <Cell
               key={`cell-${index}`}
               fill={COLORS.barChart[index % COLORS.barChart.length]}
@@ -681,7 +787,15 @@ function YearDistributionChart({ data, eventDate }) {
   );
 }
 
-function ComparisonChart({ data, events }) {
+interface ComparisonChartProps {
+  data: Array<{
+    metric: string;
+    [key: string]: any; // eslint-disable-line
+  }>;
+  events: StatsData[];
+}
+
+function ComparisonChart({ data, events }: ComparisonChartProps) {
   const COLORS_EXTENDED = [
     COLORS.primary,
     '#FF8042',
@@ -724,11 +838,12 @@ function ComparisonChart({ data, events }) {
   );
 
   const branchDistributionData = useMemo(() => {
-    const branchData = {};
+    const branchData: Record<string, number> = {};
     events.forEach((event) => {
       Object.entries(event.branchStats).forEach(([branch, count]) => {
-        branchData[branchAbbreviations[branch]] =
-          (branchData[branchAbbreviations[branch]] || 0) + count;
+        const branchKey = branch as BranchKey;
+        const abbr = branchAbbreviations[branchKey] || branch;
+        branchData[abbr] = (branchData[abbr] || 0) + count;
       });
     });
     return Object.entries(branchData).map(([branch, count]) => ({

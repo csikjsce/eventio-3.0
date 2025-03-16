@@ -96,7 +96,7 @@ export default function NewEvent() {
           if (
             !response.data.event.organizer_id ||
             !userData?.id ||
-            response.data.event.organizer_id !== parseInt(userData?.id)
+            response.data.event.organizer_id !== parseInt(`${userData?.id}`)
           ) {
             navigate('/');
           }
