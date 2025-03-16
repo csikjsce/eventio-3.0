@@ -14,6 +14,7 @@ const userRoute = require("./routes/user.route");
 const authRoute = require("./routes/auth.route");
 const eventRoute = require("./routes/event.route");
 const councilRoute = require("./routes/council.route");
+const mailerRoute = require("./routes/mailer.route");
 
 // passport setup
 passport.use(
@@ -74,7 +75,7 @@ passport.use(
                         return done(null, profile);
                     }
                 } catch (err) {
-                    logger.error(err);
+                    console.error(err);
                     return done(
                         new Error("error fetching/creating user"),
                         null
@@ -127,6 +128,7 @@ app.use("/api/" + version + "/user", userRoute);
 app.use("/api/" + version + "/auth", authRoute);
 app.use("/api/" + version + "/event", eventRoute);
 app.use("/api/" + version + "/council", councilRoute);
+app.use("/api/" + version + "/mailer", mailerRoute);
 
 if (process.env.NODE_ENV !== "production") {
     const port = process.env.PORT || 8000;
