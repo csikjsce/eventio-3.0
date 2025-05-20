@@ -50,6 +50,7 @@ model Events {
   is_submission_enabled      Boolean           @default(false)
   Participant                Participant[]
   Teams                      Team[]
+  report_url                 String?
 }
 
 model User {

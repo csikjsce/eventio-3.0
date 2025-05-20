@@ -509,6 +509,7 @@ router.post(protected + "/create", authCheck, (req, res) => {
         ma_ppt,
         min_ppt,
         ticket_count,
+        report_url
     } = req.body;
     if (dates && dates.length) {
         dates = dates.map((d) => new Date(d));
@@ -541,6 +542,7 @@ router.post(protected + "/create", authCheck, (req, res) => {
                 ma_ppt,
                 min_ppt,
                 ticket_count,
+                report_url
             },
         })
         .then((event) => {
