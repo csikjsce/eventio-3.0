@@ -53,6 +53,7 @@ interface Events {
     TICKET_OPEN: EventData[];
     ONGOING: EventData[];
     APPLIED_FOR_APPROVAL: EventData[];
+    APPLIED_FOR_PRINCI_APPROVAL: EventData[];
     COMPLETED: EventData[];
 }
 
