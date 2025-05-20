@@ -19,7 +19,7 @@ export default function Protected() {
             if (response.error) {
                 throw new Error("error fetching");
             }
-            if (response && response.user && response.user.role === "FACULTY") {
+            if (response && response.user && response.user.role === "FACULTY"|| response.user?.role=== "PRINCIPAL") {
                 setUserData(response.user);
                 return { status: 200 };
             } else {
