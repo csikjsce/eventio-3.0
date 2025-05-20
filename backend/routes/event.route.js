@@ -662,7 +662,7 @@ router.post(
             state = event.state;
             if (
                 event.organizer_id != req.user.id &&
-                req.user.role != "FACULTY"
+                req.user.role != "FACULTY" && req.user.role != "PRINCIPAL"
             ) {
                 return res
                     .status(403)
@@ -683,7 +683,6 @@ router.post(
 
         delete field.organizer;
         delete field.Participant;
-
         if (field.dates && field.dates.length) {
             field.dates = field.dates.map((d) => new Date(d));
         }
