@@ -53,6 +53,9 @@ router.get(
             case "COUNCIL":
                 redirectURL = process.env.COUNCIL_CLIENT_URL;
                 break;
+            case "PRINCIPAL":
+                redirectURL=process.env.FACULTY_CLIENT_URL;
+                break;
             default:
                 redirectURL = process.env.CLIENT_URL;
         }
