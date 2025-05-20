@@ -42,7 +42,7 @@ export default function Calendar() {
       indicators = eventList.slice(0, 3).map((event, index) => {
         const colorClass = isPast
           ? 'bg-gray-400'
-          : event.state === 'TICKET_OPEN'
+          : event.state === 'REGISTRATION_OPEN'
             ? 'bg-green-500'
             : 'bg-red-500';
         return (
