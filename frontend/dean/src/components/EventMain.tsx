@@ -1,16 +1,23 @@
 import { Calendar, Location } from "iconsax-react";
 import axios from "axios";
 import EventsDataContext from "../contexts/EventsDataContext";
+import { UserDataContext } from "../contexts/userContext";
 import { useContext, useState } from "react";
 import EventDialog from "./EventDialog";
 
 export default function EventMain({ event }: { event: EventData }) {
     const { refreshEventsData } = useContext(EventsDataContext);
+    const { userData } = useContext(UserDataContext);
     const [isOpen, setIsOpen] = useState(false);
     const [isRejected, setIsRejected] = useState<boolean>(false);
 
-    async function approve() {
+    async function approve(sendToPrincipal = false) {
         try {
+            // Determine the target state based on the checkbox selection
+            const newState = sendToPrincipal 
+                ? "APPLIED_FOR_PRINCI_APPROVAL" 
+                : "UNLISTED";
+                
             const res = await axios.request({
                 baseURL: import.meta.env.VITE_APP_SERVER_ADDRESS,
                 url: "/api/v1" + "/event/p/update/" + event.id,
@@ -20,7 +27,7 @@ export default function EventMain({ event }: { event: EventData }) {
                         "Bearer " + localStorage.getItem("accessToken"),
                 },
                 data: {
-                    state: "UNLISTED",
+                    state: newState,
                     comment: null,
                 },
             });
@@ -53,6 +60,9 @@ export default function EventMain({ event }: { event: EventData }) {
         }
     }
 
+    // Hide the principal approval checkbox for principal users
+    const isPrincipal = userData?.role === "PRINCIPAL";
+
     return (
         <div className="w-full outline outline-1 outline-card rounded-lg">
             <EventDialog
@@ -61,13 +71,9 @@ export default function EventMain({ event }: { event: EventData }) {
                 approval={approve}
                 reject={reject}
                 isRejected={isRejected}
+                showPrincipalOption={!isPrincipal} // Only show checkbox for faculty
             />
-            <div
-            // style={{
-            //     maskImage:
-            //         "linear-gradient(to bottom, rgba(0, 0, 0, 1.0) 50%, transparent 100%)", // need to work on this
-            // }}
-            >
+            <div>
                 <img
                     src={event.banner_url}
                     alt={event.name}
