@@ -24,7 +24,7 @@ import {
     ValueType,
     NameType,
 } from "recharts/types/component/DefaultTooltipContent";
-import { Calendar2, Location, User, Icon as IconType } from "iconsax-react";
+import { Calendar2, Location, DocumentDownload ,User, Icon as IconType } from "iconsax-react";
 
 const branchAbbreviations = {
     Computer_Engineering: "COMP",
@@ -224,6 +224,67 @@ function Statistics() {
         };
     }, [statsData]);
 
+    // Add this utility function for downloading CSV files
+    function downloadCSV(data, filename) {
+        const headers = Object.keys(data[0]).join(",");
+        const csvRows = [
+            headers,
+            ...data.map(row => 
+                Object.values(row)
+                    .map(value => typeof value === 'string' ? `"${value.replace(/"/g, '""')}"` : value)
+                    .join(",")
+            )
+        ];
+        
+        const csvContent = "data:text/csv;charset=utf-8," + csvRows.join("\n");
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", filename);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    // Add this function to handle attendance download
+    async function downloadAttendance(eventId, eventName) {
+        try {
+            const response = await axios.request({
+                baseURL: import.meta.env.VITE_APP_SERVER_ADDRESS,
+                url: `/api/v1/event/p/get-attendance/${eventId}`,
+                method: "POST",
+                headers: {
+                    Authorization: "Bearer " + localStorage.getItem("accessToken"),
+                },
+            });
+
+            if (response.data && !response.data.error) {
+                const attendanceData = response.data.participants.map(participant => ({
+                    Name: participant.user?.name || "N/A",
+                    Email: participant.user?.email || "N/A",
+                    "Roll Number": participant.user?.roll_number || "N/A",
+                    Branch: participant.user?.branch || "N/A", 
+                    Year: participant.user?.year || "N/A",
+                    College: participant.user?.college || "N/A",
+                    "Attended": participant.attended ? "Yes" : "No",
+                    "Team": participant.team?.name || "N/A"
+                }));
+
+                if (attendanceData.length > 0) {
+                    downloadCSV(attendanceData, `${eventName}-attendance.csv`);
+                } else {
+                    alert("No attendance data available for this event.");
+                }
+            } else {
+                console.error("Error fetching attendance data:", response.data.message);
+                alert("Failed to download attendance data. Please try again.");
+            }
+        } catch (error) {
+            console.error("Error downloading attendance:", error);
+            alert("Failed to download attendance data. Please try again.");
+        }
+    }
+
     return (
         <div className="w-full min-h-screen bg-background">
             <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -411,14 +472,52 @@ function Statistics() {
                 {activeTab === "comparison" && (
                     <>
                         <div className="mb-8">
-                            <h2 className="text-2xl font-bold text-foreground mb-4">
-                                Event Comparison
-                            </h2>
+                            <div className="flex justify-between items-center mb-4">
+                                <h2 className="text-2xl font-bold text-foreground">
+                                    Event Comparison
+                                </h2>
+                                <button
+                                    className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/80 text-foreground rounded-md"
+                                    onClick={() => {
+                                        // If any events are selected, download those
+                                        // Otherwise download all events
+                                        const eventsToDownload = selectedEvents.length > 0 
+                                            ? selectedEvents 
+                                            : filteredEvents;
+                                        
+                                        if (eventsToDownload.length === 0) {
+                                            alert("No events available to download attendance.");
+                                            return;
+                                        }
+                                        
+                                        // Confirm download for multiple events
+                                        if (eventsToDownload.length > 1) {
+                                            if (!confirm(`Download attendance for ${eventsToDownload.length} events?`)) {
+                                                return;
+                                        }
+                                    }
+                                    
+                                    // Download the first event immediately, then queue the rest
+                                    const firstEvent = eventsToDownload[0];
+                                    downloadAttendance(firstEvent.eventId, firstEvent.eventName);
+                                    
+                                    // Queue remaining downloads with slight delay to avoid browser limitations
+                                    eventsToDownload.slice(1).forEach((event, index) => {
+                                        setTimeout(() => {
+                                            downloadAttendance(event.eventId, event.eventName);
+                                        }, (index + 1) * 1000);
+                                    });
+                                }}
+                                >
+                                    <DocumentDownload size={20} color="white" variant="Bold" />
+                                    Download Attendance
+                                </button>
+                            </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                                 {filteredEvents.map((event) => (
                                     <div
                                         key={event.eventId}
-                                        className={`bg-card p-4 rounded-md shadow-md cursor-pointer ${
+                                        className={`bg-card p-4 rounded-md shadow-md cursor-pointer relative ${
                                             selectedEvents.includes(event)
                                                 ? "border-2 border-blue-500"
                                                 : ""
@@ -437,9 +536,18 @@ function Statistics() {
                                             {event.eventName}
                                         </h3>
                                         <p className="text-foreground">
-                                            Participants:{" "}
-                                            {event.totalParticipants}
+                                            Participants: {event.totalParticipants}
                                         </p>
+                                        <button 
+                                            className="absolute top-2 right-2 p-1 rounded-full bg-primary hover:bg-primary/80"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                downloadAttendance(event.eventId, event.eventName);
+                                            }}
+                                            title="Download Attendance"
+                                        >
+                                            <DocumentDownload size={16} color="white" variant="Bold" />
+                                        </button>
                                     </div>
                                 ))}
                             </div>

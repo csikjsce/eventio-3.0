@@ -1545,4 +1545,78 @@ router.post("/checkin", async (req, res) => {
     }
 });
 
+router.post(protected + "/get-attendance/:id", authCheck, async (req, res) => {
+    if (!req.user) {
+        return res.status(401).json({ error: true, message: "Unauthorized" });
+    }
+    
+    if (!["COUNCIL", "FACULTY", "PRINCIPAL"].includes(req.user.role)) {
+        return res.status(403).json({ error: true, message: "Forbidden" });
+    }
+
+    try {
+        const eventId = parseInt(req.params.id);
+        
+        const event = await prisma.events.findUnique({
+            where: { id: eventId },
+            select: { id: true, name: true }
+        });
+        
+        if (!event) {
+            return res.status(404).json({ error: true, message: "Event not found" });
+        }
+        
+        const participants = await prisma.participant.findMany({
+            where: { event_id: eventId },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        photo_url: true,
+                        roll_number: true,
+                        branch: true,
+                        year: true,
+                        college: true
+                    }
+                },
+                team: {
+                    select: {
+                        id: true,
+                        name: true
+                    }
+                }
+            }
+        });
+        
+        // Count statistics
+        const totalParticipants = participants.length;
+        const attendedParticipants = participants.filter(p => p.attended).length;
+        const attendanceRate = totalParticipants > 0 ? 
+            (attendedParticipants / totalParticipants * 100).toFixed(2) : 0;
+        
+        return res.json({
+            error: false,
+            event: {
+                id: event.id,
+                name: event.name
+            },
+            statistics: {
+                total: totalParticipants,
+                attended: attendedParticipants,
+                attendanceRate: `${attendanceRate}%`
+            },
+            participants: participants
+        });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ 
+            error: true, 
+            message: "Error fetching attendance data" 
+        });
+    }
+});
+
+
 module.exports = router;
