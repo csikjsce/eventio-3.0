@@ -25,6 +25,8 @@ router.post(protected + "/get", authCheck, async (req, res) => {
     if (!req.user) {
         return res.status(401).json({ error: "Unauthorized" });
     }
+    
+    // Handle COUNCIL role
     if (req.user.role === "COUNCIL") {
         try {
             let events = [];
@@ -81,7 +83,80 @@ router.post(protected + "/get", authCheck, async (req, res) => {
                 .json({ error: true, message: "Internal Server Error" });
         }
     }
-    if (req.user.role === "FACULTY") {
+    
+    // Handle PRINCIPAL role
+    else if (req.user.role === "PRINCIPAL") {
+        try {
+            let events = [];
+            if (req.query.state) {
+                events = await prisma.events.findMany({
+                    where: {
+                        state: {
+                            in: req.query.state,
+                        },
+                    },
+                    relationLoadStrategy: "join",
+                    include: {
+                        organizer: {
+                            select: {
+                                name: true,
+                                photo_url: true,
+                                id: true,
+                                email: true,
+                            },
+                        },
+                        children: {
+                            select: {
+                                id: true,
+                            },
+                        },
+                    },
+                });
+            } else {
+                events = await prisma.events.findMany({
+                    where: {
+                        state: {
+                            in: ["APPLIED_FOR_PRINCI_APPROVAL"],
+                        },
+                    },
+                    relationLoadStrategy: "join",
+                    include: {
+                        organizer: {
+                            select: {
+                                name: true,
+                                photo_url: true,
+                                id: true,
+                                email: true,
+                            },
+                        },
+                        children: {
+                            select: {
+                                id: true,
+                            },
+                        },
+                    },
+                });
+            }
+            let event = {};
+            events.forEach((e) => {
+                if (!event[e.state]) [(event[e.state] = [])];
+                event[e.state].push(e);
+            });
+            return res.json({
+                error: false,
+                events: event,
+                message: "Events fetched successfully for principal approval",
+            });
+        } catch (err) {
+            console.log(err);
+            return res
+                .status(500)
+                .json({ error: true, message: "Internal Server Error" });
+        }
+    }
+    
+    // Handle FACULTY role (existing)
+    else if (req.user.role === "FACULTY") {
         try {
             let events = [];
             if (req.query.state) {
@@ -121,6 +196,7 @@ router.post(protected + "/get", authCheck, async (req, res) => {
                                 "TICKET_CLOSED",
                                 "ONGOING",
                                 "COMPLETED",
+                                "APPLIED_FOR_PRINCI_APPROVAL"
                             ],
                         },
                     },
@@ -160,6 +236,7 @@ router.post(protected + "/get", authCheck, async (req, res) => {
         }
     }
 
+    // Handle other roles (existing)
     if (req.user.is_somaiya_student) {
         try {
             let events = [];
