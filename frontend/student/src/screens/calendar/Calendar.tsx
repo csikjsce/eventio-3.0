@@ -1,6 +1,7 @@
 import dayjs, { Dayjs } from 'dayjs';
 import { useContext, useState } from 'react';
 import { generateDate, months } from '../../utils/calendar';
+import { createGoogleCalendarUrl } from '../../utils/googleCalendar';
 
 import { ArrowSquareLeft, ArrowSquareRight } from 'iconsax-react';
 
@@ -41,7 +42,7 @@ export default function Calendar() {
       indicators = eventList.slice(0, 3).map((event, index) => {
         const colorClass = isPast
           ? 'bg-gray-400'
-          : event.state === 'REGISTRATION_OPEN'
+          : event.state === 'TICKET_OPEN'
             ? 'bg-green-500'
             : 'bg-red-500';
         return (
@@ -152,6 +153,23 @@ export default function Calendar() {
               ? `Schedule for ${selectDate.format('MMMM D, YYYY')}`
               : `No events on ${selectDate.format('MMMM D, YYYY')}`}
           </h1>
+
+          {/* Add button to add all events for the selected date */}
+          {getEventsForDate(selectDate).length > 0 && (
+            <div className="mt-2 mb-4">
+              {getEventsForDate(selectDate).map((event, index) => (
+                <a
+                  key={index}
+                  href={createGoogleCalendarUrl(event)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block mr-2 mb-2 px-3 py-1 bg-primary text-white text-sm rounded hover:bg-primary/80"
+                >
+                  Add "{event.name}" to Google Calendar
+                </a>
+              ))}
+            </div>
+          )}
 
           <EventList events={getEventsForDate(selectDate)} date={selectDate} />
         </div>
