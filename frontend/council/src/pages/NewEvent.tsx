@@ -638,6 +638,17 @@ export default function NewEvent() {
             </div>
           )}
 
+          {/* Report URL */}
+          <div>
+            <label className="block text-foreground">Report URL</label>
+            <input
+              className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
+              {...register('report_url')}
+              placeholder="Enter report URL"
+            />
+            <p className="text-red-500">{errors.report_url?.message}</p>
+          </div>
+
           {/* Submit Button */}
           <button
             type="submit"
