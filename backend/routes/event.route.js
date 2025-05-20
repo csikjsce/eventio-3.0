@@ -647,7 +647,7 @@ router.post(
                 .status(401)
                 .json({ error: true, message: "Unauthorized" });
         }
-        if (req.user.role != "COUNCIL" && req.user.role != "FACULTY") {
+        if (req.user.role != "COUNCIL" && req.user.role != "FACULTY" && req.user.role!="PRINCIPAL") {
             return res.status(403).json({ error: true, message: "Forbidden" });
         }
         let state_history = [];
