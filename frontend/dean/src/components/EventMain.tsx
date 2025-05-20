@@ -13,7 +13,6 @@ export default function EventMain({ event }: { event: EventData }) {
 
     async function approve(sendToPrincipal = false) {
         try {
-            // Determine the target state based on the checkbox selection
             const newState = sendToPrincipal 
                 ? "APPLIED_FOR_PRINCI_APPROVAL" 
                 : "UNLISTED";
@@ -60,7 +59,6 @@ export default function EventMain({ event }: { event: EventData }) {
         }
     }
 
-    // Hide the principal approval checkbox for principal users
     const isPrincipal = userData?.role === "PRINCIPAL";
 
     return (
@@ -71,7 +69,7 @@ export default function EventMain({ event }: { event: EventData }) {
                 approval={approve}
                 reject={reject}
                 isRejected={isRejected}
-                showPrincipalOption={!isPrincipal} // Only show checkbox for faculty
+                showPrincipalOption={!isPrincipal}
             />
             <div>
                 <img

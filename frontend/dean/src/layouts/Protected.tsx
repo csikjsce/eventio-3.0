@@ -40,6 +40,9 @@ export default function Protected() {
             if (response.error) {
                 throw new Error("error fetching");
             }
+
+            console.log("API response events:", response.events);
+
             if (response && response.events) {
                 setEventsData(response.events);
             } else {
