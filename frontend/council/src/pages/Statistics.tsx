@@ -25,7 +25,7 @@ import {
   ValueType,
   NameType,
 } from 'recharts/types/component/DefaultTooltipContent';
-import { Calendar2, Location, User, Icon as IconType } from 'iconsax-react';
+import { Calendar2, Location, User, Icon as IconType, DocumentDownload } from 'iconsax-react';
 
 // Define type for branch abbreviations
 type BranchKey = keyof typeof branchAbbreviations;
@@ -112,6 +112,70 @@ const CustomTooltip = ({
   }
   return null;
 };
+
+// CSV download utility
+function downloadCSV(data: Record<string, any>[], filename: string): void {
+  const headers = Object.keys(data[0]);
+  const csvRows = [
+    headers.join(','),
+    ...data.map((row) =>
+      headers
+        .map((header) => {
+          const value = row[header];
+          return typeof value === 'string' ? `"${value.replace(/"/g, '""')}"` : value;
+        })
+        .join(','),
+    ),
+  ];
+
+  const csvContent = 'data:text/csv;charset=utf-8,' + csvRows.join('\n');
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement('a');
+  link.setAttribute('href', encodedUri);
+  link.setAttribute('download', filename);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+// Attendance download function
+async function downloadAttendance(eventId: string, eventName: string): Promise<void> {
+  try {
+    const response = await axios.request({
+      baseURL: import.meta.env.VITE_APP_SERVER_ADDRESS,
+      url: `/api/v1/event/p/get-attendance/${eventId}`,
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer ' + localStorage.getItem('accessToken'),
+      },
+    });
+
+    if (response.data && !response.data.error) {
+      const attendanceData = response.data.participants.map((participant: any) => ({
+        Name: participant.user?.name || 'N/A',
+        Email: participant.user?.email || 'N/A',
+        'Roll Number': participant.user?.roll_number || 'N/A',
+        Branch: participant.user?.branch || 'N/A',
+        Year: participant.user?.year || 'N/A',
+        College: participant.user?.college || 'N/A',
+        Attended: participant.attended ? 'Yes' : 'No',
+        Team: participant.team?.name || 'N/A',
+      }));
+
+      if (attendanceData.length > 0) {
+        downloadCSV(attendanceData, `${eventName}-attendance.csv`);
+      } else {
+        alert('No attendance data available for this event.');
+      }
+    } else {
+      console.error('Error fetching attendance data:', response.data?.message);
+      alert('Failed to download attendance data. Please try again.');
+    }
+  } catch (error) {
+    console.error('Error downloading attendance:', error);
+    alert('Failed to download attendance data. Please try again.');
+  }
+}
 
 function Statistics() {
   const [selectedEvents, setSelectedEvents] = useState<StatsData[]>([]);
@@ -349,14 +413,47 @@ function Statistics() {
         {activeTab === 'comparison' && (
           <>
             <div className="mb-8">
-              <h2 className="text-2xl font-bold text-white mb-4">
-                Event Comparison
-              </h2>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-bold text-white">
+                  Event Comparison
+                </h2>
+                <button
+                  className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/80 text-white rounded-md"
+                  onClick={() => {
+                    const eventsToDownload = selectedEvents.length > 0
+                      ? selectedEvents
+                      : filteredEvents;
+
+                    if (eventsToDownload.length === 0) {
+                      alert('No events available to download attendance.');
+                      return;
+                    }
+
+                    if (eventsToDownload.length > 1) {
+                      if (!confirm(`Download attendance for ${eventsToDownload.length} events?`)) {
+                        return;
+                      }
+                    }
+
+                    const firstEvent = eventsToDownload[0];
+                    downloadAttendance(firstEvent.eventId, firstEvent.eventName);
+
+                    eventsToDownload.slice(1).forEach((event, index) => {
+                      setTimeout(() => {
+                        downloadAttendance(event.eventId, event.eventName);
+                      }, (index + 1) * 1000);
+                    });
+                  }}
+                >
+                  <DocumentDownload size={20} color="white" variant="Bold" />
+                  Download Attendance
+                </button>
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {filteredEvents.map((event) => (
                   <div
                     key={event.eventId}
-                    className={`bg-card p-4 rounded-md shadow-md cursor-pointer ${
+                    className={`bg-card p-4 rounded-md shadow-md cursor-pointer relative ${
                       selectedEvents.includes(event)
                         ? 'border-2 border-blue-500'
                         : ''
@@ -375,6 +472,16 @@ function Statistics() {
                     <p className="text-white">
                       Participants: {event.totalParticipants}
                     </p>
+                    <button
+                      className="absolute top-2 right-2 bg-primary p-1 rounded-full"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        downloadAttendance(event.eventId, event.eventName);
+                      }}
+                      title="Download Attendance"
+                    >
+                      <DocumentDownload size={16} color="white" variant="Bold" />
+                    </button>
                   </div>
                 ))}
               </div>
