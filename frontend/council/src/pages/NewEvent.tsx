@@ -640,11 +640,11 @@ export default function NewEvent() {
 
           {/* Report URL */}
           <div>
-            <label className="block text-foreground">Report URL</label>
+            <label className="block text-foreground">Brochure URL</label>
             <input
               className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
-              {...register('report_url')}
-              placeholder="Enter report URL"
+              // {...register('brochure_url')} Idhar brochure ka link dalna hai after db me column add hojaye
+              placeholder="Enter brochure URL"
             />
             <p className="text-red-500">{errors.report_url?.message}</p>
           </div>
