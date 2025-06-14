@@ -1,16 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
-  BarChart,
-  Bar,
   PieChart,
   Pie,
   Cell,
   ResponsiveContainer,
   Tooltip,
   Legend,
-  XAxis,
-  YAxis,
 } from 'recharts';
 import { TooltipProps } from 'recharts';
 import {
@@ -26,26 +22,90 @@ interface EventStats {
   eventId: string;
   eventName: string;
   totalParticipants: number;
-  yearStats: { [key: string]: number };
   branchStats: { [key: string]: number };
-  genderStats: { [key: string]: number };
 }
 
-const branchAbbreviations = {
-  Computer_Engineering: 'COMP',
-  Information_Technology: 'IT',
-  Mechanical: 'Mech',
-  Artificial_Intelligence_And_Data_Science: 'AIDS',
-  Electronics_And_Computers: 'EXCP',
-  Computer_Science_And_Business_Systems: 'CSBS',
-  Electronics_And_Telecommunications: 'EXTC',
-  Robotics_And_Artificial_Intelligence: 'RAI',
-  Computer_And_Communication: 'CCE',
-  Electronics: 'ETRX',
-  Electronics_VLSI: 'VLSI',
+const COLORS = [
+  '#ff7c43',
+  '#f95d6a',
+  '#d45087',
+  '#a05195',
+  '#0088FE',
+  '#FF8042',
+  '#00C49F',
+  '#FFBB28',
+];
+
+const groupBranches = (branchStats: { [key: string]: number }) => {
+  const branchGroups = {
+    'Computer Science & Related': [
+      'Computer_Engineering',
+      'Information_Technology',
+      'Computer_Science_And_Business_Systems',
+      'Computer_And_Communication',
+      'CSE(DATA SCIENCE)',
+      'CSE - DS',
+      'Computer Science Engineering',
+      'CSE(IOT & CSBT)',
+      'cse-AI',
+      'CSE with specialization in IoT, Blockchain Tech and Machine Learning',
+    ],
+    'Electronics & Computer Engineering': [
+      'Electronics_And_Computers',
+      'Electronics_And_Telecommunications',
+      'Electronics_VLSI',
+      'Electronics',
+      'electronics and computers',
+      'Embedded Electronics And Security System',
+      'Power electronic drives',
+    ],
+    'Artificial Intelligence & Robotics': [
+      'Artificial_Intelligence_And_Data_Science',
+      'Robotics_And_Artificial_Intelligence',
+      'Computer Science and Engineering- Artificial Intelligence',
+      'Robotics & Artificial Intelligence (RAI)',
+      'Computer Science(Artificial Intelligence)',
+    ],
+    'Mechanical & Other Engineering': [
+      'Mechanical',
+      'Engineering Physics',
+      'Paramedical Sciences',
+    ],
+  };
+
+  // Group branches
+  const groupedStats: { [key: string]: number } = {};
+  let othersTotal = 0;
+
+  Object.entries(branchStats).forEach(([branch, count]) => {
+    let grouped = false;
+
+    // Check each group
+    for (const [groupName, groupBranches] of Object.entries(branchGroups)) {
+      if (groupBranches.includes(branch)) {
+        groupedStats[groupName] = (groupedStats[groupName] || 0) + count;
+        grouped = true;
+        break;
+      }
+    }
+
+    // If not grouped, add to others
+    if (!grouped) {
+      othersTotal += count;
+    }
+  });
+
+  // Add Others if there are any
+  if (othersTotal > 0) {
+    groupedStats['Others'] = othersTotal;
+  }
+
+  return Object.entries(groupedStats)
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value);
 };
 
-const Stats: React.FC<StatsProps> = ({ eventId }) => {
+const GroupedBranchStats: React.FC<StatsProps> = ({ eventId }) => {
   const [statsData, setStatsData] = useState<EventStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -86,23 +146,6 @@ const Stats: React.FC<StatsProps> = ({ eventId }) => {
       fetchStats();
     }
   }, [eventId]);
-
-  const COLORS = {
-    year: ['#8884d8', '#83a6ed', '#8dd1e1', '#82ca9d'],
-    branch: ['#ff7c43', '#f95d6a', '#d45087', '#a05195'],
-    gender: ['#0088FE', '#FF8042'],
-  };
-
-  const formatDataForCharts = (stats: { [key: string]: number }) => {
-    return Object.entries(stats).map(([name, value]) => {
-      // Type assertion to narrow `name` to keys of branchAbbreviations
-      const key = name as keyof typeof branchAbbreviations;
-      return {
-        name: branchAbbreviations[key] || name,
-        value,
-      };
-    });
-  };
 
   const CustomTooltip = ({
     active,
@@ -145,16 +188,14 @@ const Stats: React.FC<StatsProps> = ({ eventId }) => {
     );
   }
 
-  const yearData = formatDataForCharts(statsData.yearStats);
-  const branchData = formatDataForCharts(statsData.branchStats);
-  const genderData = formatDataForCharts(statsData.genderStats);
+  const branchData = groupBranches(statsData.branchStats);
 
   return (
     <div className="w-full bg-background rounded-lg shadow-lg">
       <div className="bg-card rounded-lg shadow-md overflow-hidden">
         <div className="p-4 md:p-6 border-b border-mute/20">
           <h2 className="font-marcellus text-2xl text-foreground">
-            {statsData.eventName} Statistics
+            {statsData.eventName} - Grouped Branch Distribution
           </h2>
         </div>
 
@@ -163,99 +204,37 @@ const Stats: React.FC<StatsProps> = ({ eventId }) => {
             Total Registrations: {statsData.totalParticipants}
           </div>
 
-          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-2">
-            <div className="min-h-[300px]">
-              <p className="font-fira text-lg mb-4 text-foreground">
-                Year-wise Distribution
-              </p>
-              <div className="h-64 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={yearData}>
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Bar dataKey="value">
-                      {yearData.map((_, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={COLORS.year[index % COLORS.year.length]}
-                        />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            <div className="min-h-[300px]">
-              <p className="font-fira text-lg mb-4 text-foreground">
-                Branch-wise Distribution
-              </p>
-              <div className="h-64 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={branchData}
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={80}
-                      dataKey="value"
-                      label
-                    >
-                      {branchData.map((_, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={COLORS.branch[index % COLORS.branch.length]}
-                        />
-                      ))}
-                    </Pie>
-                    <Tooltip content={<CustomTooltip />} />
-                    <Legend
-                      formatter={(value) => (
-                        <span className="font-fira text-sm text-mute">
-                          {value}
-                        </span>
-                      )}
+          <div className="h-96 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={branchData}
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={120}
+                  dataKey="value"
+                  label={({ name, percent }) =>
+                    `${name} (${(percent * 100).toFixed(1)}%)`
+                  }
+                >
+                  {branchData.map((_, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={COLORS[index % COLORS.length]}
                     />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            <div className="min-h-[300px] md:col-span-2">
-              <p className="font-fira text-lg mb-4 text-foreground">
-                Gender Distribution
-              </p>
-              <div className="h-64 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={genderData}
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={80}
-                      dataKey="value"
-                      label
-                    >
-                      {genderData.map((_, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={COLORS.gender[index % COLORS.gender.length]}
-                        />
-                      ))}
-                    </Pie>
-                    <Tooltip content={<CustomTooltip />} />
-                    <Legend
-                      formatter={(value) => (
-                        <span className="font-fira text-sm text-mute">
-                          {value}
-                        </span>
-                      )}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
+                  ))}
+                </Pie>
+                <Tooltip content={<CustomTooltip />} />
+                <Legend
+                  layout="vertical"
+                  align="right"
+                  verticalAlign="middle"
+                  formatter={(value) => (
+                    <span className="font-fira text-sm text-mute">{value}</span>
+                  )}
+                />
+              </PieChart>
+            </ResponsiveContainer>
           </div>
         </div>
       </div>
@@ -263,4 +242,4 @@ const Stats: React.FC<StatsProps> = ({ eventId }) => {
   );
 };
 
-export default Stats;
+export default GroupedBranchStats;
