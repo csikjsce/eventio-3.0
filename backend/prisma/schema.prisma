@@ -51,6 +51,7 @@ model Events {
   Participant                Participant[]
   Teams                      Team[]
   report_url                 String?
+  urls                       Json?
 }
 
 model User {
