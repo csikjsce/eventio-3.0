@@ -41,6 +41,10 @@ interface EventData {
           };
     in_event_activity?: string;
     start_in_event_activity?: boolean;
+    report_url: string;
+    urls: {
+        [name: string]: string;
+    };
 }
 
 // Interface for the Events object

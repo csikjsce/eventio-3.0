@@ -45,6 +45,10 @@ interface EventData {
   comment?: string;
   ticket_count: number;
   tickets_sold: number;
+  report_url: string;
+  urls: {
+    [name: string]: string;
+  };
 }
 
 // Interface for the Events object
