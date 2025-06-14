@@ -25,7 +25,7 @@ router.post(protected + "/get", authCheck, async (req, res) => {
     if (!req.user) {
         return res.status(401).json({ error: "Unauthorized" });
     }
-    
+
     // Handle COUNCIL role
     if (req.user.role === "COUNCIL") {
         try {
@@ -83,7 +83,7 @@ router.post(protected + "/get", authCheck, async (req, res) => {
                 .json({ error: true, message: "Internal Server Error" });
         }
     }
-    
+
     // Handle PRINCIPAL role
     else if (req.user.role === "PRINCIPAL") {
         try {
@@ -154,7 +154,7 @@ router.post(protected + "/get", authCheck, async (req, res) => {
                 .json({ error: true, message: "Internal Server Error" });
         }
     }
-    
+
     // Handle FACULTY role (existing)
     else if (req.user.role === "FACULTY") {
         try {
@@ -196,7 +196,7 @@ router.post(protected + "/get", authCheck, async (req, res) => {
                                 "TICKET_CLOSED",
                                 "ONGOING",
                                 "COMPLETED",
-                                "APPLIED_FOR_PRINCI_APPROVAL"
+                                "APPLIED_FOR_PRINCI_APPROVAL",
                             ],
                         },
                     },
@@ -474,7 +474,7 @@ router.post(protected + "/get/:id", authCheck, async (req, res) => {
                     },
                     select: {
                         ticket_collected: true,
-                        id : true,
+                        id: true,
                         team: {
                             select: {
                                 id: true,
@@ -547,6 +547,8 @@ router.post(protected + "/get/:id", authCheck, async (req, res) => {
             tickets_sold: event._count.Participant,
             more_details_enabled: event.more_details_enabled,
             is_submission_enabled: event.is_submission_enabled,
+            urls: event.urls,
+            report_url: event.report_url,
         };
         res.json({ error: false, event: eventResponse });
     } catch (err) {
@@ -586,7 +588,8 @@ router.post(protected + "/create", authCheck, (req, res) => {
         ma_ppt,
         min_ppt,
         ticket_count,
-        report_url
+        report_url,
+        urls,
     } = req.body;
     if (dates && dates.length) {
         dates = dates.map((d) => new Date(d));
@@ -619,7 +622,8 @@ router.post(protected + "/create", authCheck, (req, res) => {
                 ma_ppt,
                 min_ppt,
                 ticket_count,
-                report_url
+                report_url,
+                urls,
             },
         })
         .then((event) => {
@@ -647,7 +651,11 @@ router.post(
                 .status(401)
                 .json({ error: true, message: "Unauthorized" });
         }
-        if (req.user.role != "COUNCIL" && req.user.role != "FACULTY" && req.user.role!="PRINCIPAL") {
+        if (
+            req.user.role != "COUNCIL" &&
+            req.user.role != "FACULTY" &&
+            req.user.role != "PRINCIPAL"
+        ) {
             return res.status(403).json({ error: true, message: "Forbidden" });
         }
         let state_history = [];
@@ -662,7 +670,8 @@ router.post(
             state = event.state;
             if (
                 event.organizer_id != req.user.id &&
-                req.user.role != "FACULTY" && req.user.role != "PRINCIPAL"
+                req.user.role != "FACULTY" &&
+                req.user.role != "PRINCIPAL"
             ) {
                 return res
                     .status(403)
@@ -710,7 +719,7 @@ router.post(
                 message: "Error updating event",
             });
         }
-    }
+    },
 );
 router.get(protected + "/search/", authCheck, async (req, res) => {
     if (!req.user) {
@@ -995,7 +1004,7 @@ router.post(protected + "/create-team", authCheck, async (req, res) => {
                 // unique constraint failed for the invite code, retry
                 retries++;
                 console.warn(
-                    `Retrying due to invite code collision: ${inviteCode}`
+                    `Retrying due to invite code collision: ${inviteCode}`,
                 );
             } else if (
                 error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -1043,7 +1052,7 @@ router.post(protected + "/create-team", authCheck, async (req, res) => {
             req.user.email,
             "Team Creation Details",
             team.name,
-            team.invite_code
+            team.invite_code,
         );
         console.log("Email sent successfully");
     } catch (err) {
@@ -1148,7 +1157,7 @@ router.post(protected + "/join-team", authCheck, async (req, res) => {
 
     // count the number of female participants in the team
     let femaleParticipants = participants.filter(
-        (participant) => participant.gender === "FEMALE"
+        (participant) => participant.gender === "FEMALE",
     ).length;
 
     if (
@@ -1397,7 +1406,7 @@ router.post(protected + "/team-submission", authCheck, async (req, res) => {
                     more_details4: team.Participant[3]?.more_details || "",
                     team_approval: team.approved,
                 }),
-            }
+            },
         );
         console.log("User and team details pushed successfully");
     } catch (err) {
@@ -1625,23 +1634,25 @@ router.post(protected + "/get-attendance/:id", authCheck, async (req, res) => {
     if (!req.user) {
         return res.status(401).json({ error: true, message: "Unauthorized" });
     }
-    
+
     if (!["COUNCIL", "FACULTY", "PRINCIPAL"].includes(req.user.role)) {
         return res.status(403).json({ error: true, message: "Forbidden" });
     }
 
     try {
         const eventId = parseInt(req.params.id);
-        
+
         const event = await prisma.events.findUnique({
             where: { id: eventId },
-            select: { id: true, name: true }
+            select: { id: true, name: true },
         });
-        
+
         if (!event) {
-            return res.status(404).json({ error: true, message: "Event not found" });
+            return res
+                .status(404)
+                .json({ error: true, message: "Event not found" });
         }
-        
+
         const participants = await prisma.participant.findMany({
             where: { event_id: eventId },
             include: {
@@ -1654,45 +1665,48 @@ router.post(protected + "/get-attendance/:id", authCheck, async (req, res) => {
                         roll_number: true,
                         branch: true,
                         year: true,
-                        college: true
-                    }
+                        college: true,
+                    },
                 },
                 team: {
                     select: {
                         id: true,
-                        name: true
-                    }
-                }
-            }
+                        name: true,
+                    },
+                },
+            },
         });
-        
+
         // Count statistics
         const totalParticipants = participants.length;
-        const attendedParticipants = participants.filter(p => p.attended).length;
-        const attendanceRate = totalParticipants > 0 ? 
-            (attendedParticipants / totalParticipants * 100).toFixed(2) : 0;
-        
+        const attendedParticipants = participants.filter(
+            (p) => p.attended,
+        ).length;
+        const attendanceRate =
+            totalParticipants > 0
+                ? ((attendedParticipants / totalParticipants) * 100).toFixed(2)
+                : 0;
+
         return res.json({
             error: false,
             event: {
                 id: event.id,
-                name: event.name
+                name: event.name,
             },
             statistics: {
                 total: totalParticipants,
                 attended: attendedParticipants,
-                attendanceRate: `${attendanceRate}%`
+                attendanceRate: `${attendanceRate}%`,
             },
-            participants: participants
+            participants: participants,
         });
     } catch (err) {
         console.error(err);
-        return res.status(500).json({ 
-            error: true, 
-            message: "Error fetching attendance data" 
+        return res.status(500).json({
+            error: true,
+            message: "Error fetching attendance data",
         });
     }
 });
-
 
 module.exports = router;
