@@ -14,6 +14,20 @@ export const personalDetailsSchema = (currentStep: string) =>
       .is(['MALE', 'FEMALE'], 'Gender is required.')
       .required('Gender is required'),
 
+    signature: yup
+      .array()
+      .of(
+        yup.array().of(
+          yup.object().shape({
+            x: yup.number().required('X coordinate is required'),
+            y: yup.number().required('Y coordinate is required'),
+            time: yup.number().required('Time is required'),
+            color: yup.string(),
+          }),
+        ),
+      )
+      .required('Signature is required'),
+
     year: yup
       .number()
       .typeError('Graduation year must be a number')

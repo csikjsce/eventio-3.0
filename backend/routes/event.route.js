@@ -1,4 +1,5 @@
 const express = require("express");
+const PDFDocument = require("pdfkit");
 const authCheck = require("../middleware/auth.middleware");
 const prisma = require("../utils/prisma_client");
 const { Prisma } = require("@prisma/client");
@@ -7,6 +8,7 @@ const validateUpdateFields = require("../middleware/field-validator.middlware");
 const router = express.Router();
 const sendMail = require("../utils/nmail");
 const fetch = require("node-fetch");
+
 let protected = "/p";
 
 function generateRandomCode() {
@@ -1630,83 +1632,277 @@ router.post("/checkin", async (req, res) => {
     }
 });
 
-router.post(protected + "/get-attendance/:id", authCheck, async (req, res) => {
-    if (!req.user) {
-        return res.status(401).json({ error: true, message: "Unauthorized" });
-    }
-
-    if (!["COUNCIL", "FACULTY", "PRINCIPAL"].includes(req.user.role)) {
-        return res.status(403).json({ error: true, message: "Forbidden" });
-    }
-
-    try {
-        const eventId = parseInt(req.params.id);
-
-        const event = await prisma.events.findUnique({
-            where: { id: eventId },
-            select: { id: true, name: true },
-        });
-
-        if (!event) {
-            return res
-                .status(404)
-                .json({ error: true, message: "Event not found" });
+router.get(
+    protected + "/attendance-report/:id",
+    authCheck,
+    async (req, res) => {
+        if (
+            !req.user ||
+            !["COUNCIL", "FACULTY", "PRINCIPAL"].includes(req.user.role)
+        ) {
+            return res.status(403).json({ error: true, message: "Forbidden" });
         }
 
-        const participants = await prisma.participant.findMany({
-            where: { event_id: eventId },
-            include: {
-                user: {
-                    select: {
-                        id: true,
-                        name: true,
-                        email: true,
-                        photo_url: true,
-                        roll_number: true,
-                        branch: true,
-                        year: true,
-                        college: true,
+        try {
+            const eventId = parseInt(req.params.id);
+
+            const event = await prisma.events.findUnique({
+                where: { id: eventId },
+                select: { name: true },
+            });
+
+            const participants = await prisma.participant.findMany({
+                where: { event_id: eventId, ticket_collected: true },
+                include: {
+                    user: {
+                        select: {
+                            name: true,
+                            roll_number: true,
+                            branch: true,
+                            year: true,
+                            signature: true,
+                        },
                     },
                 },
-                team: {
-                    select: {
-                        id: true,
-                        name: true,
+                orderBy: [
+                    {
+                        user: {
+                            year: "asc",
+                        },
                     },
-                },
-            },
-        });
+                    {
+                        user: {
+                            branch: "asc",
+                        },
+                    },
+                    {
+                        user: {
+                            roll_number: "asc",
+                        },
+                    },
+                ],
+            });
 
-        // Count statistics
-        const totalParticipants = participants.length;
-        const attendedParticipants = participants.filter(
-            (p) => p.attended,
-        ).length;
-        const attendanceRate =
-            totalParticipants > 0
-                ? ((attendedParticipants / totalParticipants) * 100).toFixed(2)
-                : 0;
+            const doc = new PDFDocument({ size: "A4", margin: 40 });
+            res.setHeader("Content-Type", "application/pdf");
+            res.setHeader(
+                "Content-Disposition",
+                `attachment; filename="${event.name}-attendance.pdf"`,
+            );
 
-        return res.json({
-            error: false,
-            event: {
-                id: event.id,
-                name: event.name,
-            },
-            statistics: {
-                total: totalParticipants,
-                attended: attendedParticipants,
-                attendanceRate: `${attendanceRate}%`,
-            },
-            participants: participants,
-        });
-    } catch (err) {
-        console.error(err);
-        return res.status(500).json({
-            error: true,
-            message: "Error fetching attendance data",
-        });
-    }
-});
+            doc.pipe(res);
+
+            doc.fontSize(16).text(`Attendance Report – ${event.name}`, {
+                align: "center",
+            });
+            doc.moveDown();
+
+            // Table layout
+            const colWidths = {
+                roll: 75,
+                name: 150,
+                branch: 100,
+                year: 75,
+                signature: 100,
+            };
+
+            const rowHeight = 20;
+            const tableLeft = 40;
+            const tableRight =
+                tableLeft + Object.values(colWidths).reduce((a, b) => a + b, 0);
+            const tableTop = doc.y + 10;
+            let y = tableTop + rowHeight / 2 - 5;
+
+            // Draw table headers
+            doc.font("Helvetica-Bold")
+                .fontSize(10)
+                .text("Roll No", tableLeft, y, {
+                    width: colWidths.roll,
+                    align: "center",
+                })
+                .text("Name", tableLeft + colWidths.roll, y, {
+                    width: colWidths.name,
+                    align: "center",
+                })
+                .text(
+                    "Branch",
+                    tableLeft + colWidths.roll + colWidths.name,
+                    y,
+                    {
+                        width: colWidths.branch,
+                        align: "center",
+                    },
+                )
+                .text(
+                    "Year",
+                    tableLeft +
+                        colWidths.roll +
+                        colWidths.name +
+                        colWidths.branch,
+                    y,
+                    {
+                        width: colWidths.year,
+                        align: "center",
+                    },
+                )
+                .text(
+                    "Signature",
+                    tableLeft +
+                        colWidths.roll +
+                        colWidths.name +
+                        colWidths.branch +
+                        colWidths.year,
+                    y,
+                    { width: colWidths.signature, align: "center" },
+                );
+
+            y += 20;
+            doc.moveTo(tableLeft, y).lineTo(tableRight, y).stroke();
+
+            // Header vertical lines
+            let x = tableLeft;
+            for (const width of Object.values(colWidths)) {
+                doc.moveTo(x, tableTop).lineTo(x, y).stroke();
+                x += width;
+            }
+            doc.moveTo(x, tableTop).lineTo(x, y).stroke(); // final right border
+
+            // Table rows
+            let rowIndex = 0;
+            for (const p of participants) {
+                if (y + rowHeight > 780) {
+                    doc.addPage();
+                    y = 40;
+                }
+
+                const { name, roll_number, branch, year, signature } = p.user;
+                const centerTextY = y + rowHeight / 2 - 5;
+
+                // Alternating background
+                if (rowIndex % 2 === 0) {
+                    doc.rect(tableLeft, y, tableRight - tableLeft, rowHeight)
+                        .fillColor("#f2f2f2")
+                        .fill();
+                }
+                doc.fillColor("black"); // reset fill color for text/strokes
+
+                // Text Columns
+                doc.font("Helvetica")
+                    .fontSize(9)
+                    .text(roll_number || "N/A", tableLeft, centerTextY, {
+                        width: colWidths.roll,
+                        align: "center",
+                    })
+                    .text(
+                        name || "N/A",
+                        tableLeft + colWidths.roll,
+                        centerTextY,
+                        {
+                            width: colWidths.name,
+                            align: "center",
+                        },
+                    )
+                    .text(
+                        branch || "N/A",
+                        tableLeft + colWidths.roll + colWidths.name,
+                        centerTextY,
+                        {
+                            width: colWidths.branch,
+                            align: "center",
+                        },
+                    )
+                    .text(
+                        year || "N/A",
+                        tableLeft +
+                            colWidths.roll +
+                            colWidths.name +
+                            colWidths.branch,
+                        centerTextY,
+                        {
+                            width: colWidths.year,
+                            align: "center",
+                        },
+                    );
+
+                // Signature box
+                if (signature && Array.isArray(signature)) {
+                    doc.save();
+
+                    const sigX =
+                        tableLeft +
+                        colWidths.roll +
+                        colWidths.name +
+                        colWidths.branch +
+                        colWidths.year +
+                        30;
+                    const sigY = y + 5;
+
+                    const scale = 0.125;
+                    doc.translate(sigX, sigY);
+
+                    for (const stroke of signature) {
+                        if (!stroke.length) continue;
+                        doc.moveTo(stroke[0].x * scale, stroke[0].y * scale);
+                        for (let i = 1; i < stroke.length; i++) {
+                            doc.lineTo(
+                                stroke[i].x * scale,
+                                stroke[i].y * scale,
+                            );
+                        }
+                        doc.stroke();
+                    }
+
+                    doc.restore();
+                } else {
+                    doc.text(
+                        "No signature",
+                        tableLeft +
+                            colWidths.roll +
+                            colWidths.name +
+                            colWidths.branch +
+                            colWidths.year +
+                            10,
+                        centerTextY,
+                    );
+                }
+
+                // Row horizontal line
+                y += rowHeight;
+                doc.moveTo(tableLeft, y).lineTo(tableRight, y).stroke();
+
+                // Vertical column lines
+                x = tableLeft;
+                for (const width of Object.values(colWidths)) {
+                    doc.moveTo(x, y - rowHeight)
+                        .lineTo(x, y)
+                        .stroke();
+                    x += width;
+                }
+                doc.moveTo(x, y - rowHeight)
+                    .lineTo(x, y)
+                    .stroke();
+
+                rowIndex++;
+            }
+
+            // Outer border
+            const totalHeight = y - tableTop;
+            doc.rect(
+                tableLeft,
+                tableTop,
+                tableRight - tableLeft,
+                totalHeight,
+            ).stroke();
+
+            doc.end();
+        } catch (err) {
+            console.error("PDF generation error:", err);
+            res.status(500).json({
+                error: true,
+                message: "Failed to generate PDF",
+            });
+        }
+    },
+);
 
 module.exports = router;

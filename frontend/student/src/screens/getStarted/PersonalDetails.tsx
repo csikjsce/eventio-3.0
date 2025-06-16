@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import Quote from '../../components/Quote';
 import { useFormContext } from 'react-hook-form';
-import { PersonalDetailsSchema } from './validation'; // Ensure this is correctly imported
+import { PersonalDetailsSchema } from './validation';
+import SignatureCanvas from 'react-signature-canvas';
 
 interface Props {
   setCurrentStep: React.Dispatch<React.SetStateAction<string>>;
@@ -15,7 +16,7 @@ export default function PersonalDetails({ setCurrentStep }: Props) {
     setValue,
   } = useFormContext<PersonalDetailsSchema>(); // Use the correct schema type
 
-  console.log(errors);
+  const signatureRef = useRef<SignatureCanvas>(null);
 
   const onSubmit = () => {
     setCurrentStep('EducationalDetails');
@@ -75,11 +76,38 @@ export default function PersonalDetails({ setCurrentStep }: Props) {
               <p className="text-red-500">{errors.gender?.message as string}</p>
             )}
           </div>
+
+          <div>
+            <p className="text-foreground">Draw your signature</p>
+            <SignatureCanvas
+              ref={signatureRef}
+              canvasProps={{
+                className: 'w-full h-32 border border-gray-300 bg-white',
+              }}
+              onEnd={() => {
+                const signatureData = signatureRef.current?.toData();
+                setValue('signature', signatureData || []);
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => {
+                signatureRef.current?.clear();
+                setValue('signature', []);
+              }}
+              className="mt-2 btn btn-primary border-2 border-mute px-2 py-1 rounded-full text-sm text-mute hover:bg-card/80 active:bg-card/60"
+            >
+              Clear
+            </button>
+            {errors.signature && (
+              <p className="text-red-500">{errors.signature?.message}</p>
+            )}
+          </div>
         </div>
         <div className="flex justify-end">
           <button
             type="submit"
-            className="btn btn-primary border-2 border-vitality p-2 rounded-full text-vitality"
+            className="btn btn-primary border-2 border-vitality px-2 py-1 rounded-full text-vitality"
           >
             Continue
           </button>
