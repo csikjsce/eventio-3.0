@@ -75,6 +75,7 @@ model User {
   updated_at         DateTime           @updatedAt
   refresh_token      String?            @unique
   branch             String?
+  signature          Json?
   Events             Events[]
   Participant        Participant[]
   participant_users  Participant_user[]

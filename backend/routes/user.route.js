@@ -27,8 +27,17 @@ router.post(protected + "/update", authCheck, (req, res) => {
         roll_number,
         year,
         college,
+        signature,
     } = req.body;
-    if (!degree || !branch || !gender || !phone_number || !year || !college) {
+    if (
+        !degree ||
+        !branch ||
+        !gender ||
+        !phone_number ||
+        !year ||
+        !college ||
+        !signature
+    ) {
         return res
             .status(400)
             .json({ error: true, message: "All fields are required" });
@@ -45,6 +54,7 @@ router.post(protected + "/update", authCheck, (req, res) => {
                 roll_number,
                 year: parseInt(year),
                 college,
+                signature,
             },
         })
         .then((user) => {
