@@ -206,6 +206,16 @@ export const newEventSchema = yup.object({
     .number()
     .min(1, 'Min Paricipants cannot be less than 1')
     .required('Min Paricipants required'),
+
+  urls: yup
+    .object()
+    .shape({
+      instagram: yup.string().url('Must be a valid Instagram URL').optional(),
+      facebook: yup.string().url('Must be a valid Facebook URL').optional(),
+      linkedin: yup.string().url('Must be a valid LinkedIn URL').optional(),
+      other: yup.string().url('Must be a valid URL').optional(),
+    })
+    .optional(),
 });
 
 export type NewEventSchema = yup.InferType<typeof newEventSchema>;

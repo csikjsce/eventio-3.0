@@ -2,6 +2,7 @@ import { Calendar, Location } from 'iconsax-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import ReportModal from './ReportModal';
+import GeoTagModal from './GeoTagModal';
 
 const tagHighlights: { [key: string]: string } = {
   Tech: 'bg-blue-500/10 border-2 border-blue-700 text-blue-700',
@@ -10,11 +11,17 @@ const tagHighlights: { [key: string]: string } = {
 
 export default function EventCard({ event }: { event: EventData }) {
   const [showReportModal, setShowReportModal] = useState(false);
+  const [showgeotagModal, setShowgeotagModal] = useState(false);
 
   const handleReportClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setShowReportModal(true);
+  };
+  const handleGeoTagClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowgeotagModal(true);
   };
 
   return (
@@ -77,27 +84,45 @@ export default function EventCard({ event }: { event: EventData }) {
         </div>
         <div className="flex flex-col items-end gap-2">
           <div className="p-4 text-foreground">{event.state}</div>
-          {event.state === "COMPLETED" && (
-            event.report_url ? (
+          {event.state === 'COMPLETED' &&
+            (event.report_url ? (
               <div className=" text-white py-1 rounded-md text-sm font-medium flex items-center">
                 Report Uploaded
               </div>
             ) : (
-              <button 
+              <button
                 onClick={handleReportClick}
                 className="bg-vitality text-white px-3 py-1 rounded-md text-sm font-medium"
               >
                 Upload Report
               </button>
-            )
-          )}
+            ))}
+          {event.state === 'COMPLETED' &&
+            (event.urls.geotagged_pictures ? (
+              <div className="text-green-500 font-fira text-sm">
+                pictures uploaded
+              </div>
+            ) : (
+              <button
+                onClick={handleGeoTagClick}
+                className="bg-vitality text-white px-1 py-2 rounded-md text-xs font-medium"
+              >
+                Upload Geotag pictures
+              </button>
+            ))}
         </div>
       </Link>
-      
+
       {showReportModal && (
-        <ReportModal 
-          eventId={event.id} 
-          onClose={() => setShowReportModal(false)} 
+        <ReportModal
+          eventId={event.id}
+          onClose={() => setShowReportModal(false)}
+        />
+      )}
+      {showgeotagModal && (
+        <GeoTagModal
+          eventId={event.id}
+          onClose={() => setShowReportModal(false)}
         />
       )}
     </>

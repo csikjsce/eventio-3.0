@@ -56,6 +56,12 @@ export default function NewEvent() {
       is_feedback_enabled: false,
       is_only_somaiya: true,
       registration_type: 'ONPLATFORM',
+      urls: {
+        instagram: '',
+        facebook: '',
+        linkedin: '',
+        other: '',
+      },
     },
   });
 
@@ -78,6 +84,12 @@ export default function NewEvent() {
   const [loading, setLoading] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
   const [success, setSuccess] = useState(false);
+  // const [urls , setUrls] = useState({
+  //   "instagram": "",
+  //   "facebook": "",
+  //   "linkedin": "",
+  //   "other": "",
+  // });
 
   const eventState = watch('state');
 
@@ -120,6 +132,18 @@ export default function NewEvent() {
             setShowParent(true);
           }
           console.log(response.data.event.min_ppt);
+
+          // Populate URLs if they exist
+          if (response.data.event.urls) {
+            setValue(
+              'urls.instagram',
+              response.data.event.urls.instagram || '',
+            );
+            setValue('urls.facebook', response.data.event.urls.facebook || '');
+            setValue('urls.linkedin', response.data.event.urls.linkedin || '');
+            setValue('urls.other', response.data.event.urls.other || '');
+          }
+
           if (response.data.event.ma_ppt > 1) {
             setValue('ma_ppt', response.data.event.ma_ppt);
             setValue('min_ppt', response.data.event.min_ppt);
@@ -647,6 +671,53 @@ export default function NewEvent() {
               placeholder="Enter brochure URL"
             />
             <p className="text-red-500">{errors.report_url?.message}</p>
+          </div>
+
+          {/* Social Media URLs Section */}
+          <div className="col-span-2">
+            <h3 className="text-lg font-semibold text-foreground mb-4">
+              Social Media Links
+            </h3>
+          </div>
+
+          {/* Instagram URL */}
+          <div>
+            <label className="block text-foreground">Instagram URL</label>
+            <input
+              className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
+              {...register('urls.instagram')}
+              placeholder="https://instagram.com/your-event"
+            />
+          </div>
+
+          {/* Facebook URL */}
+          <div>
+            <label className="block text-foreground">Facebook URL</label>
+            <input
+              className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
+              {...register('urls.facebook')}
+              placeholder="https://facebook.com/your-event"
+            />
+          </div>
+
+          {/* LinkedIn URL */}
+          <div>
+            <label className="block text-foreground">LinkedIn URL</label>
+            <input
+              className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
+              {...register('urls.linkedin')}
+              placeholder="https://linkedin.com/company/your-event"
+            />
+          </div>
+
+          {/* Other URL */}
+          <div>
+            <label className="block text-foreground">Other URL</label>
+            <input
+              className="border border-mute p-2 w-full bg-background text-foreground rounded-md"
+              {...register('urls.other')}
+              placeholder="https://your-website.com"
+            />
           </div>
 
           {/* Submit Button */}
