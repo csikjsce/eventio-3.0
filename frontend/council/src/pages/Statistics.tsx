@@ -25,7 +25,13 @@ import {
   ValueType,
   NameType,
 } from 'recharts/types/component/DefaultTooltipContent';
-import { Calendar2, Location, User, Icon as IconType, DocumentDownload } from 'iconsax-react';
+import {
+  Calendar2,
+  Location,
+  User,
+  Icon as IconType,
+  DocumentDownload,
+} from 'iconsax-react';
 
 // Define type for branch abbreviations
 type BranchKey = keyof typeof branchAbbreviations;
@@ -113,67 +119,36 @@ const CustomTooltip = ({
   return null;
 };
 
-// CSV download utility
-function downloadCSV(data: Record<string, any>[], filename: string): void {
-  const headers = Object.keys(data[0]);
-  const csvRows = [
-    headers.join(','),
-    ...data.map((row) =>
-      headers
-        .map((header) => {
-          const value = row[header];
-          return typeof value === 'string' ? `"${value.replace(/"/g, '""')}"` : value;
-        })
-        .join(','),
-    ),
-  ];
-
-  const csvContent = 'data:text/csv;charset=utf-8,' + csvRows.join('\n');
-  const encodedUri = encodeURI(csvContent);
-  const link = document.createElement('a');
-  link.setAttribute('href', encodedUri);
-  link.setAttribute('download', filename);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-}
-
-// Attendance download function
+// Attendance download function (Dean's PDF logic)
 async function downloadAttendance(eventId: string, eventName: string): Promise<void> {
   try {
     const response = await axios.request({
       baseURL: import.meta.env.VITE_APP_SERVER_ADDRESS,
-      url: `/api/v1/event/p/get-attendance/${eventId}`,
-      method: 'POST',
+      url: `/api/v1/event/p/attendance-report/${eventId}`,
+      method: 'GET',
+      responseType: 'blob', // Important: treat it as binary
       headers: {
         Authorization: 'Bearer ' + localStorage.getItem('accessToken'),
       },
     });
 
-    if (response.data && !response.data.error) {
-      const attendanceData = response.data.participants.map((participant: any) => ({
-        Name: participant.user?.name || 'N/A',
-        Email: participant.user?.email || 'N/A',
-        'Roll Number': participant.user?.roll_number || 'N/A',
-        Branch: participant.user?.branch || 'N/A',
-        Year: participant.user?.year || 'N/A',
-        College: participant.user?.college || 'N/A',
-        Attended: participant.attended ? 'Yes' : 'No',
-        Team: participant.team?.name || 'N/A',
-      }));
+    // Create a Blob from the PDF response
+    const blob = new Blob([response.data], { type: 'application/pdf' });
 
-      if (attendanceData.length > 0) {
-        downloadCSV(attendanceData, `${eventName}-attendance.csv`);
-      } else {
-        alert('No attendance data available for this event.');
-      }
-    } else {
-      console.error('Error fetching attendance data:', response.data?.message);
-      alert('Failed to download attendance data. Please try again.');
-    }
+    // Create a link to trigger download
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${eventName}-attendance.pdf`;
+    document.body.appendChild(link);
+    link.click();
+
+    // Cleanup
+    link.remove();
+    window.URL.revokeObjectURL(url);
   } catch (error) {
-    console.error('Error downloading attendance:', error);
-    alert('Failed to download attendance data. Please try again.');
+    console.error('Error downloading attendance PDF:', error);
+    alert('Failed to download attendance PDF. Please try again.');
   }
 }
 
@@ -420,28 +395,19 @@ function Statistics() {
                 <button
                   className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/80 text-white rounded-md"
                   onClick={() => {
-                    const eventsToDownload = selectedEvents.length > 0
-                      ? selectedEvents
-                      : filteredEvents;
+                    const eventsToDownload =
+                      selectedEvents.length > 0
+                        ? selectedEvents
+                        : filteredEvents;
 
                     if (eventsToDownload.length === 0) {
-                      alert('No events available to download attendance.');
+                      alert('No events selected for attendance download.');
                       return;
                     }
 
-                    if (eventsToDownload.length > 1) {
-                      if (!confirm(`Download attendance for ${eventsToDownload.length} events?`)) {
-                        return;
-                      }
-                    }
-
-                    const firstEvent = eventsToDownload[0];
-                    downloadAttendance(firstEvent.eventId, firstEvent.eventName);
-
-                    eventsToDownload.slice(1).forEach((event, index) => {
-                      setTimeout(() => {
-                        downloadAttendance(event.eventId, event.eventName);
-                      }, (index + 1) * 1000);
+                    // Download attendance PDF for each selected event
+                    eventsToDownload.forEach((event) => {
+                      downloadAttendance(event.eventId, event.eventName);
                     });
                   }}
                 >
@@ -480,7 +446,11 @@ function Statistics() {
                       }}
                       title="Download Attendance"
                     >
-                      <DocumentDownload size={16} color="white" variant="Bold" />
+                      <DocumentDownload
+                        size={16}
+                        color="white"
+                        variant="Bold"
+                      />
                     </button>
                   </div>
                 ))}
