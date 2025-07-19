@@ -48,15 +48,15 @@ router.get(
         let redirectURL;
         switch (userDB.role) {
             case "FACULTY":
-                redirectURL = process.env.FACULTY_CLIENT_URL;
+                redirectURL = process.env.CLIENT_URL + '/dean';
                 break;
             case "COUNCIL":
                 console.log("user redirecting");
                 console.log(userDB.role)
-                redirectURL = process.env.COUNCIL_CLIENT_URL;
+                redirectURL = process.env.CLIENT_URL + '/council';
                 break;
             case "PRINCIPAL":
-                redirectURL=process.env.FACULTY_CLIENT_URL;
+                redirectURL=process.env.CLIENT_URL + '/dean';
                 break;
             default:
                 redirectURL = process.env.CLIENT_URL;

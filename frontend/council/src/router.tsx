@@ -32,6 +32,9 @@ const router = createBrowserRouter(
       <Route path="logout" Component={Logout} />
     </Route>,
   ),
+  {
+    basename: '/council',
+  }
 );
 
 export default router;
