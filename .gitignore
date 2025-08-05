@@ -23,3 +23,15 @@ dist-ssr
 *.sln
 *.sw?
 .env
+.env.production
+.env.local
+
+# SSL certificates and sensitive files
+ssl/*.pem
+ssl/*.key
+ssl/*.crt
+ssl/*.csr
+*.pem
+*.key
+backend/cert/*
+!backend/cert/*.example
