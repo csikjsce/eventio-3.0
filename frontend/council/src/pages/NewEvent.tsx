@@ -670,7 +670,6 @@ export default function NewEvent() {
               // {...register('brochure_url')} Idhar brochure ka link dalna hai after db me column add hojaye
               placeholder="Enter brochure URL"
             />
-            <p className="text-red-500">{errors.report_url?.message}</p>
           </div>
 
           {/* Social Media URLs Section */}
