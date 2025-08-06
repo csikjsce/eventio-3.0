@@ -1,0 +1,63 @@
+version: "3.8"
+
+services:
+    # Backend service
+    backend:
+        build:
+            context: ./backend
+            dockerfile: Dockerfile
+        container_name: eventio-backend
+        ports:
+            - "8000:8000"
+        environment:
+            - NODE_ENV=development
+            - PORT=8000
+            - DATABASE_URL=${DATABASE_URL}
+            - DIRECT_URL=${DIRECT_URL}
+            - LOG_LEVEL=${LOG_LEVEL:-info}
+            - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+            - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+            - GOOGLE_CALLBACK_URL=/api/v1/auth/google/callback
+            - JWT_SECRET=${JWT_SECRET}
+            - CLIENT_URL=http://localhost
+            - COUNCIL_CLIENT_URL=http://localhost/council
+            - FACULTY_CLIENT_URL=http://localhost/dean
+            - SERVER_URL=http://localhost/api
+            - AT_EXPIRATION=${AT_EXPIRATION:-5h}
+            - RT_EXPIRATION=${RT_EXPIRATION:-7d}
+        volumes:
+            - ./backend/cert:/app/cert:ro
+        networks:
+            - eventio-network
+        restart: unless-stopped
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 40s
+
+    # Frontend nginx service
+    frontend:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: eventio-frontend
+        ports:
+            - "80:80"
+        depends_on:
+            backend:
+                condition: service_healthy
+        networks:
+            - eventio-network
+        restart: unless-stopped
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost/api/v1/health"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 40s
+
+networks:
+    eventio-network:
+        driver: bridge
