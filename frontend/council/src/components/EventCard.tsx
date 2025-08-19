@@ -98,7 +98,7 @@ export default function EventCard({ event }: { event: EventData }) {
               </button>
             ))}
           {event.state === 'COMPLETED' &&
-            (event.urls.geotagged_pictures ? (
+            (event?.urls?.geotagged_pictures ? (
               <div className="text-green-500 font-fira text-sm">
                 pictures uploaded
               </div>
