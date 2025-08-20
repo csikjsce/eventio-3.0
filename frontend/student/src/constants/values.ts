@@ -34,5 +34,17 @@ export const branchOptions: { [key: string]: string[] } = {
     'Electronics And Computers',
     'Electronics VLSI',
     'Robotics And Artificial Intelligence',
+  ],'2029': [
+    'Computer Engineering',
+    'Computer And Communication',
+    'Computer Science And Business Systems',
+    'Information Technology',
+    'Artificial Intelligence And Data Science',
+    'Mechanical',
+    'Electronics And Telecommunications',
+    'Electronics And Computers',
+    'Electronics VLSI',
+    'Robotics And Artificial Intelligence',
+    'Other'
   ],
 };
