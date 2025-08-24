@@ -21,7 +21,7 @@ const ScannerPage = () => {
         const response = await axios.post(
           `${import.meta.env.VITE_APP_SERVER_ADDRESS}/api/v1/event/checkin`,
           {
-            event_id: 47,
+            event_id: 60,
             participant_id: participantId,
           },
         );
