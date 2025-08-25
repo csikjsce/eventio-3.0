@@ -48,7 +48,7 @@ export default function PersonalDetails({ setCurrentStep }: Props) {
             )}
           </div>
 
-          <div>
+{/*           <div>
             <input
               {...register('roll_number')}
               className="min-h-10 w-full max-w-80 rounded-xl px-4 outline outline-1 bg-card text-foreground"
@@ -58,7 +58,7 @@ export default function PersonalDetails({ setCurrentStep }: Props) {
             {errors.roll_number && (
               <p className="text-red-500">{errors.roll_number?.message}</p>
             )}
-          </div>
+          </div> */}
 
           <div>
             <select
