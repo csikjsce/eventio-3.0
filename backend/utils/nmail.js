@@ -3,18 +3,18 @@ const nodemailer = require("nodemailer");
 async function sendMail(to, subject, teamName, teamCode) {
     // Create a transporter object using the default SMTP transport
     let transporter = nodemailer.createTransport({
-        host: 'smtp.gmail.com', // Replace with your SMTP server
-        port: 587, // Replace with your SMTP port
-        secure: false, // true for 465, false for other ports
+        host: 'smtp.gmail.com',
+        port: 587,
+        secure: false,
         auth: {
-            user: 'csi-kjsce@somaiya.edu', // Replace with your email
-            pass: 'kvcqmrmerygaouzj' // Replace with your email password
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS,
         }
     });
 
     // Setup email data
     let mailOptions = {
-        from: 'arnabbhowmik019@gmail.com', // Replace with your sender email
+        from: process.env.EMAIL_USER,
         to: to,
         subject: subject, // Subject line
         html: `

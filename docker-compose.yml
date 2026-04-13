@@ -10,7 +10,7 @@ services:
         ports:
             - "8000:8000"
         environment:
-            - NODE_ENV=development
+            - NODE_ENV=production
             - PORT=8000
             - DATABASE_URL=${DATABASE_URL}
             - DIRECT_URL=${DIRECT_URL}
@@ -19,12 +19,16 @@ services:
             - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
             - GOOGLE_CALLBACK_URL=/api/v1/auth/google/callback
             - JWT_SECRET=${JWT_SECRET}
-            - CLIENT_URL=http://localhost
-            - COUNCIL_CLIENT_URL=http://localhost/council
-            - FACULTY_CLIENT_URL=http://localhost/dean
-            - SERVER_URL=http://localhost/api
+            - SESSION_SECRET=${SESSION_SECRET}
+            - CLIENT_URL=${CLIENT_URL}
+            - COUNCIL_CLIENT_URL=${COUNCIL_CLIENT_URL}
+            - FACULTY_CLIENT_URL=${FACULTY_CLIENT_URL}
+            - SERVER_URL=${SERVER_URL}
             - AT_EXPIRATION=${AT_EXPIRATION:-5h}
             - RT_EXPIRATION=${RT_EXPIRATION:-7d}
+            - FRONTEND_REDIRECT_PATH=${FRONTEND_REDIRECT_PATH:-/login}
+            - EMAIL_USER=${EMAIL_USER}
+            - EMAIL_PASS=${EMAIL_PASS}
         volumes:
             - ./backend/cert:/app/cert:ro
         networks:
@@ -42,6 +46,8 @@ services:
         build:
             context: .
             dockerfile: Dockerfile
+            args:
+                - VITE_APP_SERVER_ADDRESS=${VITE_APP_SERVER_ADDRESS:-}
         container_name: eventio-frontend
         ports:
             - "80:80"

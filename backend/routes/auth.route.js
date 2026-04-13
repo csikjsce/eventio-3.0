@@ -51,8 +51,6 @@ router.get(
                 redirectURL = process.env.CLIENT_URL + '/dean';
                 break;
             case "COUNCIL":
-                console.log("user redirecting");
-                console.log(userDB.role)
                 redirectURL = process.env.CLIENT_URL + '/council';
                 break;
             case "PRINCIPAL":

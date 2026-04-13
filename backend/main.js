@@ -1,6 +1,5 @@
 require("dotenv").config();
 const express = require("express");
-const https = require("https");
 const app = express();
 const cors = require("cors");
 const httpLogger = require("./utils/logger_middleware");
@@ -39,15 +38,10 @@ passport.use(
                 try {
 
                     try{
-                        console.log("ADMIN DHUNDH RHA HU");
-                        
                         let admin = await prisma.admins.findUnique({
                             where: { email: email },
                         });
-                        if(admin){
-                            console.log("ADMIN MIL GYA "); 
-                        }
-                        
+
                             let User = await prisma.user.create({
                                 data: {
                                     google_id: profile.id,
@@ -102,14 +96,18 @@ passport.deserializeUser(async (user, done) => {
 //middlewares
 app.use(passport.initialize());
 app.use(
-    session({ secret: "secretkey", resave: false, saveUninitialized: true })
+    session({ secret: process.env.SESSION_SECRET, resave: false, saveUninitialized: true })
 );
 app.use(passport.session());
 app.use(httpLogger);
 app.use(express.json());
 app.use(
     cors({
-        origin: "*",
+        origin: [
+            process.env.CLIENT_URL,
+            process.env.COUNCIL_CLIENT_URL,
+            process.env.FACULTY_CLIENT_URL,
+        ],
         credentials: true,
     })
 );
@@ -130,17 +128,5 @@ app.use("/api/" + version + "/event", eventRoute);
 app.use("/api/" + version + "/council", councilRoute);
 app.use("/api/" + version + "/mailer", mailerRoute);
 
-if (process.env.NODE_ENV !== "production") {
-    const port = process.env.PORT || 8000;
-    app.listen(port, () => logger.debug(`Server started on port ${port}`));
-} else {
-    const fs = require("fs");
-    const httpsOptions = {
-        key: fs.readFileSync("./cert/privkey.pem"),
-        cert: fs.readFileSync("./cert/fullchain.pem"),
-    };
-
-    https.createServer(httpsOptions, app).listen(443, () => {
-        logger.info("Server started on https://localhost:443");
-    });
-}
+const port = process.env.PORT || 8000;
+app.listen(port, () => logger.info(`Server started on port ${port}`));
