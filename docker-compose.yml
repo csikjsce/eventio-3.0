@@ -3,9 +3,10 @@ version: "3.8"
 services:
     # Backend service
     backend:
+        image: ghcr.io/csikjsce/eventio-backend:latest
         build:
             context: ./backend
-            dockerfile: Dockerfile
+            dockerfile: dockerfile
         container_name: eventio-backend
         ports:
             - "8000:8000"
@@ -43,6 +44,7 @@ services:
 
     # Frontend nginx service
     frontend:
+        image: ghcr.io/csikjsce/eventio-frontend:latest
         build:
             context: .
             dockerfile: Dockerfile
@@ -63,6 +65,18 @@ services:
             timeout: 10s
             retries: 3
             start_period: 40s
+
+    # Watchtower — auto-pulls new images from GHCR and restarts containers
+    watchtower:
+        image: containrrr/watchtower
+        container_name: eventio-watchtower
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+        environment:
+            - WATCHTOWER_POLL_INTERVAL=300
+            - WATCHTOWER_CLEANUP=true
+            - WATCHTOWER_INCLUDE_RESTARTING=true
+        restart: unless-stopped
 
 networks:
     eventio-network:
