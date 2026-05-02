@@ -8,11 +8,16 @@ import Protected from './layouts/Protected';
 import SidebarLayout from './layouts/SidebarLayout';
 
 import Home from './pages/Home';
-import Statistics from './pages/Statistics'
+import Statistics from './pages/Statistics';
 import EventDetails from './pages/EventDetails';
 import NewEvent from './pages/NewEvent';
 import Login from './pages/Login';
 import Logout from './pages/Logout';
+import Participants from './pages/Participants';
+import Attendance from './pages/Attendance';
+import ApprovalTracker from './pages/ApprovalTracker';
+import Announcements from './pages/Announcements';
+import Budget from './pages/Budget';
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -22,6 +27,11 @@ const router = createBrowserRouter(
           <Route index Component={Home} />
           <Route path="statistics" Component={Statistics} />
           <Route path="new-event" Component={NewEvent} />
+          <Route path="participants" Component={Participants} />
+          <Route path="attendance" Component={Attendance} />
+          <Route path="approvals" Component={ApprovalTracker} />
+          <Route path="announcements" Component={Announcements} />
+          <Route path="budget" Component={Budget} />
           <Route path="event-details/:id">
             <Route index Component={EventDetails} />
             <Route path="edit" Component={NewEvent} />
