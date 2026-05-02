@@ -270,7 +270,6 @@ export default function Attendance() {
                           allowMultiple={false}
                           scanDelay={800}
                           styles={{ container: { width: '100%', height: '100%' } }}
-                          components={{ audio: false }}
                         />
                         {/* Scan overlay frame */}
                         <div className="absolute inset-0 pointer-events-none flex items-center justify-center">

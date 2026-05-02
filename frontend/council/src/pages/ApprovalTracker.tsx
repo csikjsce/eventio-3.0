@@ -42,7 +42,6 @@ function StageTracker({ current }: { current: ApprovalStage }) {
       {STAGES.map((s, i) => {
         const done   = !rejected && i < idx;
         const active = !rejected && i === idx;
-        const future = !done && !active;
         return (
           <div key={s} className="flex items-center">
             <div className={`flex flex-col items-center gap-1 min-w-[72px]`}>

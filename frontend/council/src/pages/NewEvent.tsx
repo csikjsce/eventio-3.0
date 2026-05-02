@@ -120,7 +120,7 @@ export default function NewEvent() {
 
     function applyEvent(ev: EventData) {
       setEvent(ev);
-      methods.reset(ev);
+      methods.reset(ev as Parameters<typeof methods.reset>[0]);
       setStartDate(dateToString(new Date((ev as unknown as { dates: string[] }).dates[0])));
       const evDates = (ev as unknown as { dates: string[] }).dates;
       if (evDates.length > 1) {

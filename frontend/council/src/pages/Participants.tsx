@@ -1,7 +1,7 @@
 import { useState, useContext, useMemo } from 'react';
 import Select from '../components/Select';
 import EventsDataContext from '../contexts/EventsDataContext';
-import { Search, Download, Users, Filter, ArrowLeft, ChevronRight, CalendarDays, MapPin } from 'lucide-react';
+import { Search, Download, Users, ArrowLeft, ChevronRight, CalendarDays, MapPin } from 'lucide-react';
 import { DocumentDownload } from 'iconsax-react';
 
 // ── Mock participant data ──────────────────────────────────────────────────────

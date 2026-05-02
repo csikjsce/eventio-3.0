@@ -4,7 +4,7 @@ import {
   ArrowLeft, CheckCircle2, Clock, AlertCircle,
   ChevronRight, MessageSquare, Send, FileText, Lock,
   Building2, GraduationCap, Users, ShieldCheck, Info,
-  Download, Upload, Paperclip, X, ExternalLink,
+  Download, Upload, Paperclip, X,
 } from 'lucide-react';
 import EventsDataContext from '../contexts/EventsDataContext';
 

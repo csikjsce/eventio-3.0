@@ -4,7 +4,7 @@ import EventsDataContext from '../contexts/EventsDataContext';
 import axios from 'axios';
 import Select from '../components/Select';
 import {
-  BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area,
+  BarChart, Bar, PieChart, Pie, Cell,
   ResponsiveContainer, Tooltip, Legend,
   XAxis, YAxis,
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
@@ -172,7 +172,7 @@ interface TrendBadge { direction: 'up' | 'down' | 'neutral'; text: string }
 
 function StatCard({ label, value, sub, accent, trend, icon: Icon }: {
   label: string; value: string | number; sub?: string; accent?: boolean; trend?: TrendBadge;
-  icon?: React.ComponentType<{ size?: number; className?: string }>;
+  icon?: React.ComponentType<{ size?: number | string; className?: string }>;
 }) {
   const isNum = typeof value === 'number';
   const animated = useCountUp(isNum ? (value as number) : 0);
@@ -222,24 +222,6 @@ function ChartCard({ title, children, className = '', actions }: {
   );
 }
 
-// ── Small segmented control ───────────────────────────────────────────────────
-function SegControl({ options, value, onChange }: {
-  options: { id: string; label: string }[];
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  return (
-    <div className="flex gap-0.5 bg-[#1c1c1e] border border-white/[0.06] rounded-lg p-0.5">
-      {options.map(o => (
-        <button key={o.id} type="button" onClick={() => onChange(o.id)}
-          className={`px-2.5 py-1 text-[11px] font-fira rounded-md transition-all ${value === o.id ? 'bg-red-600/80 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}>
-          {o.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
 // ── Types ─────────────────────────────────────────────────────────────────────
 type Tab = 'overview' | 'events' | 'comparison';
 type SortOrder = 'participants-desc' | 'participants-asc' | 'date-desc' | 'date-asc';
@@ -250,10 +232,8 @@ export default function Statistics() {
   const [selectedEvents, setSelectedEvents] = useState<StatsData[]>([]);
   const [drillEvent, setDrillEvent] = useState<StatsData | null>(null);
   const [statsData, setStatsData] = useState<StatsData[]>(MOCK_STATS);
-  const [branchFilter, setBranchFilter] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState<SortOrder>('participants-desc');
   const [search, setSearch] = useState('');
-  const [branchChartType, setBranchChartType] = useState<'pie' | 'bar'>('pie');
 
   const { userData } = useContext(UserDataContext);
   const { eventsList } = useContext(EventsDataContext);
@@ -284,28 +264,6 @@ export default function Statistics() {
     const agg: Record<string, number> = {};
     statsData.forEach(e => Object.entries(e.genderStats).forEach(([g, c]) => { agg[g] = (agg[g] || 0) + c; }));
     return Object.entries(agg).map(([name, value]) => ({ name, value }));
-  }, [statsData]);
-
-  const trendData = useMemo(() =>
-    [...statsData]
-      .sort((a, b) => new Date(a.dates[0]).getTime() - new Date(b.dates[0]).getTime())
-      .map(e => ({
-        name: e.eventName,
-        date: new Date(e.dates[0]).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' }),
-        participants: e.totalParticipants,
-      })),
-  [statsData]);
-
-  const monthlyData = useMemo(() => {
-    const months: Record<string, { label: string; count: number; ts: number }> = {};
-    statsData.forEach(e => {
-      const d = new Date(e.dates[0]);
-      const key = `${d.getFullYear()}-${String(d.getMonth()).padStart(2, '0')}`;
-      const label = d.toLocaleDateString('en-IN', { month: 'short', year: '2-digit' });
-      if (!months[key]) months[key] = { label, count: 0, ts: d.getTime() };
-      months[key].count += e.totalParticipants;
-    });
-    return Object.values(months).sort((a, b) => a.ts - b.ts).map(({ label, count }) => ({ month: label, count }));
   }, [statsData]);
 
   const participantsBarData = useMemo(() =>
@@ -347,19 +305,6 @@ export default function Statistics() {
     const diversityScore = sum > 0 && maxEntropy > 0 ? Math.round((entropy / maxEntropy) * 100) : 0;
     return { total, avg, best, femalePct, totalFemale, completedCount, growth, diversityScore, uniqueBranches: allBranchData.length };
   }, [statsData, eventsList, allBranchData]);
-
-  // Branch filter — which events contain that branch
-  const branchFilteredEvents = useMemo(() => {
-    if (!branchFilter) return [];
-    return statsData
-      .filter(e => Object.entries(e.branchStats).some(([b]) => (BRANCH_ABBR[b as BranchKey] || b) === branchFilter))
-      .map(e => ({
-        event: e,
-        count: Object.entries(e.branchStats)
-          .find(([b]) => (BRANCH_ABBR[b as BranchKey] || b) === branchFilter)?.[1] || 0,
-      }))
-      .sort((a, b) => b.count - a.count);
-  }, [branchFilter, statsData]);
 
   // Sorted + filtered events for Per-Event tab
   const filteredSortedEvents = useMemo(() => {
