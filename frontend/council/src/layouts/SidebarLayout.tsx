@@ -27,9 +27,9 @@ export default function SidebarLayout() {
   }
 
   return (
-    <div className="flex">
+    <div className="flex min-h-screen bg-[#080808]">
       <Sidebar />
-      <div className="w-screen pl-[16.66vw]">
+      <div className="flex-1 pl-64 min-h-screen">
         <Outlet />
       </div>
     </div>
