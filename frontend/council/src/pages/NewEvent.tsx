@@ -80,7 +80,7 @@ export default function NewEvent() {
     },
   });
 
-  const { register, handleSubmit, setValue, watch, formState: { errors } } = methods;
+  const { register, handleSubmit, setValue, watch, trigger, formState: { errors } } = methods;
 
   const [startDate, setStartDate] = useState(dateToString(new Date()));
   const [endDate, setEndDate] = useState(dateToString(new Date()));
@@ -92,6 +92,22 @@ export default function NewEvent() {
   const [loading, setLoading] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  // Fields to validate when advancing from each step
+  type FormKey = Parameters<typeof trigger>[0];
+  const STEP_FIELDS: Record<number, FormKey[]> = {
+    1: ['name', 'tag_line', 'description', 'long_description', 'event_page_image_url', 'banner_url'],
+    2: ['event_type', 'dates', 'venue', 'online_event_link'],
+    3: ['fee', 'ticket_count', 'external_registration_link', 'min_ppt', 'ma_ppt'],
+    4: [],
+    5: [],
+  };
+
+  async function goNext() {
+    const fields = STEP_FIELDS[step] ?? [];
+    const valid = fields.length === 0 || await trigger(fields as Parameters<typeof trigger>[0]);
+    if (valid) setStep(s => s + 1);
+  }
 
   const eventState = watch('state');
   const eventType = watch('event_type');
@@ -232,7 +248,7 @@ export default function NewEvent() {
               Cancel
             </button>
             {step < totalSteps && (
-              <button type="button" onClick={() => setStep((s) => s + 1)} className="px-5 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-fira font-semibold rounded-lg transition-colors">
+              <button type="button" onClick={goNext} className="px-5 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-fira font-semibold rounded-lg transition-colors">
                 Continue →
               </button>
             )}
@@ -253,7 +269,10 @@ export default function NewEvent() {
                 const done = step > s.id;
                 const active = step === s.id;
                 return (
-                  <button key={s.id} type="button" onClick={() => setStep(s.id)}
+                  <button key={s.id} type="button" onClick={async () => {
+                      // Allow jumping back freely; jumping forward validates current step
+                      if (s.id > step) { await goNext(); } else { setStep(s.id); }
+                    }}
                     className={`flex items-start gap-3 px-3 py-3 rounded-lg text-left transition-all ${active ? 'bg-red-600/10 border border-red-600/20' : 'hover:bg-white/5 border border-transparent'}`}>
                     <div className={`w-6 h-6 rounded-full shrink-0 flex items-center justify-center text-xs font-fira font-semibold mt-0.5 ${done ? 'bg-red-600 text-white' : active ? 'bg-red-600/20 border border-red-600/50 text-red-400' : 'bg-zinc-800 text-zinc-500 border border-white/5'}`}>
                       {done ? '✓' : s.id}
@@ -749,7 +768,7 @@ export default function NewEvent() {
                   ← Back
                 </button>
                 {step < totalSteps ? (
-                  <button type="button" onClick={() => setStep((s) => s + 1)}
+                  <button type="button" onClick={goNext}
                     className="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-fira font-semibold rounded-lg transition-colors">
                     Continue →
                   </button>
