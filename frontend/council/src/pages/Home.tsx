@@ -2,9 +2,10 @@ import { useContext, useEffect, useState } from 'react';
 import UserDataContext from '../contexts/UserDataContext';
 import EventsDataContext from '../contexts/EventsDataContext';
 import EventCard from '../components/EventCard';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Calendar from '../components/calendar/Calendar.tsx';
 import ScannerPage from './scanner';
+import { LayoutList, CalendarDays, Copy } from 'lucide-react';
 
 export default function Home() {
   const { userData } = useContext(UserDataContext);
@@ -12,8 +13,14 @@ export default function Home() {
   const events = eventsList.filter(
     (event) => event.organizer_id === Number(userData?.id),
   );
+  const navigate = useNavigate();
 
   const [isMobile, setIsMobile] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+
+  function duplicateEvent(ev: EventData) {
+    navigate('/new-event', { state: { duplicate: ev } });
+  }
 
   useEffect(() => {
     const handleResize = () => {
@@ -98,27 +105,47 @@ export default function Home() {
         ))}
       </div>
 
-      {/* Calendar */}
-      <div className="mb-8">
-        <Calendar />
-      </div>
-
       {/* Events list */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-white text-xl font-marcellus">Your Events</h2>
-        <span className="text-zinc-500 text-xs font-fira">{events.length} event{events.length !== 1 ? 's' : ''}</span>
-      </div>
-      <div className="flex flex-col gap-3">
-        {events.length === 0 && (
-          <div className="bg-[#1c1c1e] border border-white/5 rounded-xl p-12 text-center">
-            <p className="text-zinc-500 font-fira text-sm">No events yet.</p>
-            <Link to="new-event" className="text-red-500 text-sm font-fira hover:underline mt-2 inline-block">Create your first event →</Link>
+        <div className="flex items-center gap-3">
+          <span className="text-zinc-500 text-xs font-fira">{events.length} event{events.length !== 1 ? 's' : ''}</span>
+          <div className="flex gap-0.5 bg-[#1c1c1e] border border-white/[0.06] rounded-lg p-1">
+            <button type="button" onClick={() => setViewMode('list')}
+              className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-red-600/80 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}>
+              <LayoutList size={14} />
+            </button>
+            <button type="button" onClick={() => setViewMode('calendar')}
+              className={`p-1.5 rounded-md transition-all ${viewMode === 'calendar' ? 'bg-red-600/80 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}>
+              <CalendarDays size={14} />
+            </button>
           </div>
-        )}
-        {events.map((event) => (
-          <EventCard key={event.id} event={event} />
-        ))}
+        </div>
       </div>
+      {viewMode === 'calendar' && <Calendar />}
+      {viewMode === 'list' && (
+        <div className="flex flex-col gap-3">
+          {events.length === 0 && (
+            <div className="bg-[#1c1c1e] border border-white/5 rounded-xl p-12 text-center">
+              <p className="text-zinc-500 font-fira text-sm">No events yet.</p>
+              <Link to="new-event" className="text-red-500 text-sm font-fira hover:underline mt-2 inline-block">Create your first event →</Link>
+            </div>
+          )}
+          {events.map((event) => (
+            <div key={event.id} className="relative group">
+              <EventCard event={event} />
+              <button
+                type="button"
+                onClick={() => duplicateEvent(event)}
+                title="Duplicate event"
+                className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 px-2.5 py-1.5 bg-[#252527] border border-white/10 hover:border-red-600/40 text-zinc-400 hover:text-white text-[11px] font-fira rounded-lg z-10"
+              >
+                <Copy size={11} /> Duplicate
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

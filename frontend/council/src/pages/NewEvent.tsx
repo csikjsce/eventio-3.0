@@ -5,7 +5,7 @@ import { useEffect, useState, useContext } from 'react';
 import axios from 'axios';
 import Spinner from '../components/Spinner';
 import Loader from '../components/Loader';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import UserDataContext from '../contexts/UserDataContext';
 import EventsDataContext from '../contexts/EventsDataContext';
 import { Trophy, Wrench, Mic2, Monitor, Sparkles } from 'lucide-react';
@@ -58,6 +58,7 @@ const STEPS = [
 export default function NewEvent() {
   const navigate = useNavigate();
   const { id } = useParams();
+  const location = useLocation();
   const [event, setEvent] = useState<EventData | null>(null);
   const [step, setStep] = useState(1);
 
@@ -99,37 +100,69 @@ export default function NewEvent() {
   const moreDetailsEnabled = watch('more_details_enabled') ?? false;
   const submissionEnabled = watch('is_submission_enabled') ?? false;
 
+  // Pre-fill form from duplicated event (passed via navigate state)
+  useEffect(() => {
+    const dup = (location.state as { duplicate?: EventData })?.duplicate;
+    if (!dup || id) return;
+    const { id: _id, created_at: _ca, organizer_id: _oi, state: _st, ...fields } = dup as Record<string, unknown> & EventData;
+    void _id; void _ca; void _oi; void _st;
+    methods.reset({ ...(fields as Partial<NewEventSchema>), name: `${dup.name} (Copy)`, state: 'DRAFT' });
+    setStartDate(dateToString(new Date((dup as EventData & { dates?: string[] }).dates?.[0] ?? new Date())));
+    if ((dup as EventData & { dates?: string[] }).dates && (dup as EventData & { dates?: string[] }).dates!.length > 1) {
+      const dts = (dup as EventData & { dates?: string[] }).dates!;
+      setEndDate(dateToString(new Date(dts[dts.length - 1])));
+      setIsMultipleDates(true);
+    }
+  }, []);
+
   useEffect(() => {
     if (!id) return;
+
+    function applyEvent(ev: EventData) {
+      setEvent(ev);
+      methods.reset(ev);
+      setStartDate(dateToString(new Date((ev as unknown as { dates: string[] }).dates[0])));
+      const evDates = (ev as unknown as { dates: string[] }).dates;
+      if (evDates.length > 1) {
+        setEndDate(dateToString(new Date(evDates[evDates.length - 1])));
+        setIsMultipleDates(true);
+      }
+      if ((ev as unknown as { parent_id?: number }).parent_id) {
+        setParentId((ev as unknown as { parent_id: number }).parent_id);
+        setShowParent(true);
+      }
+      if (ev.urls) {
+        setValue('urls.instagram', (ev.urls as Record<string,string>).instagram || '');
+        setValue('urls.facebook',  (ev.urls as Record<string,string>).facebook  || '');
+        setValue('urls.linkedin',  (ev.urls as Record<string,string>).linkedin  || '');
+        setValue('urls.other',     (ev.urls as Record<string,string>).other     || '');
+      }
+      if (ev.ma_ppt > 1) {
+        setValue('ma_ppt', ev.ma_ppt);
+        setValue('min_ppt', ev.min_ppt);
+        setIsTeamEvent(true);
+      } else {
+        setValue('ma_ppt', 1);
+        setValue('min_ppt', 1);
+      }
+      if ((ev as unknown as { female_requirement?: unknown }).female_requirement) setHasFemaleQuota(true);
+      setValue('is_ticket_feature_enabled', ev.is_ticket_feature_enabled);
+    }
+
     axios.request({
       baseURL: import.meta.env.VITE_APP_SERVER_ADDRESS,
       url: '/api/v1' + `/event/p/get/${id}`,
       method: 'POST',
       headers: { Authorization: 'Bearer ' + localStorage.getItem('accessToken') },
     }).then((response) => {
-      if (!response.data.event.organizer_id || !userData?.id ||
-        response.data.event.organizer_id !== parseInt(`${userData?.id}`)) navigate('/');
-      setEvent(response.data.event);
-      methods.reset(response.data.event);
-      setStartDate(dateToString(new Date(response.data.event.dates[0])));
-      if (response.data.event.dates.length > 1) {
-        setEndDate(dateToString(new Date(response.data.event.dates[response.data.event.dates.length - 1])));
-        setIsMultipleDates(true);
-      }
-      if (response.data.event.parent_id) { setParentId(response.data.event.parent_id); setShowParent(true); }
-      if (response.data.event.urls) {
-        setValue('urls.instagram', response.data.event.urls.instagram || '');
-        setValue('urls.facebook', response.data.event.urls.facebook || '');
-        setValue('urls.linkedin', response.data.event.urls.linkedin || '');
-        setValue('urls.other', response.data.event.urls.other || '');
-      }
-      if (response.data.event.ma_ppt > 1) {
-        setValue('ma_ppt', response.data.event.ma_ppt);
-        setValue('min_ppt', response.data.event.min_ppt);
-        setIsTeamEvent(true);
-      } else { setValue('ma_ppt', 1); setValue('min_ppt', 1); }
-      if (response.data.event.female_requirement) setHasFemaleQuota(true);
-      setValue('is_ticket_feature_enabled', response.data.event.is_ticket_feature_enabled);
+      const ev = response.data.event;
+      if (!ev.organizer_id || !userData?.id ||
+        ev.organizer_id !== parseInt(`${userData?.id}`)) navigate('/');
+      applyEvent(ev);
+    }).catch(() => {
+      // Fallback: load from context (mock data)
+      const found = eventsList.find(e => String(e.id) === String(id));
+      if (found) applyEvent(found);
     });
   }, [id]);
 

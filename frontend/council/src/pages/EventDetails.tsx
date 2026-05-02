@@ -12,6 +12,7 @@ import {
 import { Icon as IconType } from 'iconsax-react';
 import Loader from '../components/Loader';
 import UserDataContext from '../contexts/UserDataContext';
+import EventsDataContext from '../contexts/EventsDataContext';
 import Stats from '../components/Stats';
 
 function IconText({
@@ -50,6 +51,7 @@ function Passage({
 export default function EventDetails() {
   const [event, setEvent] = useState<EventData | null>(null);
   const { userData } = useContext(UserDataContext);
+  const { eventsList } = useContext(EventsDataContext);
   const [loading, setLoading] = useState(true);
   const { id } = useParams();
   const navigate = useNavigate();
@@ -66,21 +68,32 @@ export default function EventDetails() {
           },
         });
         setEvent(res.data.event);
-        setLoading(false);
-      } catch (error) {
-        console.error('Error fetching event:', error);
+      } catch {
+        // fallback: look up in local mock/context data
+        const found = eventsList.find(e => String(e.id) === String(id));
+        if (found) setEvent(found);
+      } finally {
         setLoading(false);
       }
     };
     if (id) fetchEvent(id);
-  }, [id, navigate]);
+  }, [id, navigate, eventsList]);
 
   if (!id) {
     return <Navigate to="/" />;
   }
 
-  if (loading && event == null) {
+  if (loading) {
     return <Loader />;
+  }
+
+  if (!event) {
+    return (
+      <div className="min-h-screen bg-[#121214] flex flex-col items-center justify-center gap-4">
+        <p className="text-zinc-400 font-fira text-lg">Event not found.</p>
+        <Link to="/" className="text-red-500 font-fira text-sm hover:underline">← Back to Home</Link>
+      </div>
+    );
   }
 
   return (
