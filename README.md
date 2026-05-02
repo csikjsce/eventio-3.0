@@ -1,4 +1,4 @@
-# Eventio 3.0 
+# Eventio 3.0 is here
 
 Event management system for college events.
 
