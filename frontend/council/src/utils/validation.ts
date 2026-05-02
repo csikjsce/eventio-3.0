@@ -216,6 +216,23 @@ export const newEventSchema = yup.object({
       other: yup.string().url('Must be a valid URL').optional(),
     })
     .optional(),
+
+  female_requirement: yup
+    .number()
+    .min(0, 'Cannot be negative')
+    .nullable()
+    .notRequired(),
+
+  more_details_enabled: yup.boolean().default(false).notRequired(),
+
+  is_submission_enabled: yup.boolean().default(false).notRequired(),
+
+  report_url: yup
+    .string()
+    .trim()
+    .url('Must be a valid URL')
+    .nullable()
+    .notRequired(),
 });
 
 export type NewEventSchema = yup.InferType<typeof newEventSchema>;
