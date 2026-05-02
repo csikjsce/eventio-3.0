@@ -2,6 +2,7 @@ import { useMemo, useState, useContext, useEffect, useRef } from 'react';
 import UserDataContext from '../contexts/UserDataContext';
 import EventsDataContext from '../contexts/EventsDataContext';
 import axios from 'axios';
+import Select from '../components/Select';
 import {
   BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area,
   ResponsiveContainer, Tooltip, Legend,
@@ -651,13 +652,17 @@ export default function Statistics() {
                     className="bg-[#1c1c1e] border border-white/[0.06] focus:border-red-600/40 rounded-lg pl-8 pr-3 py-2 text-sm font-fira text-white placeholder-zinc-600 outline-none transition-colors w-56" />
                 </div>
                 {/* Sort */}
-                <select value={sortOrder} onChange={e => setSortOrder(e.target.value as SortOrder)}
-                  className="bg-[#1c1c1e] border border-white/[0.06] rounded-lg px-3 py-2 text-sm font-fira text-zinc-300 outline-none cursor-pointer">
-                  <option value="participants-desc">Most Participants</option>
-                  <option value="participants-asc">Fewest Participants</option>
-                  <option value="date-desc">Latest First</option>
-                  <option value="date-asc">Earliest First</option>
-                </select>
+                <Select
+                  value={sortOrder}
+                  onChange={v => setSortOrder(v as SortOrder)}
+                  options={[
+                    { value: 'participants-desc', label: 'Most Participants' },
+                    { value: 'participants-asc',  label: 'Fewest Participants' },
+                    { value: 'date-desc',         label: 'Latest First' },
+                    { value: 'date-asc',          label: 'Earliest First' },
+                  ]}
+                  size="sm"
+                />
                 <span className="text-zinc-600 text-xs font-fira ml-auto">{filteredSortedEvents.length} event{filteredSortedEvents.length !== 1 ? 's' : ''}</span>
               </div>
 
