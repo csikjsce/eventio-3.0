@@ -10,7 +10,7 @@ const routes = [
 
 export default function Sidebar() {
   return (
-    <div className="fixed h-screen w-64 flex flex-col bg-[#0a0a0a] border-r border-white/5">
+    <div className="fixed h-screen w-64 flex flex-col bg-[#181818] border-r border-white/[0.07]">
       {/* Logo */}
       <div className="flex items-center gap-3 px-6 py-6 border-b border-white/5">
         <img src={EventioLogo} alt="Eventio Logo" className="h-8 w-8" />

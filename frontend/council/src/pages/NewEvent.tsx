@@ -8,6 +8,7 @@ import Loader from '../components/Loader';
 import { useNavigate, useParams } from 'react-router-dom';
 import UserDataContext from '../contexts/UserDataContext';
 import EventsDataContext from '../contexts/EventsDataContext';
+import { Trophy, Wrench, Mic2, Monitor, Sparkles } from 'lucide-react';
 
 function dateToString(date: Date) {
   const formatted = date.toLocaleString('en-CA', {
@@ -17,13 +18,13 @@ function dateToString(date: Date) {
   return formatted.replace(', ', 'T').slice(0, 16);
 }
 
-const INPUT = 'w-full bg-[#0d0d0d] border border-white/10 focus:border-red-600/50 rounded-lg px-3 py-2.5 text-white text-sm font-fira outline-none transition-colors placeholder:text-zinc-600';
+const INPUT = 'w-full bg-[#1c1c1e] border border-white/10 focus:border-red-600/50 rounded-lg px-3 py-2.5 text-white text-sm font-fira outline-none transition-colors placeholder:text-zinc-600';
 const LABEL = 'block text-zinc-400 text-xs font-fira font-medium uppercase tracking-wider mb-1';
 const ERROR = 'text-red-500 text-xs font-fira mt-0.5';
 const FIELD = 'flex flex-col';
 
 // Section container for grouping related controls inside a step
-const SECTION = 'p-5 bg-[#0d0d0d] border border-white/[0.06] rounded-xl space-y-4';
+const SECTION = 'p-5 bg-[#1c1c1e] border border-white/[0.06] rounded-xl space-y-4';
 
 function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
   return (
@@ -185,10 +186,10 @@ export default function NewEvent() {
 
   return (
     <FormProvider {...methods}>
-      <div className="min-h-screen bg-[#080808] flex flex-col">
+      <div className="min-h-screen bg-[#121214] flex flex-col">
 
         {/* Top bar */}
-        <div className="flex items-center justify-between px-8 py-4 border-b border-white/5 bg-[#0a0a0a]">
+        <div className="flex items-center justify-between px-8 py-4 border-b border-white/5 bg-[#181818]">
           <div>
             <h1 className="text-white font-marcellus text-xl">{id ? 'Edit Event' : 'New Event'}</h1>
             <p className="text-zinc-500 text-xs font-fira mt-0.5">Step {step} of {totalSteps} — {STEPS[step - 1].label}</p>
@@ -213,7 +214,7 @@ export default function NewEvent() {
 
         <div className="flex flex-1 overflow-hidden">
           {/* Step sidebar */}
-          <div className="w-56 shrink-0 bg-[#0a0a0a] border-r border-white/5 py-6 px-4">
+          <div className="w-56 shrink-0 bg-[#181818] border-r border-white/5 py-6 px-4">
             <div className="flex flex-col gap-1">
               {STEPS.map((s) => {
                 const done = step > s.id;
@@ -299,7 +300,7 @@ export default function NewEvent() {
                         { val: true, label: 'Sub Event', desc: 'Nested under a parent event (e.g. a round or workshop within a fest)' },
                       ].map((opt) => (
                         <button key={String(opt.val)} type="button" onClick={() => setShowParent(opt.val)}
-                          className={`flex items-start gap-3 p-3 rounded-lg border text-left transition-all ${showParent === opt.val ? 'border-red-600/40 bg-red-600/10' : 'border-white/[0.06] bg-[#0d0d0d] hover:border-white/15'}`}>
+                          className={`flex items-start gap-3 p-3 rounded-lg border text-left transition-all ${showParent === opt.val ? 'border-red-600/40 bg-red-600/10' : 'border-white/[0.06] bg-[#1c1c1e] hover:border-white/15'}`}>
                           <div className={`w-4 h-4 rounded-full border-2 mt-0.5 shrink-0 flex items-center justify-center ${showParent === opt.val ? 'border-red-500' : 'border-zinc-600'}`}>
                             {showParent === opt.val && <div className="w-2 h-2 rounded-full bg-red-500" />}
                           </div>
@@ -338,17 +339,17 @@ export default function NewEvent() {
                     <label className={LABEL}>Event Type <span className="text-red-500">*</span></label>
                     <div className="grid grid-cols-3 gap-3 mt-1">
                       {[
-                        { val: 'COMPETETION', label: 'Competition', icon: '🏆' },
-                        { val: 'WORKSHOP',    label: 'Workshop',    icon: '🔧' },
-                        { val: 'SPEAKER_SESSION', label: 'Speaker Session', icon: '🎤' },
-                        { val: 'ONLINE',      label: 'Online',      icon: '💻' },
-                        { val: 'FEST',        label: 'Fest',        icon: '🎪' },
+                        { val: 'COMPETETION', label: 'Competition', Icon: Trophy },
+                        { val: 'WORKSHOP',    label: 'Workshop',    Icon: Wrench },
+                        { val: 'SPEAKER_SESSION', label: 'Speaker Session', Icon: Mic2 },
+                        { val: 'ONLINE',      label: 'Online',      Icon: Monitor },
+                        { val: 'FEST',        label: 'Fest',        Icon: Sparkles },
                       ].map((opt) => {
                         const cur = watch('event_type');
                         return (
                           <button key={opt.val} type="button" onClick={() => setValue('event_type', opt.val as NewEventSchema['event_type'])}
-                            className={`py-3 px-3 rounded-lg border text-sm font-fira text-center transition-all flex flex-col items-center gap-1 ${cur === opt.val ? 'border-red-600/40 bg-red-600/10 text-white' : 'border-white/[0.06] bg-[#0d0d0d] text-zinc-400 hover:border-white/15'}`}>
-                            <span className="text-xl">{opt.icon}</span>
+                            className={`py-3 px-3 rounded-lg border text-sm font-fira text-center transition-all flex flex-col items-center gap-1 ${cur === opt.val ? 'border-red-600/40 bg-red-600/10 text-white' : 'border-white/[0.06] bg-[#1c1c1e] text-zinc-400 hover:border-white/15'}`}>
+                            <opt.Icon size={18} />
                             {opt.label}
                           </button>
                         );
@@ -408,7 +409,7 @@ export default function NewEvent() {
                         const cur = watch('registration_type');
                         return (
                           <button key={opt.val} type="button" onClick={() => setValue('registration_type', opt.val as NewEventSchema['registration_type'])}
-                            className={`flex items-start gap-3 p-4 rounded-lg border text-left transition-all ${cur === opt.val ? 'border-red-600/40 bg-red-600/10' : 'border-white/[0.06] bg-[#0d0d0d] hover:border-white/15'}`}>
+                            className={`flex items-start gap-3 p-4 rounded-lg border text-left transition-all ${cur === opt.val ? 'border-red-600/40 bg-red-600/10' : 'border-white/[0.06] bg-[#1c1c1e] hover:border-white/15'}`}>
                             <div className={`w-4 h-4 rounded-full border-2 mt-0.5 shrink-0 flex items-center justify-center ${cur === opt.val ? 'border-red-500' : 'border-zinc-600'}`}>
                               {cur === opt.val && <div className="w-2 h-2 rounded-full bg-red-500" />}
                             </div>
@@ -519,7 +520,7 @@ export default function NewEvent() {
                         return (
                           <button key={String(opt.val)} type="button"
                             onClick={() => setValue('attendance_type', opt.val as NewEventSchema['attendance_type'])}
-                            className={`flex items-start gap-3 p-3 rounded-lg border text-left transition-all ${isSelected ? 'border-red-600/40 bg-red-600/10' : 'border-white/[0.06] bg-[#0d0d0d] hover:border-white/15'}`}>
+                            className={`flex items-start gap-3 p-3 rounded-lg border text-left transition-all ${isSelected ? 'border-red-600/40 bg-red-600/10' : 'border-white/[0.06] bg-[#1c1c1e] hover:border-white/15'}`}>
                             <div className={`w-4 h-4 rounded-full border-2 mt-0.5 shrink-0 flex items-center justify-center ${isSelected ? 'border-red-500' : 'border-zinc-600'}`}>
                               {isSelected && <div className="w-2 h-2 rounded-full bg-red-500" />}
                             </div>
@@ -742,7 +743,7 @@ export default function NewEvent() {
 
 function ReviewRow({ label, value, step, onJump }: { label: string; value: string; step: number; onJump: (s: number) => void }) {
   return (
-    <div className="flex items-center justify-between py-2.5 px-4 bg-[#0d0d0d] border border-white/[0.06] rounded-lg">
+    <div className="flex items-center justify-between py-2.5 px-4 bg-[#1c1c1e] border border-white/[0.06] rounded-lg">
       <span className="text-zinc-500 text-xs font-fira uppercase tracking-wider">{label}</span>
       <div className="flex items-center gap-3">
         <span className="text-white text-sm font-fira">{value}</span>

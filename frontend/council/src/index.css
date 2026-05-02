@@ -6,8 +6,8 @@
 @layer base {
   :root {
     --color-foreground: 245 245 245;
-    --color-background: 8 8 8;
-    --color-card: 16 16 16;
+    --color-background: 18 18 20;
+    --color-card: 26 26 28;
     --color-mute: 115 115 115;
     --color-primary: 220 38 38;
     --color-vitality: 239 68 68;
@@ -15,30 +15,30 @@
   }
 
   html, body {
-    background: #080808;
+    background: #121214;
     color: rgb(245 245 245);
   }
 
   * {
     scrollbar-width: thin;
-    scrollbar-color: #2a2a2a #0a0a0a;
+    scrollbar-color: #383838 #181818;
   }
 
   *::-webkit-scrollbar {
     width: 4px;
   }
   *::-webkit-scrollbar-track {
-    background: #0a0a0a;
+    background: #181818;
   }
   *::-webkit-scrollbar-thumb {
-    background: #2a2a2a;
+    background: #383838;
     border-radius: 4px;
   }
 
   input, textarea {
-    background: #111111 !important;
+    background: #1e1e20 !important;
     color: #f5f5f5 !important;
-    border-color: #2a2a2a !important;
+    border-color: #333336 !important;
   }
 
   input::placeholder, textarea::placeholder {
@@ -52,7 +52,7 @@
   }
 
   select {
-    background: #111111 url(data:image/svg+xml;base64,PHN2ZyBpZD0iTGF5ZXJfMSIgZGF0YS1uYW1lPSJMYXllciAxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0Ljk1IDEwIj48ZGVmcz48c3R5bGU+LmNscy0xe2ZpbGw6IzExMTt9LmNscy0ye2ZpbGw6I2FhYTt9PC9zdHlsZT48L2RlZnM+PHRpdGxlPmFycm93czwvdGl0bGU+PHJlY3QgY2xhc3M9ImNscy0xIiB3aWR0aD0iNC45NSIgaGVpZ2h0PSIxMCIvPjxwb2x5Z29uIGNsYXNzPSJjbHMtMiIgcG9pbnRzPSIxLjQxIDQuNjcgMi40OCAzLjE4IDMuNTQgNC42NyAxLjQxIDQuNjciLz48cG9seWdvbiBjbGFzcz0iY2xzLTIiIHBvaW50cz0iMy41NCA1LjMzIDIuNDggNi44MiAxLjQxIDUuMzMgMy41NCA1LjMzIi8+PC9zdmc+)
+    background: #1e1e20 url(data:image/svg+xml;base64,PHN2ZyBpZD0iTGF5ZXJfMSIgZGF0YS1uYW1lPSJMYXllciAxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0Ljk1IDEwIj48ZGVmcz48c3R5bGU+LmNscy0xe2ZpbGw6IzExMTt9LmNscy0ye2ZpbGw6I2FhYTt9PC9zdHlsZT48L2RlZnM+PHRpdGxlPmFycm93czwvdGl0bGU+PHJlY3QgY2xhc3M9ImNscy0xIiB3aWR0aD0iNC45NSIgaGVpZ2h0PSIxMCIvPjxwb2x5Z29uIGNsYXNzPSJjbHMtMiIgcG9pbnRzPSIxLjQxIDQuNjcgMi40OCAzLjE4IDMuNTQgNC42NyAxLjQxIDQuNjciLz48cG9seWdvbiBjbGFzcz0iY2xzLTIiIHBvaW50cz0iMy41NCA1LjMzIDIuNDggNi44MiAxLjQxIDUuMzMgMy41NCA1LjMzIi8+PC9zdmc+)
       no-repeat 97% 50% !important;
     color: #f5f5f5 !important;
     border-color: #2a2a2a !important;

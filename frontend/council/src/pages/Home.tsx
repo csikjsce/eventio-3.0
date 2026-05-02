@@ -56,7 +56,7 @@ export default function Home() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#080808] p-8">
+    <div className="min-h-screen bg-[#121214] p-8">
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-4">
@@ -90,7 +90,7 @@ export default function Home() {
         {statCards.map((s) => (
           <div
             key={s.label}
-            className="bg-[#111] border border-white/5 rounded-xl p-5"
+            className="bg-[#1c1c1e] border border-white/5 rounded-xl p-5"
           >
             <p className="text-zinc-500 text-xs font-fira mb-2">{s.label}</p>
             <p className={`text-3xl font-bold font-fira ${s.color}`}>{s.value}</p>
@@ -110,7 +110,7 @@ export default function Home() {
       </div>
       <div className="flex flex-col gap-3">
         {events.length === 0 && (
-          <div className="bg-[#111] border border-white/5 rounded-xl p-12 text-center">
+          <div className="bg-[#1c1c1e] border border-white/5 rounded-xl p-12 text-center">
             <p className="text-zinc-500 font-fira text-sm">No events yet.</p>
             <Link to="new-event" className="text-red-500 text-sm font-fira hover:underline mt-2 inline-block">Create your first event →</Link>
           </div>

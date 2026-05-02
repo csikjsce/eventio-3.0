@@ -1,4 +1,5 @@
 import { Calendar, Location } from 'iconsax-react';
+import { Check } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import ReportModal from './ReportModal';
@@ -106,7 +107,7 @@ export default function EventCard({ event }: { event: EventData }) {
           {event.state === 'COMPLETED' && (
             <div className="flex flex-col items-end gap-1" onClick={(e) => e.preventDefault()}>
               {event.report_url ? (
-                <span className="text-[10px] text-green-500 font-fira">✓ Report uploaded</span>
+                <span className="flex items-center gap-1 text-[10px] text-green-500 font-fira"><Check size={11} strokeWidth={3} /> Report uploaded</span>
               ) : (
                 <button
                   onClick={handleReportClick}
@@ -116,7 +117,7 @@ export default function EventCard({ event }: { event: EventData }) {
                 </button>
               )}
               {event?.urls?.geotagged_pictures ? (
-                <span className="text-[10px] text-green-500 font-fira">✓ Geo-tagged</span>
+                <span className="flex items-center gap-1 text-[10px] text-green-500 font-fira"><Check size={11} strokeWidth={3} /> Geo-tagged</span>
               ) : (
                 <button
                   onClick={handleGeoTagClick}
