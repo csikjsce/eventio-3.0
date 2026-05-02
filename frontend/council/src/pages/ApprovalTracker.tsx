@@ -1,6 +1,6 @@
 import { useContext } from 'react';
 import EventsDataContext from '../contexts/EventsDataContext';
-import { CheckCircle2, Circle, Clock, AlertCircle, ChevronRight } from 'lucide-react';
+import { CheckCircle2, Circle, Clock, AlertCircle, ChevronRight, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 type ApprovalStage = 'COUNCIL' | 'DEAN' | 'PRINCIPAL' | 'APPROVED' | 'REJECTED';
@@ -134,10 +134,16 @@ export default function ApprovalTracker() {
                           {info && <> · Submitted {new Date(info.submittedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</>}
                         </p>
                       </div>
-                      <Link to={`/event-details/${ev.id}/edit`}
-                        className="shrink-0 flex items-center gap-1 text-xs font-fira text-zinc-500 hover:text-zinc-200 transition-colors">
-                        Edit <ChevronRight size={12} />
-                      </Link>
+                      <div className="flex items-center gap-2">
+                        <Link to={`/event-details/${ev.id}/permissions`}
+                          className="shrink-0 flex items-center gap-1.5 text-xs font-fira px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 border border-white/[0.06] text-zinc-400 hover:text-white rounded-lg transition-all">
+                          <ShieldCheck size={12} /> Approval Status
+                        </Link>
+                        <Link to={`/event-details/${ev.id}/edit`}
+                          className="shrink-0 flex items-center gap-1 text-xs font-fira text-zinc-500 hover:text-zinc-200 transition-colors">
+                          Edit <ChevronRight size={12} />
+                        </Link>
+                      </div>
                     </div>
 
                     {info ? (

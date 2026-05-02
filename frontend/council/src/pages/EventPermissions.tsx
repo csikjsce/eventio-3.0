@@ -229,7 +229,11 @@ export default function EventPermissions() {
                 {meta.label}
               </span>
             </div>
-            <p className="text-zinc-500 text-sm font-fira">{event.name}</p>
+            <div className="flex items-center gap-2 mt-0.5">
+              <p className="text-zinc-500 text-sm font-fira">{event.name}</p>
+              <span className="text-zinc-700 text-xs">·</span>
+              <Link to="/approvals" className="text-zinc-600 hover:text-zinc-400 text-xs font-fira transition-colors">Approval Tracker</Link>
+            </div>
           </div>
         </div>
         {canSubmit && (
