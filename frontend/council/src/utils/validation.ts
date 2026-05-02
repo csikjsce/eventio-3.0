@@ -119,7 +119,7 @@ export const newEventSchema = yup.object({
     .string()
     .required('State is required')
     .test('is-valid-state', 'Invalid state', function (value) {
-      const draftStates = ['DRAFT', 'APPLIED_FOR_APPROVAL'];
+      const draftStates = ['DRAFT', 'APPLIED_FOR_APPROVAL', 'APPLIED_FOR_PRINCI_APPROVAL'];
       const otherStates = [
         'UNLISTED',
         'UPCOMING',

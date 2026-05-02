@@ -49,12 +49,16 @@ interface EventData {
   urls: {
     [name: string]: string;
   };
+  female_requirement?: number | null;
+  more_details_enabled?: boolean;
+  is_submission_enabled?: boolean;
 }
 
 // Interface for the Events object
 interface Events {
   DRAFT: EventData[];
   APPLIED_FOR_APPROVAL: EventData[];
+  APPLIED_FOR_PRINCI_APPROVAL: EventData[];
   UNLISTED: EventData[];
   UPCOMING: EventData[];
   REGISTRATION_OPEN: EventData[];

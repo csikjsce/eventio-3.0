@@ -27,9 +27,6 @@ const router = createBrowserRouter(
       <Route path="logout" Component={Logout} />
     </Route>,
   ),
-  {
-  basename: '/dean',
-  }
 );
 
 export default router;

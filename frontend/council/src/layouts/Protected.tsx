@@ -69,17 +69,18 @@ export default function Protected() {
   }, []);
 
   const eventsList: EventData[] = [
-    ...(eventsData?.DRAFT                || []),
-    ...(eventsData?.APPLIED_FOR_APPROVAL || []),
-    ...(eventsData?.UNLISTED             || []),
-    ...(eventsData?.UPCOMING             || []),
-    ...(eventsData?.REGISTRATION_OPEN    || []),
-    ...(eventsData?.REGISTRATION_CLOSED  || []),
-    ...(eventsData?.TICKET_OPEN          || []),
-    ...(eventsData?.TICKET_CLOSED        || []),
-    ...(eventsData?.ONGOING              || []),
-    ...(eventsData?.COMPLETED            || []),
-    ...(eventsData?.PRIVATE              || []),
+    ...(eventsData?.DRAFT                        || []),
+    ...(eventsData?.APPLIED_FOR_APPROVAL         || []),
+    ...(eventsData?.APPLIED_FOR_PRINCI_APPROVAL  || []),
+    ...(eventsData?.UNLISTED                     || []),
+    ...(eventsData?.UPCOMING                     || []),
+    ...(eventsData?.REGISTRATION_OPEN            || []),
+    ...(eventsData?.REGISTRATION_CLOSED          || []),
+    ...(eventsData?.TICKET_OPEN                  || []),
+    ...(eventsData?.TICKET_CLOSED                || []),
+    ...(eventsData?.ONGOING                      || []),
+    ...(eventsData?.COMPLETED                    || []),
+    ...(eventsData?.PRIVATE                      || []),
   ];
 
   if (!ready) return <Loader />;
