@@ -18,6 +18,7 @@ import Attendance from './pages/Attendance';
 import ApprovalTracker from './pages/ApprovalTracker';
 import Announcements from './pages/Announcements';
 import Budget from './pages/Budget';
+import EventPermissions from './pages/EventPermissions';
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -35,6 +36,7 @@ const router = createBrowserRouter(
           <Route path="event-details/:id">
             <Route index Component={EventDetails} />
             <Route path="edit" Component={NewEvent} />
+            <Route path="permissions" Component={EventPermissions} />
           </Route>
         </Route>
       </Route>

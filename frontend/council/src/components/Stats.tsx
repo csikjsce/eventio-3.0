@@ -1,18 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import {
-  PieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
-  Tooltip,
-  Legend,
-} from 'recharts';
-import { TooltipProps } from 'recharts';
-import {
-  ValueType,
-  NameType,
-} from 'recharts/types/component/DefaultTooltipContent';
 
 interface StatsProps {
   eventId: string;
@@ -226,43 +213,26 @@ const GroupedBranchStats: React.FC<StatsProps> = ({ eventId }) => {
     }
   }, [eventId]);
 
-  const CustomTooltip = ({
-    active,
-    payload,
-    label,
-  }: TooltipProps<ValueType, NameType>) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-card p-2 rounded-md shadow-md">
-          <p className="font-fira text-sm text-foreground">{`${label} : ${payload[0].value}`}</p>
-        </div>
-      );
-    }
-    return null;
-  };
-
   if (loading) {
     return (
-      <div className="w-full h-96 flex items-center justify-center">
-        <p className="text-foreground">Loading statistics...</p>
+      <div className="bg-[#1c1c1e] border border-white/[0.06] rounded-xl p-5 flex items-center justify-center h-32">
+        <p className="text-zinc-600 font-fira text-xs">Loading statistics...</p>
       </div>
     );
   }
 
   if (error || !statsData) {
     return (
-      <div className="w-full h-96 flex items-center justify-center">
-        <p className="text-red-500">{error || 'No data available'}</p>
+      <div className="bg-[#1c1c1e] border border-white/[0.06] rounded-xl p-5 flex items-center justify-center h-32">
+        <p className="text-zinc-600 font-fira text-xs">No statistics available.</p>
       </div>
     );
   }
 
   if (statsData.totalParticipants <= 0) {
     return (
-      <div className="w-full h-96 flex items-center justify-center">
-        <p className="text-foreground">
-          No participants registered for this event.
-        </p>
+      <div className="bg-[#1c1c1e] border border-white/[0.06] rounded-xl p-5 flex items-center justify-center h-32">
+        <p className="text-zinc-600 font-fira text-xs">No registrations yet.</p>
       </div>
     );
   }
@@ -270,52 +240,34 @@ const GroupedBranchStats: React.FC<StatsProps> = ({ eventId }) => {
   const branchData = groupBranches(statsData.branchStats);
 
   return (
-    <div className="w-full bg-background rounded-lg shadow-lg">
-      <div className="bg-card rounded-lg shadow-md overflow-hidden">
-        <div className="p-4 md:p-6 border-b border-mute/20">
-          <h2 className="font-marcellus text-2xl text-foreground">
-            {statsData.eventName} - Grouped Branch Distribution
-          </h2>
+    <div className="bg-[#1c1c1e] border border-white/[0.06] rounded-xl p-5">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-white font-fira font-semibold text-sm">Branch Distribution</h3>
+        <div>
+          <span className="text-white font-fira font-bold text-sm">{statsData.totalParticipants}</span>
+          <span className="text-zinc-600 text-xs font-fira ml-1">registered</span>
         </div>
-
-        <div className="p-4 md:p-6 space-y-8">
-          <div className="text-xl md:text-2xl font-fira font-bold text-center text-foreground">
-            Total Registrations: {statsData.totalParticipants}
-          </div>
-
-          <div className="h-96 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={branchData}
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={120}
-                  dataKey="value"
-                  label={({ name, percent }) =>
-                    `${name} (${(percent * 100).toFixed(1)}%)`
-                  }
-                >
-                  {branchData.map((_, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={COLORS[index % COLORS.length]}
-                    />
-                  ))}
-                </Pie>
-                <Tooltip content={<CustomTooltip />} />
-                <Legend
-                  layout="vertical"
-                  align="right"
-                  verticalAlign="middle"
-                  formatter={(value) => (
-                    <span className="font-fira text-sm text-mute">{value}</span>
-                  )}
+      </div>
+      <div className="space-y-3">
+        {branchData.map((item, i) => {
+          const pct = (item.value * 100) / statsData.totalParticipants;
+          return (
+            <div key={item.name}>
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-zinc-300 text-xs font-fira">{item.name}</span>
+                <span className="text-zinc-500 text-xs font-fira tabular-nums">
+                  {item.value} &middot; {pct.toFixed(1)}%
+                </span>
+              </div>
+              <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full"
+                  style={{ width: `${pct}%`, backgroundColor: COLORS[i % COLORS.length] }}
                 />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
