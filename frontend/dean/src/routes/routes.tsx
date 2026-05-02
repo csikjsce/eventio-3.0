@@ -2,6 +2,7 @@ import Home from "../screens/Home";
 import Statistics from "../screens/Statistics";
 import Login from "../screens/Login";
 import Logout from "../screens/Logout";
+import EventApproval from "../screens/EventApproval";
 
 import {
   createBrowserRouter,
@@ -19,6 +20,7 @@ const router = createBrowserRouter(
         <Route Component={SidebarLayout}>
           <Route index Component={Home} />
           <Route path="statistics" Component={Statistics} />
+          <Route path="event/:id" Component={EventApproval} />
         </Route>
       </Route>
       <Route path="login" Component={Login} />

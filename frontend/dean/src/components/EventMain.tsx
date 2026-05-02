@@ -3,6 +3,7 @@ import axios from "axios";
 import EventsDataContext from "../contexts/EventsDataContext";
 import { UserDataContext } from "../contexts/userContext";
 import { useContext, useState } from "react";
+import { Link } from "react-router-dom";
 import EventDialog from "./EventDialog";
 
 export default function EventMain({ event }: { event: EventData }) {
@@ -195,6 +196,12 @@ export default function EventMain({ event }: { event: EventData }) {
                     </div>
                 </div>
                 <div className="flex gap-2 justify-center items-center text-foreground">
+                    <Link
+                        to={`/event/${event.id}`}
+                        className="border border-black/20 dark:border-white/20 px-3 h-8 rounded-full text-xs font-fira text-mute hover:text-foreground hover:border-primary/40 transition-all flex items-center"
+                    >
+                        View Details
+                    </Link>
                     <button
                         className="border border-green-600 w-16 h-8 p-1 rounded-full hover:bg-green-600 hover:text-white active:bg-green-700"
                         onClick={() => {

@@ -1,8 +1,8 @@
 {
   "rewrites": [
     {
-      "source": "/council/(.*)",
-      "destination": "/council/index.html"
+      "source": "/(.*)",
+      "destination": "/"
     }
   ]
 }
