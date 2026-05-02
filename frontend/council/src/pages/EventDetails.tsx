@@ -123,7 +123,7 @@ export default function EventDetails() {
           {isOrganizer && (
             <Link to="./permissions"
               className="flex items-center gap-1.5 px-4 py-2 bg-[#1c1c1e] border border-white/[0.06] hover:border-white/15 text-zinc-400 hover:text-white text-xs font-fira rounded-lg transition-all">
-              <ShieldCheck size={13} /> Permissions
+              <ShieldCheck size={13} /> Approval Status
             </Link>
           )}
           {isOrganizer && (

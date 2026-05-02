@@ -1,142 +1,183 @@
-import { useState, useContext, useEffect } from 'react';
+import { useContext, useState } from 'react';
 import { Link, useParams, Navigate } from 'react-router-dom';
 import {
-  ArrowLeft, Users, Building2, Tag, Ticket, CheckCircle2, Globe,
-  ExternalLink, Eye, EyeOff, ShieldCheck, Link2, Save, RotateCcw,
-  Info, UserCheck, UserX, Lock, Unlock, ChevronDown,
+  ArrowLeft, CheckCircle2, Clock, AlertCircle,
+  ChevronRight, MessageSquare, Send, FileText, Lock,
+  Building2, GraduationCap, Users, ShieldCheck, Info,
+  Download, Upload, Paperclip, X, ExternalLink,
 } from 'lucide-react';
 import EventsDataContext from '../contexts/EventsDataContext';
 
-// ── Types ─────────────────────────────────────────────────────────────────────
-interface PermissionSettings {
-  is_only_somaiya: boolean;
-  registration_type: string;
-  min_ppt: number;
-  ma_ppt: number;
-  fee: number;
-  is_ticket_feature_enabled: boolean;
-  ticket_count: number;
-  is_feedback_enabled: boolean;
-  attendance_type: string;
-  external_registration_link: string;
-  online_event_link: string;
+// --- Permission forms definition ---------------------------------------------
+interface PermForm {
+  id: string;
+  title: string;
+  authority: string;
+  description: string;
+  required: boolean;
+  templateUrl?: string;
 }
 
-// ── Small reusable UI pieces ───────────────────────────────────────────────────
-function SectionHeader({ icon: Icon, title, description }: { icon: React.ElementType; title: string; description: string }) {
-  return (
-    <div className="flex items-start gap-3 pb-4 mb-2 border-b border-white/[0.05]">
-      <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center shrink-0 mt-0.5">
-        <Icon size={14} className="text-zinc-400" />
-      </div>
-      <div>
-        <p className="text-white font-fira font-semibold text-sm">{title}</p>
-        <p className="text-zinc-600 text-xs font-fira mt-0.5">{description}</p>
-      </div>
-    </div>
+const PERMISSION_FORMS: PermForm[] = [
+  {
+    id: 'venue',
+    title: 'Venue Permission Letter',
+    authority: 'College Administration',
+    description: 'Request letter for booking the venue. Must be signed by the faculty advisor before submission.',
+    required: true,
+    templateUrl: '#',
+  },
+  {
+    id: 'dean_noc',
+    title: "Dean's NOC",
+    authority: "Dean's Office",
+    description: "No Objection Certificate from the Dean's Office. Required for all external or inter-college events.",
+    required: true,
+    templateUrl: '#',
+  },
+  {
+    id: 'principal_letter',
+    title: 'Principal Approval Letter',
+    authority: 'Principal',
+    description: 'Formal permission letter addressed to the Principal. Required for large-scale or sponsored events.',
+    required: true,
+    templateUrl: '#',
+  },
+  {
+    id: 'budget',
+    title: 'Budget Approval Form',
+    authority: 'Council / Finance',
+    description: 'Detailed budget breakdown to be approved by the student council finance committee.',
+    required: false,
+    templateUrl: '#',
+  },
+  {
+    id: 'external_speaker',
+    title: 'External Speaker / Guest Form',
+    authority: "Dean's Office",
+    description: 'Required when inviting external guests, judges, or speakers to campus.',
+    required: false,
+    templateUrl: '#',
+  },
+  {
+    id: 'media',
+    title: 'Media & Photography Consent',
+    authority: 'College Administration',
+    description: 'Permission for photography, videography, and media coverage during the event.',
+    required: false,
+  },
+];
+
+type FormStatus = 'not_uploaded' | 'uploaded' | 'approved' | 'rejected';
+
+function formStatusBadge(status: FormStatus) {
+  if (status === 'uploaded')    return <span className="px-2 py-0.5 rounded text-[10px] font-fira bg-blue-500/10 text-blue-400">Uploaded</span>;
+  if (status === 'approved')    return <span className="px-2 py-0.5 rounded text-[10px] font-fira bg-emerald-500/10 text-emerald-400">Approved</span>;
+  if (status === 'rejected')    return <span className="px-2 py-0.5 rounded text-[10px] font-fira bg-red-500/10 text-red-400">Rejected</span>;
+  return <span className="px-2 py-0.5 rounded text-[10px] font-fira bg-zinc-800 text-zinc-600">Pending Upload</span>;
+}
+
+// --- Approval chain definition -----------------------------------------------
+const APPROVAL_STAGES: {
+  key: string;
+  label: string;
+  role: string;
+  icon: React.ElementType;
+  description: string;
+  reachedWhen: (history: string[]) => boolean;
+}[] = [
+  {
+    key: 'DRAFT',
+    label: 'Drafted',
+    role: 'Event Organizer',
+    icon: FileText,
+    description: 'Event created and saved as a draft.',
+    reachedWhen: () => true,
+  },
+  {
+    key: 'APPLIED_FOR_APPROVAL',
+    label: 'Submitted for Review',
+    role: 'Council / Nodal Officer',
+    icon: Send,
+    description: 'Organizer submitted the event for council review.',
+    reachedWhen: (h) => h.includes('APPLIED_FOR_APPROVAL'),
+  },
+  {
+    key: 'COUNCIL_APPROVED',
+    label: 'Council Clearance',
+    role: "Dean's Office",
+    icon: Users,
+    description: "Council has reviewed and forwarded to the Dean's Office.",
+    reachedWhen: (h) =>
+      h.some((s) =>
+        ['UNLISTED', 'UPCOMING', 'REGISTRATION_OPEN', 'REGISTRATION_CLOSED',
+          'ONGOING', 'COMPLETED', 'TICKET_OPEN', 'TICKET_CLOSED', 'PRIVATE'].includes(s),
+      ),
+  },
+  {
+    key: 'DEAN_APPROVED',
+    label: "Principal's Approval",
+    role: 'Principal',
+    icon: GraduationCap,
+    description: "Dean has forwarded to the Principal for final sign-off.",
+    reachedWhen: (h) =>
+      h.some((s) =>
+        ['UPCOMING', 'REGISTRATION_OPEN', 'REGISTRATION_CLOSED',
+          'ONGOING', 'COMPLETED', 'TICKET_OPEN', 'TICKET_CLOSED'].includes(s),
+      ),
+  },
+  {
+    key: 'APPROVED',
+    label: 'Approved and Live',
+    role: 'System',
+    icon: ShieldCheck,
+    description: 'All permissions granted. Event is active.',
+    reachedWhen: (h) =>
+      h.some((s) =>
+        ['REGISTRATION_OPEN', 'REGISTRATION_CLOSED', 'ONGOING', 'COMPLETED',
+          'TICKET_OPEN', 'TICKET_CLOSED'].includes(s),
+      ),
+  },
+];
+
+// --- State config -------------------------------------------------------------
+const STATE_META: Record<string, { label: string; cls: string; desc: string }> = {
+  DRAFT:                { label: 'Draft',                cls: 'bg-zinc-700 text-zinc-300',         desc: 'Not yet submitted for approval.' },
+  APPLIED_FOR_APPROVAL: { label: 'Awaiting Approval',   cls: 'bg-amber-500/15 text-amber-400',     desc: 'Pending review by the council.' },
+  UNLISTED:             { label: 'Council Approved',    cls: 'bg-blue-500/15 text-blue-400',       desc: 'Cleared by council. Awaiting higher approval.' },
+  UPCOMING:             { label: 'Approved - Upcoming', cls: 'bg-emerald-500/15 text-emerald-400', desc: 'All approvals granted. Event goes live soon.' },
+  REGISTRATION_OPEN:    { label: 'Live',                cls: 'bg-emerald-500/15 text-emerald-400', desc: 'Fully approved. Registration is open.' },
+  REGISTRATION_CLOSED:  { label: 'Reg. Closed',         cls: 'bg-zinc-600/30 text-zinc-400',       desc: 'Approvals complete. Registration period ended.' },
+  ONGOING:              { label: 'Ongoing',             cls: 'bg-purple-500/15 text-purple-400',   desc: 'Event is currently in progress.' },
+  COMPLETED:            { label: 'Completed',           cls: 'bg-zinc-600/30 text-zinc-400',       desc: 'Event has concluded.' },
+  TICKET_OPEN:          { label: 'Tickets Open',        cls: 'bg-emerald-500/15 text-emerald-400', desc: 'Ticketing is active.' },
+  TICKET_CLOSED:        { label: 'Tickets Closed',      cls: 'bg-zinc-600/30 text-zinc-400',       desc: 'Ticketing has ended.' },
+  PRIVATE:              { label: 'Private',             cls: 'bg-zinc-600/30 text-zinc-400',       desc: 'Visible only to selected participants.' },
+};
+
+function getStageStatus(
+  stage: (typeof APPROVAL_STAGES)[0],
+  history: string[],
+  currentState: string,
+): 'done' | 'current' | 'pending' {
+  if (stage.reachedWhen(history) || stage.reachedWhen([currentState])) return 'done';
+  const lastDoneIdx = APPROVAL_STAGES.reduce(
+    (acc, s, i) => (s.reachedWhen(history) || s.reachedWhen([currentState]) ? i : acc),
+    -1,
   );
+  const thisIdx = APPROVAL_STAGES.findIndex((s) => s.key === stage.key);
+  if (thisIdx === lastDoneIdx + 1) return 'current';
+  return 'pending';
 }
 
-function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      disabled={disabled}
-      onClick={() => !disabled && onChange(!checked)}
-      className={`relative w-10 h-5 rounded-full transition-colors shrink-0 ${
-        checked ? 'bg-red-600' : 'bg-zinc-700'
-      } ${disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
-    >
-      <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
-        checked ? 'translate-x-5' : 'translate-x-0.5'
-      }`} />
-    </button>
-  );
-}
-
-function PermRow({
-  label, description, children,
-}: { label: string; description?: string; children: React.ReactNode }) {
-  return (
-    <div className="flex items-center justify-between gap-4 py-3.5 border-b border-white/[0.04] last:border-0">
-      <div className="min-w-0">
-        <p className="text-white text-sm font-fira">{label}</p>
-        {description && <p className="text-zinc-600 text-xs font-fira mt-0.5 leading-relaxed">{description}</p>}
-      </div>
-      <div className="shrink-0">{children}</div>
-    </div>
-  );
-}
-
-function NativeSelect({ value, onChange, options }: {
-  value: string; onChange: (v: string) => void;
-  options: { value: string; label: string }[];
-}) {
-  return (
-    <div className="relative">
-      <select
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        className="appearance-none bg-[#252527] border border-white/[0.08] focus:border-red-600/40 text-white text-sm font-fira rounded-lg pl-3 pr-8 py-1.5 outline-none cursor-pointer"
-      >
-        {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-      </select>
-      <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" />
-    </div>
-  );
-}
-
-function NumberInput({ value, onChange, min, max, prefix }: {
-  value: number; onChange: (v: number) => void; min?: number; max?: number; prefix?: string;
-}) {
-  return (
-    <div className="flex items-center gap-1">
-      {prefix && <span className="text-zinc-400 text-sm font-fira">{prefix}</span>}
-      <input
-        type="number"
-        value={value}
-        min={min}
-        max={max}
-        onChange={e => onChange(Number(e.target.value))}
-        className="w-20 bg-[#252527] border border-white/[0.08] focus:border-red-600/40 text-white text-sm font-fira rounded-lg px-3 py-1.5 outline-none text-right"
-      />
-    </div>
-  );
-}
-
-// ── Main component ─────────────────────────────────────────────────────────────
+// --- Main component -----------------------------------------------------------
 export default function EventPermissions() {
   const { id } = useParams<{ id: string }>();
   const { eventsList } = useContext(EventsDataContext);
-  const event = eventsList.find(e => String(e.id) === String(id));
-
-  const [settings, setSettings] = useState<PermissionSettings | null>(null);
-  const [original, setOriginal] = useState<PermissionSettings | null>(null);
-  const [saved, setSaved] = useState(false);
-
-  useEffect(() => {
-    if (!event) return;
-    const init: PermissionSettings = {
-      is_only_somaiya: event.is_only_somaiya,
-      registration_type: event.registration_type,
-      min_ppt: event.min_ppt,
-      ma_ppt: event.ma_ppt,
-      fee: event.fee,
-      is_ticket_feature_enabled: event.is_ticket_feature_enabled,
-      ticket_count: event.ticket_count,
-      is_feedback_enabled: event.is_feedback_enabled,
-      attendance_type: event.attendance_type ?? 'MANUAL',
-      external_registration_link: event.external_registration_link ?? '',
-      online_event_link: event.online_event_link ?? '',
-    };
-    setSettings(init);
-    setOriginal(init);
-  }, [event?.id]);
+  const event = eventsList.find((e) => String(e.id) === String(id));
 
   if (!id) return <Navigate to="/" />;
-  if (!event || !settings || !original) {
+  if (!event) {
     return (
       <div className="min-h-screen bg-[#121214] flex items-center justify-center">
         <p className="text-zinc-600 font-fira text-sm">Event not found.</p>
@@ -144,268 +185,351 @@ export default function EventPermissions() {
     );
   }
 
-  function set<K extends keyof PermissionSettings>(key: K, value: PermissionSettings[K]) {
-    setSettings(prev => prev ? { ...prev, [key]: value } : prev);
-    setSaved(false);
+  const history: string[] = event.state_history ?? [];
+  const meta = STATE_META[event.state] ?? { label: event.state, cls: 'bg-zinc-700 text-zinc-300', desc: '' };
+  const canSubmit = event.state === 'DRAFT';
+
+  // Form upload state (local UI simulation — wire to API when ready)
+  const [formStatuses, setFormStatuses] = useState<Record<string, FormStatus>>(
+    () => Object.fromEntries(PERMISSION_FORMS.map((f) => [f.id, 'not_uploaded'])),
+  );
+  const [uploadedNames, setUploadedNames] = useState<Record<string, string>>({});
+
+  function handleFileChange(formId: string, files: FileList | null) {
+    if (!files || files.length === 0) return;
+    setUploadedNames((prev) => ({ ...prev, [formId]: files[0].name }));
+    setFormStatuses((prev) => ({ ...prev, [formId]: 'uploaded' }));
   }
 
-  function reset() {
-    setSettings(original);
-    setSaved(false);
+  function clearUpload(formId: string) {
+    setUploadedNames((prev) => { const n = { ...prev }; delete n[formId]; return n; });
+    setFormStatuses((prev) => ({ ...prev, [formId]: 'not_uploaded' }));
   }
 
-  function save() {
-    // TODO: PATCH to API when backend is ready
-    setOriginal(settings);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
-  }
-
-  const isDirty = JSON.stringify(settings) !== JSON.stringify(original);
-  const isTeam = settings.registration_type === 'TEAM';
+  const uploadedCount = Object.values(formStatuses).filter((s) => s !== 'not_uploaded').length;
+  const requiredForms = PERMISSION_FORMS.filter((f) => f.required);
+  const requiredDone = requiredForms.every((f) => formStatuses[f.id] !== 'not_uploaded');
 
   return (
     <div className="min-h-screen bg-[#121214] px-8 py-8">
 
       {/* Header */}
-      <div className="flex items-start justify-between mb-7">
+      <div className="flex items-start justify-between mb-8">
         <div className="flex items-start gap-3">
-          <Link to={`../event-details/${id}`}
-            className="w-8 h-8 mt-1 rounded-lg bg-[#1c1c1e] border border-white/[0.06] hover:border-white/15 flex items-center justify-center text-zinc-400 hover:text-white transition-all shrink-0">
+          <Link
+            to={`../event-details/${id}`}
+            className="w-8 h-8 mt-1 rounded-lg bg-[#1c1c1e] border border-white/[0.06] hover:border-white/15 flex items-center justify-center text-zinc-400 hover:text-white transition-all shrink-0"
+          >
             <ArrowLeft size={15} />
           </Link>
           <div>
-            <h1 className="text-white font-marcellus text-2xl leading-tight">Event Permissions</h1>
-            <p className="text-zinc-500 text-sm font-fira mt-0.5">{event.name}</p>
+            <div className="flex items-center gap-2.5 mb-1">
+              <h1 className="text-white font-marcellus text-2xl leading-tight">Permission Status</h1>
+              <span className={"px-2.5 py-1 rounded-md text-[11px] font-fira font-semibold tracking-wide " + meta.cls}>
+                {meta.label}
+              </span>
+            </div>
+            <p className="text-zinc-500 text-sm font-fira">{event.name}</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          {isDirty && (
-            <button type="button" onClick={reset}
-              className="flex items-center gap-1.5 px-4 py-2 bg-[#1c1c1e] border border-white/[0.06] hover:border-white/15 text-zinc-400 hover:text-white text-xs font-fira rounded-lg transition-all">
-              <RotateCcw size={12} /> Reset
-            </button>
-          )}
-          <button type="button" onClick={save}
-            disabled={!isDirty}
-            className={`flex items-center gap-1.5 px-4 py-2 border text-xs font-fira rounded-lg transition-all ${
-              saved
-                ? 'bg-emerald-600/20 border-emerald-600/30 text-emerald-400'
-                : isDirty
-                  ? 'bg-red-600 border-red-600 text-white hover:bg-red-700'
-                  : 'bg-zinc-800/50 border-zinc-700/50 text-zinc-600 cursor-not-allowed'
-            }`}>
-            <Save size={12} /> {saved ? 'Saved!' : 'Save Changes'}
+        {canSubmit && (
+          <button
+            type="button"
+            className="flex items-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-fira rounded-xl transition-colors"
+          >
+            <Send size={13} /> Submit for Approval
           </button>
-        </div>
+        )}
       </div>
 
-      {/* Info banner */}
-      {isDirty && (
-        <div className="flex items-center gap-2 px-4 py-3 bg-amber-500/5 border border-amber-500/15 rounded-xl mb-5 text-amber-400 text-xs font-fira">
-          <Info size={13} className="shrink-0" />
-          You have unsaved changes. Save before leaving this page.
+      {/* Awaiting banner */}
+      {event.state === 'APPLIED_FOR_APPROVAL' && (
+        <div className="flex items-start gap-3 px-4 py-4 bg-amber-500/5 border border-amber-500/15 rounded-xl mb-6">
+          <Clock size={14} className="text-amber-400 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-amber-400 font-fira font-semibold text-sm">Awaiting Review</p>
+            <p className="text-zinc-500 text-xs font-fira mt-0.5">
+              Your permission request has been submitted and is currently under review. You will be notified once a decision is made.
+            </p>
+          </div>
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        {/* ── 1. Visibility & Access ── */}
-        <div className="bg-[#1c1c1e] border border-white/[0.06] rounded-xl p-5">
-          <SectionHeader icon={ShieldCheck} title="Visibility & Access"
-            description="Control who can see and participate in this event." />
-          <div>
-            <PermRow label="Somaiya Students Only"
-              description="When enabled, only students with a Somaiya email can register.">
-              <Toggle checked={settings.is_only_somaiya} onChange={v => set('is_only_somaiya', v)} />
-            </PermRow>
-            <PermRow label="Visibility">
-              <div className="flex items-center gap-2 text-sm font-fira">
-                {settings.is_only_somaiya
-                  ? <><Lock size={13} className="text-amber-400" /><span className="text-amber-400">Somaiya Only</span></>
-                  : <><Unlock size={13} className="text-emerald-400" /><span className="text-emerald-400">Open to All</span></>
-                }
-              </div>
-            </PermRow>
-            {event.external_registration_link !== null && (
-              <PermRow label="External Registration Link"
-                description="Redirect students to an external form instead of in-app registration.">
-                <div />
-              </PermRow>
-            )}
-            <div className="pt-1">
-              <label className="text-zinc-600 text-[10px] font-fira uppercase tracking-wider block mb-1.5">
-                External Registration URL
-              </label>
-              <input
-                type="url"
-                value={settings.external_registration_link}
-                onChange={e => set('external_registration_link', e.target.value)}
-                placeholder="https://forms.google.com/…"
-                className="w-full bg-[#252527] border border-white/[0.08] focus:border-red-600/40 text-white text-sm font-fira rounded-lg px-3 py-2 outline-none transition-colors placeholder-zinc-700"
-              />
-            </div>
-            <div className="pt-3">
-              <label className="text-zinc-600 text-[10px] font-fira uppercase tracking-wider block mb-1.5">
-                Online Event Link
-              </label>
-              <input
-                type="url"
-                value={settings.online_event_link}
-                onChange={e => set('online_event_link', e.target.value)}
-                placeholder="https://meet.google.com/…"
-                className="w-full bg-[#252527] border border-white/[0.08] focus:border-red-600/40 text-white text-sm font-fira rounded-lg px-3 py-2 outline-none transition-colors placeholder-zinc-700"
-              />
-            </div>
-          </div>
-        </div>
+        {/* Left: Approval chain + state history */}
+        <div className="lg:col-span-2 space-y-4">
 
-        {/* ── 2. Registration Rules ── */}
-        <div className="bg-[#1c1c1e] border border-white/[0.06] rounded-xl p-5">
-          <SectionHeader icon={Users} title="Registration Rules"
-            description="Define how students register — individually or in teams." />
-          <div>
-            <PermRow label="Registration Type">
-              <NativeSelect
-                value={settings.registration_type}
-                onChange={v => set('registration_type', v)}
-                options={[
-                  { value: 'INDIVIDUAL', label: 'Individual' },
-                  { value: 'TEAM', label: 'Team' },
-                ]}
-              />
-            </PermRow>
-            {isTeam && (
-              <>
-                <PermRow label="Min team size"
-                  description="Minimum number of members per team.">
-                  <NumberInput value={settings.min_ppt} onChange={v => set('min_ppt', v)} min={2} max={settings.ma_ppt} />
-                </PermRow>
-                <PermRow label="Max team size"
-                  description="Maximum number of members per team.">
-                  <NumberInput value={settings.ma_ppt} onChange={v => set('ma_ppt', v)} min={settings.min_ppt} max={50} />
-                </PermRow>
-              </>
-            )}
-            <PermRow label="Entry Fee" description="Set to 0 for a free event.">
-              <NumberInput value={settings.fee} onChange={v => set('fee', v)} min={0} prefix="₹" />
-            </PermRow>
-          </div>
-
-          {/* Preview badge */}
-          <div className="mt-4 p-3 bg-zinc-800/40 rounded-lg border border-white/[0.04]">
-            <p className="text-zinc-600 text-[10px] font-fira uppercase tracking-wider mb-2">Student sees</p>
-            <div className="flex flex-wrap gap-2">
-              {settings.fee > 0
-                ? <span className="px-2 py-1 bg-amber-500/10 text-amber-400 text-xs font-fira rounded-md">₹{settings.fee}</span>
-                : <span className="px-2 py-1 bg-emerald-500/10 text-emerald-400 text-xs font-fira rounded-md">Free</span>
-              }
-              <span className="px-2 py-1 bg-zinc-700 text-zinc-300 text-xs font-fira rounded-md">
-                {isTeam ? `Team · ${settings.min_ppt}–${settings.ma_ppt} members` : 'Individual'}
-              </span>
-              {settings.is_only_somaiya
-                ? <span className="px-2 py-1 bg-blue-500/10 text-blue-400 text-xs font-fira rounded-md flex items-center gap-1"><Building2 size={10} /> Somaiya Only</span>
-                : <span className="px-2 py-1 bg-zinc-700/60 text-zinc-400 text-xs font-fira rounded-md flex items-center gap-1"><Globe size={10} /> Open to All</span>
-              }
-              {settings.external_registration_link && (
-                <span className="px-2 py-1 bg-purple-500/10 text-purple-400 text-xs font-fira rounded-md flex items-center gap-1"><ExternalLink size={10} /> External Form</span>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* ── 3. Features ── */}
-        <div className="bg-[#1c1c1e] border border-white/[0.06] rounded-xl p-5">
-          <SectionHeader icon={CheckCircle2} title="Features"
-            description="Enable or disable optional event features." />
-          <div>
-            <PermRow label="Ticketing"
-              description="Manage seat capacity and issue numbered tickets to registrants.">
-              <Toggle checked={settings.is_ticket_feature_enabled} onChange={v => set('is_ticket_feature_enabled', v)} />
-            </PermRow>
-            {settings.is_ticket_feature_enabled && (
-              <PermRow label="Total Seats" description="Set to 0 for unlimited.">
-                <NumberInput value={settings.ticket_count} onChange={v => set('ticket_count', v)} min={0} />
-              </PermRow>
-            )}
-            <PermRow label="Post-Event Feedback"
-              description="Students can submit feedback after the event ends.">
-              <Toggle checked={settings.is_feedback_enabled} onChange={v => set('is_feedback_enabled', v)} />
-            </PermRow>
-            <PermRow label="Attendance Mode"
-              description="How attendance will be marked for this event.">
-              <NativeSelect
-                value={settings.attendance_type}
-                onChange={v => set('attendance_type', v)}
-                options={[
-                  { value: 'MANUAL', label: 'Manual' },
-                  { value: 'QR', label: 'QR Scan' },
-                  { value: 'AUTO', label: 'Automatic' },
-                ]}
-              />
-            </PermRow>
-          </div>
-
-          {/* Feature summary */}
-          <div className="mt-4 grid grid-cols-3 gap-2">
-            {[
-              { label: 'Tickets', on: settings.is_ticket_feature_enabled, detail: settings.is_ticket_feature_enabled ? (settings.ticket_count > 0 ? `${settings.ticket_count} seats` : 'Unlimited') : 'Off' },
-              { label: 'Feedback', on: settings.is_feedback_enabled, detail: settings.is_feedback_enabled ? 'Post-event' : 'Off' },
-              { label: 'Attendance', on: true, detail: settings.attendance_type },
-            ].map(({ label, on, detail }) => (
-              <div key={label} className={`p-3 rounded-lg border text-center ${on ? 'border-emerald-500/20 bg-emerald-500/5' : 'border-zinc-700/50 bg-zinc-800/30'}`}>
-                <p className={`text-[10px] font-fira uppercase tracking-wider mb-1 ${on ? 'text-emerald-500' : 'text-zinc-600'}`}>{label}</p>
-                <p className="text-white text-xs font-fira font-semibold">{detail}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* ── 4. Who Can See What ── */}
-        <div className="bg-[#1c1c1e] border border-white/[0.06] rounded-xl p-5">
-          <SectionHeader icon={Eye} title="Visibility Matrix"
-            description="What different user roles can see and do with this event." />
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs font-fira">
-              <thead>
-                <tr className="border-b border-white/[0.06]">
-                  <th className="text-left py-2 text-zinc-600 font-normal uppercase tracking-wider text-[10px]">Permission</th>
-                  <th className="text-center py-2 text-zinc-500 font-semibold px-2">Organizer</th>
-                  <th className="text-center py-2 text-zinc-500 font-semibold px-2">Council</th>
-                  <th className="text-center py-2 text-zinc-500 font-semibold px-2">Student</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[
-                  { action: 'View event',         organizer: true,  council: true,  student: event.state !== 'DRAFT' },
-                  { action: 'Register',           organizer: false, council: false, student: event.state === 'REGISTRATION_OPEN' },
-                  { action: 'Edit details',       organizer: true,  council: true,  student: false },
-                  { action: 'Change state',       organizer: false, council: true,  student: false },
-                  { action: 'View participants',  organizer: true,  council: true,  student: false },
-                  { action: 'Mark attendance',    organizer: true,  council: true,  student: false },
-                  { action: 'Submit feedback',    organizer: false, council: false, student: settings.is_feedback_enabled && event.state === 'COMPLETED' },
-                  { action: 'Download report',    organizer: true,  council: true,  student: false },
-                ].map(({ action, organizer, council, student }) => (
-                  <tr key={action} className="border-b border-white/[0.03] last:border-0">
-                    <td className="py-2.5 text-zinc-400">{action}</td>
-                    {[organizer, council, student].map((v, i) => (
-                      <td key={i} className="py-2.5 text-center px-2">
-                        {v
-                          ? <UserCheck size={13} className="text-emerald-400 mx-auto" />
-                          : <UserX size={13} className="text-zinc-700 mx-auto" />
+          {/* Stage timeline */}
+          <div className="bg-[#1c1c1e] border border-white/[0.06] rounded-xl p-5">
+            <p className="text-white font-fira font-semibold text-sm mb-5">Approval Chain</p>
+            <div>
+              {APPROVAL_STAGES.map((stage, idx) => {
+                const status = getStageStatus(stage, history, event.state);
+                const Icon = stage.icon;
+                const isLast = idx === APPROVAL_STAGES.length - 1;
+                return (
+                  <div key={stage.key} className="flex gap-4">
+                    <div className="flex flex-col items-center">
+                      <div
+                        className={
+                          "w-8 h-8 rounded-full flex items-center justify-center shrink-0 border transition-colors " +
+                          (status === 'done'    ? 'bg-emerald-500/15 border-emerald-500/30' :
+                           status === 'current' ? 'bg-amber-500/15 border-amber-500/30' :
+                                                  'bg-zinc-800 border-zinc-700/50')
                         }
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      >
+                        {status === 'done'    ? <CheckCircle2 size={14} className="text-emerald-400" /> :
+                         status === 'current' ? <Clock size={14} className="text-amber-400" /> :
+                                                <Icon size={14} className="text-zinc-600" />}
+                      </div>
+                      {!isLast && (
+                        <div
+                          className={"w-px flex-1 min-h-[28px] my-1 " + (status === 'done' ? 'bg-emerald-500/20' : 'bg-zinc-800')}
+                        />
+                      )}
+                    </div>
+                    <div className={"min-w-0 flex-1 " + (isLast ? "pb-0" : "pb-6")}>
+                      <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                        <p
+                          className={
+                            "text-sm font-fira font-semibold " +
+                            (status === 'done' ? 'text-white' : status === 'current' ? 'text-amber-300' : 'text-zinc-600')
+                          }
+                        >
+                          {stage.label}
+                        </p>
+                        <span
+                          className={
+                            "text-[10px] font-fira px-1.5 py-0.5 rounded " +
+                            (status === 'done'    ? 'bg-emerald-500/10 text-emerald-500' :
+                             status === 'current' ? 'bg-amber-500/10 text-amber-500' :
+                                                    'bg-zinc-800 text-zinc-600')
+                          }
+                        >
+                          {status === 'done' ? 'Completed' : status === 'current' ? 'In Progress' : 'Pending'}
+                        </span>
+                      </div>
+                      <p className="text-zinc-600 text-xs font-fira">{stage.role}</p>
+                      <p className="text-zinc-700 text-xs font-fira mt-1 leading-relaxed">{stage.description}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-          <p className="text-zinc-700 text-[10px] font-fira mt-3 leading-relaxed">
-            * Visibility is derived from the current event state and the settings above. Some rows update live as you change settings.
-          </p>
+
+          {/* Permission Forms */}
+          <div className="bg-[#1c1c1e] border border-white/[0.06] rounded-xl p-5">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-white font-fira font-semibold text-sm">Permission Forms</p>
+              <span className="text-zinc-600 text-xs font-fira">{uploadedCount} / {PERMISSION_FORMS.length} uploaded</span>
+            </div>
+            <p className="text-zinc-600 text-xs font-fira mb-4">
+              Download the form template, fill it out, get the required signatures, and upload the signed copy.
+            </p>
+
+            {/* Progress bar */}
+            <div className="h-1 bg-zinc-800 rounded-full mb-5 overflow-hidden">
+              <div
+                className="h-full bg-red-600 rounded-full transition-all"
+                style={{ width: PERMISSION_FORMS.length > 0 ? (uploadedCount * 100 / PERMISSION_FORMS.length) + '%' : '0%' }}
+              />
+            </div>
+
+            <div className="space-y-3">
+              {PERMISSION_FORMS.map((form) => {
+                const status = formStatuses[form.id];
+                const fileName = uploadedNames[form.id];
+                return (
+                  <div key={form.id} className="border border-white/[0.05] rounded-xl p-4 bg-zinc-900/40">
+                    <div className="flex items-start justify-between gap-3 mb-1">
+                      <div className="flex items-start gap-2 min-w-0">
+                        <FileText size={13} className="text-zinc-500 mt-0.5 shrink-0" />
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="text-white text-sm font-fira font-medium">{form.title}</p>
+                            {form.required && (
+                              <span className="text-[9px] font-fira text-red-400 bg-red-500/10 px-1.5 py-0.5 rounded uppercase tracking-wider">Required</span>
+                            )}
+                          </div>
+                          <p className="text-zinc-600 text-[10px] font-fira">{form.authority}</p>
+                        </div>
+                      </div>
+                      {formStatusBadge(status)}
+                    </div>
+                    <p className="text-zinc-600 text-xs font-fira ml-5 mb-3 leading-relaxed">{form.description}</p>
+                    <div className="flex items-center gap-2 ml-5 flex-wrap">
+                      {form.templateUrl && (
+                        <a
+                          href={form.templateUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 border border-white/[0.06] text-zinc-400 hover:text-white text-xs font-fira rounded-lg transition-all"
+                        >
+                          <Download size={11} /> Template
+                        </a>
+                      )}
+                      {status === 'not_uploaded' ? (
+                        <label className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 border border-white/[0.06] text-zinc-400 hover:text-white text-xs font-fira rounded-lg transition-all cursor-pointer">
+                          <Upload size={11} /> Upload Signed Copy
+                          <input
+                            type="file"
+                            accept=".pdf,.jpg,.jpeg,.png"
+                            className="hidden"
+                            onChange={(e) => handleFileChange(form.id, e.target.files)}
+                          />
+                        </label>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 border border-white/[0.06] text-zinc-400 text-xs font-fira rounded-lg">
+                            <Paperclip size={11} />
+                            <span className="max-w-[160px] truncate">{fileName ?? 'Uploaded file'}</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => clearUpload(form.id)}
+                            className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-600 hover:text-red-400 border border-white/[0.06] transition-all"
+                          >
+                            <X size={11} />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Submit button if all required forms uploaded */}
+            {requiredDone && canSubmit && (
+              <div className="mt-4 p-3 bg-emerald-500/5 border border-emerald-500/15 rounded-xl flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 size={13} className="text-emerald-400" />
+                  <p className="text-emerald-400 text-xs font-fira">All required forms uploaded. Ready to submit.</p>
+                </div>
+                <button
+                  type="button"
+                  className="flex items-center gap-1.5 px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-fira rounded-lg transition-colors"
+                >
+                  <Send size={11} /> Submit
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* State history breadcrumb */}
+          {history.length > 0 && (
+            <div className="bg-[#1c1c1e] border border-white/[0.06] rounded-xl p-5">
+              <p className="text-white font-fira font-semibold text-sm mb-4">State History</p>
+              <div className="flex flex-wrap items-center gap-2">
+                {history.map((s, i) => {
+                  const m = STATE_META[s];
+                  return (
+                    <div key={i} className="flex items-center gap-1.5">
+                      <span className={"px-2.5 py-1 rounded-md text-[11px] font-fira " + (m ? m.cls : 'bg-zinc-800 text-zinc-500')}>
+                        {m ? m.label : s}
+                      </span>
+                      {i < history.length - 1 && <ChevronRight size={12} className="text-zinc-700" />}
+                    </div>
+                  );
+                })}
+                {event.state !== history[history.length - 1] && (
+                  <>
+                    <ChevronRight size={12} className="text-zinc-700" />
+                    <span className={"px-2.5 py-1 rounded-md text-[11px] font-fira " + meta.cls}>{meta.label}</span>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
+        {/* Right: Info panel */}
+        <div className="space-y-4">
+
+          {/* Current status */}
+          <div className="bg-[#1c1c1e] border border-white/[0.06] rounded-xl p-5">
+            <p className="text-zinc-600 text-[10px] font-fira uppercase tracking-wider mb-3">Current Status</p>
+            <span className={"inline-block px-3 py-1.5 rounded-lg text-sm font-fira font-semibold mb-2 " + meta.cls}>
+              {meta.label}
+            </span>
+            <p className="text-zinc-500 text-xs font-fira leading-relaxed">{meta.desc}</p>
+          </div>
+
+          {/* Authority remark */}
+          {event.comment && (
+            <div className="bg-[#1c1c1e] border border-white/[0.06] rounded-xl p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <MessageSquare size={13} className="text-zinc-500" />
+                <p className="text-zinc-400 text-xs font-fira uppercase tracking-wider">Remark from Authority</p>
+              </div>
+              <p className="text-white text-sm font-fira leading-relaxed italic">"{event.comment}"</p>
+            </div>
+          )}
+
+          {/* What happens next */}
+          <div className="bg-[#1c1c1e] border border-white/[0.06] rounded-xl p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <Info size={13} className="text-zinc-500" />
+              <p className="text-zinc-400 text-xs font-fira uppercase tracking-wider">What Happens Next</p>
+            </div>
+            <p className="text-zinc-500 text-xs font-fira leading-relaxed">
+              {event.state === 'DRAFT'
+                ? 'Submit your event for approval when ready. The council will review your details and forward it to the Dean and Principal.'
+                : event.state === 'APPLIED_FOR_APPROVAL'
+                  ? 'The council is reviewing your event. Once cleared, it will be forwarded to the Dean and Principal. This typically takes 3-5 working days.'
+                  : event.state === 'UNLISTED'
+                    ? "Council clearance granted. The Dean's Office and Principal will review your event next."
+                    : ['UPCOMING', 'REGISTRATION_OPEN', 'ONGOING', 'COMPLETED'].includes(event.state)
+                      ? 'All permissions have been granted. No further action required.'
+                      : 'Contact the council office for further information.'}
+            </p>
+          </div>
+
+          {/* Pre-submission checklist */}
+          <div className="bg-[#1c1c1e] border border-white/[0.06] rounded-xl p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <Lock size={13} className="text-zinc-500" />
+              <p className="text-zinc-400 text-xs font-fira uppercase tracking-wider">Submission Checklist</p>
+            </div>
+            <ul className="space-y-2">
+              {[
+                { label: 'Event description', done: !!event.description },
+                { label: 'Date(s) set',        done: Array.isArray(event.dates) && event.dates.length > 0 },
+                { label: 'Venue specified',     done: !!event.venue },
+                { label: 'Banner uploaded',     done: !!event.banner_url },
+              ].map(({ label, done }) => (
+                <li key={label} className="flex items-center gap-2 text-xs font-fira">
+                  {done
+                    ? <CheckCircle2 size={12} className="text-emerald-400 shrink-0" />
+                    : <AlertCircle size={12} className="text-amber-500 shrink-0" />}
+                  <span className={done ? 'text-zinc-400' : 'text-amber-400'}>{label}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Approving authorities */}
+          <div className="bg-[#1c1c1e] border border-white/[0.06] rounded-xl p-5">
+            <p className="text-zinc-600 text-[10px] font-fira uppercase tracking-wider mb-3">Approving Authorities</p>
+            <div className="space-y-3">
+              {([
+                { label: 'Council / Nodal Officer', Icon: Users },
+                { label: "Dean's Office",           Icon: Building2 },
+                { label: 'Principal',               Icon: GraduationCap },
+              ] as const).map(({ label, Icon }) => (
+                <div key={label} className="flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-lg bg-zinc-800 flex items-center justify-center shrink-0">
+                    <Icon size={12} className="text-zinc-500" />
+                  </div>
+                  <span className="text-zinc-500 text-xs font-fira">{label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+        </div>
       </div>
     </div>
   );
