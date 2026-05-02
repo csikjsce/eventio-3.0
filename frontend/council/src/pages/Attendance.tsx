@@ -172,6 +172,8 @@ export default function Attendance() {
 
   // ── Detail view ──────────────────────────────────────────────────────────────
   const selectedEvent = activeEvents.find(e => e.id === selectedEventId);
+  const attendancePct = attendees.length > 0 ? Math.round((presentCount * 100) / attendees.length) : 0;
+  const attendanceBarWidth = attendees.length > 0 ? (presentCount * 100) / attendees.length : 0;
 
   return (
     <div className="min-h-screen bg-[#121214] px-8 py-8">
@@ -262,7 +264,7 @@ export default function Attendance() {
                     </div>
 
                     {cameraActive ? (
-                      <div className="relative rounded-xl overflow-hidden" style={{ aspectRatio: '1 / 1' }}>
+                      <div className="relative rounded-xl overflow-hidden" style={{ aspectRatio: '1/1' }}>
                         <Scanner
                           onScan={handleCameraScan}
                           allowMultiple={false}
@@ -309,11 +311,11 @@ export default function Attendance() {
                   </div>
                   <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
                     <div className="h-full bg-emerald-600 rounded-full transition-all"
-                      style={{ width: `${attendees.length > 0 ? (presentCount / attendees.length) * 100 : 0}%` }} />
+                      style={{ width: `${attendanceBarWidth}%` }} />
                   </div>
                 </div>
                 <p className="text-white text-3xl font-fira font-bold">
-                  {attendees.length > 0 ? Math.round((presentCount / attendees.length) * 100) : 0}%
+                  {attendancePct}%
                 </p>
                 <p className="text-zinc-500 text-xs font-fira">Show-up rate</p>
               </div>
@@ -394,7 +396,6 @@ export default function Attendance() {
             </div>
           </div>
         </div>
-      )}
     </div>
   );
 }
