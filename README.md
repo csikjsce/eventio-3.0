@@ -12,7 +12,7 @@
 ![Nginx](https://img.shields.io/badge/Nginx-reverse--proxy-009639?logo=nginx&logoColor=white)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow)
 
-> Full-stack college event management platform with role-based access for students, councils, faculty, and the principal
+> Full-stack college event management platform with role-based access for students, councils, faculty, and the principal.
 
 ---
 
