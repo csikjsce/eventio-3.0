@@ -78,7 +78,6 @@ model User {
   signature          Json?
   Events             Events[]
   Participant        Participant[]
-  participant_users  Participant_user[]
   Team               Team[]
 }
 
@@ -111,19 +110,9 @@ model Team {
   approved          Boolean            @default(false)
   submissions       Json?
   Participant       Participant[]
-  participant_users Participant_user[]
 
   @@unique([name, event_id])
   @@unique([invite_code, event_id])
-}
-
-model Participant_user {
-  participant_id Int
-  user_id        Int
-  participant    Team @relation(fields: [participant_id], references: [id])
-  user           User @relation(fields: [user_id], references: [id])
-
-  @@id([participant_id, user_id])
 }
 
 model Admins {

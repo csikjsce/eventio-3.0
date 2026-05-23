@@ -516,7 +516,6 @@ router.post(protected + "/get/:id", authCheck, async (req, res) => {
         });
         let eventResponse = {
             id: event.id,
-            title: event.title,
             description: event.description,
             long_description: event.long_description,
             is_only_somaiya: event.is_only_somaiya,
@@ -568,7 +567,6 @@ router.post(protected + "/create", authCheck, (req, res) => {
 
     let {
         name,
-        title,
         tag_line,
         description,
         long_description,
@@ -601,7 +599,6 @@ router.post(protected + "/create", authCheck, (req, res) => {
         .create({
             data: {
                 name,
-                title,
                 tag_line,
                 event_type,
                 description,
@@ -849,8 +846,95 @@ router.get(protected + "/stats", authCheck, async (req, res) => {
         });
     }
 });
-router.post(protected + "/get-children/:id", authCheck, (req, res) => {});
-router.post(protected + "/get-calendar", authCheck, (req, res) => {});
+router.post(protected + "/get-children/:id", authCheck, async (req, res) => {
+    if (!req.user) {
+        return res.status(401).json({ error: true, message: "Unauthorized" });
+    }
+    const parentId = parseInt(req.params.id);
+    if (isNaN(parentId)) {
+        return res.status(400).json({ error: true, message: "Invalid event id" });
+    }
+    try {
+        const children = await prisma.events.findMany({
+            where: { parent_id: parentId },
+            include: {
+                organizer: {
+                    select: { id: true, name: true, photo_url: true, email: true },
+                },
+            },
+        });
+        return res.json({ error: false, children });
+    } catch (err) {
+        logger.error(err);
+        return res
+            .status(500)
+            .json({ error: true, message: "Error fetching child events" });
+    }
+});
+
+router.post(protected + "/get-calendar", authCheck, async (req, res) => {
+    if (!req.user) {
+        return res.status(401).json({ error: true, message: "Unauthorized" });
+    }
+    const role = req.user.role;
+    let visibleStates;
+    if (role === "COUNCIL" || role === "FACULTY") {
+        visibleStates = [
+            "UPCOMING",
+            "REGISTRATION_OPEN",
+            "REGISTRATION_CLOSED",
+            "TICKET_OPEN",
+            "TICKET_CLOSED",
+            "ONGOING",
+            "COMPLETED",
+        ];
+    } else if (role === "PRINCIPAL") {
+        visibleStates = [
+            "UPCOMING",
+            "REGISTRATION_OPEN",
+            "REGISTRATION_CLOSED",
+            "TICKET_OPEN",
+            "TICKET_CLOSED",
+            "ONGOING",
+            "COMPLETED",
+        ];
+    } else {
+        visibleStates = [
+            "UPCOMING",
+            "REGISTRATION_OPEN",
+            "REGISTRATION_CLOSED",
+            "TICKET_OPEN",
+            "TICKET_CLOSED",
+            "ONGOING",
+        ];
+    }
+    try {
+        const events = await prisma.events.findMany({
+            where: { state: { in: visibleStates } },
+            select: {
+                id: true,
+                name: true,
+                tag_line: true,
+                dates: true,
+                venue: true,
+                state: true,
+                banner_url: true,
+                logo_image__url: true,
+                event_type: true,
+                organizer: {
+                    select: { id: true, name: true, photo_url: true },
+                },
+            },
+            orderBy: { dates: "asc" },
+        });
+        return res.json({ error: false, events });
+    } catch (err) {
+        logger.error(err);
+        return res
+            .status(500)
+            .json({ error: true, message: "Error fetching calendar events" });
+    }
+});
 router.post(protected + "/register-for-event", authCheck, async (req, res) => {
     if (!req.user) {
         return res.status(401).json({ error: true, message: "Unauthorized" });
@@ -1148,6 +1232,7 @@ router.post(protected + "/join-team", authCheck, async (req, res) => {
                 },
             ],
         },
+        include: { user: { select: { gender: true } } },
     });
 
     let teamMembers = participants.length;
@@ -1161,7 +1246,7 @@ router.post(protected + "/join-team", authCheck, async (req, res) => {
 
     // count the number of female participants in the team
     let femaleParticipants = participants.filter(
-        (participant) => participant.gender === "FEMALE",
+        (participant) => participant.user?.gender === "FEMALE",
     ).length;
 
     if (
@@ -1169,9 +1254,6 @@ router.post(protected + "/join-team", authCheck, async (req, res) => {
         femaleParticipants < event.female_requirement &&
         teamMembers + 1 >= event.ma_ppt
     ) {
-        console.log(req.user.gender);
-        console.log(femaleParticipants);
-        console.log(event.ma_ppt, event.female_requirement);
         return res.status(403).json({
             error: true,
             message:

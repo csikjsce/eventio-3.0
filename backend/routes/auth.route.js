@@ -48,21 +48,19 @@ router.get(
         let redirectURL;
         switch (userDB.role) {
             case "FACULTY":
-                redirectURL = process.env.CLIENT_URL + '/dean';
+                redirectURL = process.env.DEAN_CLIENT_URL;
                 break;
             case "COUNCIL":
-                redirectURL = process.env.CLIENT_URL + '/council';
+                redirectURL = process.env.COUNCIL_CLIENT_URL;
                 break;
             case "PRINCIPAL":
-                redirectURL=process.env.CLIENT_URL + '/dean';
+                redirectURL = process.env.DEAN_CLIENT_URL;
                 break;
             default:
                 redirectURL = process.env.CLIENT_URL;
         }
         res.redirect(
-            `${
-                redirectURL + process.env.FRONTEND_REDIRECT_PATH
-            }?accessToken=${accessToken}&refreshToken=${refreshToken}`,
+            `${redirectURL}${process.env.FRONTEND_REDIRECT_PATH}?accessToken=${accessToken}&refreshToken=${refreshToken}`,
         );
     },
 );

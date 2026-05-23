@@ -1,7 +1,6 @@
 version: "3.8"
 
 services:
-    # Backend service
     backend:
         image: ghcr.io/csikjsce/eventio-backend:latest
         build:
@@ -32,8 +31,6 @@ services:
             - EMAIL_PASS=${EMAIL_PASS}
         volumes:
             - ./backend/cert:/app/cert:ro
-        networks:
-            - eventio-network
         restart: unless-stopped
         healthcheck:
             test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
@@ -42,42 +39,47 @@ services:
             retries: 3
             start_period: 40s
 
-    # Frontend nginx service
-    frontend:
-        image: ghcr.io/csikjsce/eventio-frontend:latest
+    student:
+        image: ghcr.io/csikjsce/eventio-student:latest
         build:
-            context: .
+            context: ./frontend/student
             dockerfile: Dockerfile
             args:
-                - VITE_APP_SERVER_ADDRESS=${VITE_APP_SERVER_ADDRESS:-}
-        container_name: eventio-frontend
+                - VITE_APP_SERVER_ADDRESS=${VITE_APP_SERVER_ADDRESS:-http://localhost:8000}
+        container_name: eventio-student
         ports:
-            - "80:80"
+            - "3000:80"
         depends_on:
             backend:
                 condition: service_healthy
-        networks:
-            - eventio-network
-        restart: unless-stopped
-        healthcheck:
-            test: ["CMD", "curl", "-f", "http://localhost/api/v1/health"]
-            interval: 30s
-            timeout: 10s
-            retries: 3
-            start_period: 40s
-
-    # Watchtower — auto-pulls new images from GHCR and restarts containers
-    watchtower:
-        image: containrrr/watchtower
-        container_name: eventio-watchtower
-        volumes:
-            - /var/run/docker.sock:/var/run/docker.sock
-        environment:
-            - WATCHTOWER_POLL_INTERVAL=300
-            - WATCHTOWER_CLEANUP=true
-            - WATCHTOWER_INCLUDE_RESTARTING=true
         restart: unless-stopped
 
-networks:
-    eventio-network:
-        driver: bridge
+    council:
+        image: ghcr.io/csikjsce/eventio-council:latest
+        build:
+            context: ./frontend/council
+            dockerfile: Dockerfile
+            args:
+                - VITE_APP_SERVER_ADDRESS=${VITE_APP_SERVER_ADDRESS:-http://localhost:8000}
+        container_name: eventio-council
+        ports:
+            - "3001:80"
+        depends_on:
+            backend:
+                condition: service_healthy
+        restart: unless-stopped
+
+    dean:
+        image: ghcr.io/csikjsce/eventio-dean:latest
+        build:
+            context: ./frontend/dean
+            dockerfile: Dockerfile
+            args:
+                - VITE_APP_SERVER_ADDRESS=${VITE_APP_SERVER_ADDRESS:-http://localhost:8000}
+        container_name: eventio-dean
+        ports:
+            - "3002:80"
+        depends_on:
+            backend:
+                condition: service_healthy
+        restart: unless-stopped
