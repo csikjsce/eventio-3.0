@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight2, CallCalling, Clock, Icon as Icontype, Moon, Sun } from "iconsax-react";
+import { ArrowRight2, CallCalling, Clock, Icon as Icontype, Moon, Setting2, Sun } from "iconsax-react";
 import Link from "next/link";
 import { UserDataContext } from "@/contexts/userContext";
 import { useContext } from "react";
@@ -121,12 +121,24 @@ export default function ProfileScreen() {
       {/* Menu items */}
       <div className="flex flex-col gap-3">
         <ProfileItem Icon={Clock} title="My Events" to="/profile/myevents" />
+        <ProfileItem Icon={Setting2} title="Edit Profile" to="/profile/settings" />
         <ProfileItem
           Icon={CallCalling}
           title="Contact Us"
           to="tel:+918657432101"
         />
         <ThemeToggle />
+      </div>
+
+      {/* Credits */}
+      <div className="mt-10 flex flex-col items-center gap-1.5">
+        <p className="font-poppins text-xs text-mute">Built &amp; maintained by</p>
+        <p className="font-poppins font-semibold text-sm text-foreground tracking-wide">
+          CSI KJSCE
+        </p>
+        <p className="font-poppins text-xs text-mute/60">
+          Eventio v3.0
+        </p>
       </div>
     </div>
   );
