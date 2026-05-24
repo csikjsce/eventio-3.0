@@ -1,11 +1,13 @@
 "use client";
 
 import { useContext } from "react";
+import Link from "next/link";
 import { UserDataContext } from "@/contexts/userContext";
 import EventsDataContext from "@/contexts/EventsDataContext";
 import EventCard from "@/components/EventCard";
 import TrendingCard from "@/components/TrendingCard";
 import { SearchNormal1 } from "iconsax-react";
+import { useBookmarks } from "@/hooks/useBookmarks";
 import type { EventData } from "@/types/eventio";
 
 function parentFilterOut(event: EventData) {
@@ -18,9 +20,32 @@ function ticketFilter(event: EventData) {
   return event.Participant !== false && event.Participant.ticket_collected;
 }
 
+function SectionHeader({ title, href }: { title: string; href?: string }) {
+  return (
+    <div className="flex justify-between items-center">
+      <h2 className="font-semibold text-base text-foreground font-poppins">
+        {title}
+      </h2>
+      {href ? (
+        <Link
+          href={href}
+          className="text-primary text-xs font-poppins font-medium active:opacity-70"
+        >
+          View All
+        </Link>
+      ) : (
+        <span className="text-primary text-xs font-poppins font-medium opacity-40">
+          View All
+        </span>
+      )}
+    </div>
+  );
+}
+
 export default function HomeScreen() {
   const { userData } = useContext(UserDataContext);
   const { events } = useContext(EventsDataContext);
+  const { isBookmarked, toggle } = useBookmarks();
 
   const today = new Date();
   const dateStr = today.toLocaleDateString("en-US", {
@@ -58,12 +83,14 @@ export default function HomeScreen() {
             KJ Somaiya
           </span>
         </div>
-        <img
-          src={userData?.photo_url || ""}
-          alt="profile"
-          referrerPolicy="no-referrer"
-          className="w-11 h-11 rounded-full object-cover ring-2 ring-primary/40"
-        />
+        <Link href="/profile">
+          <img
+            src={userData?.photo_url || ""}
+            alt="profile"
+            referrerPolicy="no-referrer"
+            className="w-11 h-11 rounded-full object-cover ring-2 ring-primary/40"
+          />
+        </Link>
       </div>
 
       {/* ── Welcome ── */}
@@ -87,7 +114,7 @@ export default function HomeScreen() {
       {/* ── Your Tickets ── */}
       {ticketEvents.length > 0 && (
         <section>
-          <SectionHeader title="Your Tickets" />
+          <SectionHeader title="Your Tickets" href="/profile/myevents" />
           <div className="flex flex-col gap-3 mt-3">
             {ticketEvents.slice(0, 3).map((event) => (
               <EventCard key={event.id} event={event} />
@@ -99,7 +126,7 @@ export default function HomeScreen() {
       {/* ── Nearby / Trending ── */}
       {trendingEvents.length > 0 && (
         <section>
-          <SectionHeader title="Nearby Event" />
+          <SectionHeader title="Nearby Event" href="/councils" />
           <div className="overflow-x-auto scrollbar-hide flex gap-4 -mx-4 px-4 pb-2 mt-3">
             {trendingEvents.map((event) => {
               const text =
@@ -110,7 +137,15 @@ export default function HomeScreen() {
                     : event.state === "REGISTRATION_OPEN"
                       ? "Register Now"
                       : "Coming Soon";
-              return <TrendingCard key={event.id} event={event} text={text} />;
+              return (
+                <TrendingCard
+                  key={event.id}
+                  event={event}
+                  text={text}
+                  bookmarked={isBookmarked(event.id)}
+                  onBookmark={toggle}
+                />
+              );
             })}
           </div>
         </section>
@@ -119,7 +154,7 @@ export default function HomeScreen() {
       {/* ── Upcoming Events ── */}
       {upcomingList.length > 0 && (
         <section>
-          <SectionHeader title="Upcoming Event" />
+          <SectionHeader title="Upcoming Event" href="/calendar" />
           <div className="flex flex-col gap-3 mt-3">
             {upcomingList.slice(0, 5).map((event) => (
               <EventCard key={event.id} event={event} />
@@ -128,11 +163,11 @@ export default function HomeScreen() {
         </section>
       )}
 
-      {/* ── Registration Open ── */}
+      {/* ── Tickets Released ── */}
       {events?.REGISTRATION_OPEN?.filter(parentFilterOut).length === 0 &&
         events?.TICKET_OPEN?.filter(parentFilterOut).length !== 0 && (
           <section>
-            <SectionHeader title="Tickets Released" />
+            <SectionHeader title="Tickets Released" href="/profile/myevents" />
             <div className="flex flex-col gap-3 mt-3">
               {events.TICKET_OPEN.filter(parentFilterOut).map((event) => (
                 <EventCard key={event.id} event={event} />
@@ -140,19 +175,6 @@ export default function HomeScreen() {
             </div>
           </section>
         )}
-    </div>
-  );
-}
-
-function SectionHeader({ title }: { title: string }) {
-  return (
-    <div className="flex justify-between items-center">
-      <h2 className="font-semibold text-base text-foreground font-poppins">
-        {title}
-      </h2>
-      <span className="text-primary text-xs font-poppins font-medium">
-        View All
-      </span>
     </div>
   );
 }

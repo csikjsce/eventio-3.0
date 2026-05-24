@@ -6,9 +6,13 @@ import type { EventData } from "@/types/eventio";
 export default function TrendingCard({
   event,
   text,
+  bookmarked = false,
+  onBookmark,
 }: {
   event: EventData;
   text: string;
+  bookmarked?: boolean;
+  onBookmark?: (id: number) => void;
 }) {
   return (
     <Link
@@ -26,13 +30,24 @@ export default function TrendingCard({
           alt={event.name}
           className="w-full h-44 object-cover"
         />
-        {/* Bookmark pill */}
-        <div className="absolute top-3 right-3 bg-black/40 backdrop-blur-sm rounded-full p-2">
+
+        {/* Bookmark button — separate from Link navigation */}
+        <button
+          onClick={(e) => {
+            e.preventDefault();   // stop Link navigation
+            e.stopPropagation();
+            onBookmark?.(event.id);
+          }}
+          aria-label={bookmarked ? "Remove bookmark" : "Bookmark event"}
+          className={`absolute top-3 right-3 backdrop-blur-sm rounded-full p-2 transition-colors ${
+            bookmarked ? "bg-primary" : "bg-black/40"
+          }`}
+        >
           <svg
             width="14"
             height="14"
             viewBox="0 0 24 24"
-            fill="none"
+            fill={bookmarked ? "white" : "none"}
             stroke="white"
             strokeWidth="2"
             strokeLinecap="round"
@@ -40,7 +55,7 @@ export default function TrendingCard({
           >
             <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
           </svg>
-        </div>
+        </button>
       </div>
 
       {/* Content */}
@@ -62,9 +77,9 @@ export default function TrendingCard({
           </div>
         </div>
         {/* CTA */}
-        <button className="w-full bg-foreground text-background rounded-full py-2.5 text-xs font-semibold font-poppins hover:opacity-90 transition-opacity">
+        <div className="w-full bg-foreground text-background rounded-full py-2.5 text-xs font-semibold font-poppins text-center">
           {text}
-        </button>
+        </div>
       </div>
     </Link>
   );
