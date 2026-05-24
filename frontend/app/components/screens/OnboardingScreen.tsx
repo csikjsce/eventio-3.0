@@ -113,16 +113,18 @@ function PersonalDetails({
           </Field>
 
           <Field label="Gender" error={errors.gender}>
-            <select
-              className={inputCls}
-              value={data.gender}
-              onChange={(e) => onChange("gender", e.target.value)}
-            >
-              <option value="" disabled>Select Gender</option>
-              <option value="MALE">Male</option>
-              <option value="FEMALE">Female</option>
-              <option value="OTHER">Prefer not to say</option>
-            </select>
+            <SelectWrapper>
+              <select
+                className={selectCls}
+                value={data.gender}
+                onChange={(e) => onChange("gender", e.target.value)}
+              >
+                <option value="" disabled>Select Gender</option>
+                <option value="MALE">Male</option>
+                <option value="FEMALE">Female</option>
+                <option value="OTHER">Prefer not to say</option>
+              </select>
+            </SelectWrapper>
           </Field>
         </div>
       </div>
@@ -171,33 +173,37 @@ function EducationalDetails({
 
         <div className="flex flex-col gap-5">
           <Field label="Graduation Year" error={errors.year}>
-            <select
-              className={inputCls}
-              value={data.year}
-              onChange={(e) => {
-                onChange("year", e.target.value);
-                onChange("branch", "");
-              }}
-            >
-              <option value="" disabled>Select Graduation Year</option>
-              {["2025", "2026", "2027", "2028", "2029"].map((y) => (
-                <option key={y} value={y}>{y}</option>
-              ))}
-            </select>
+            <SelectWrapper>
+              <select
+                className={selectCls}
+                value={data.year}
+                onChange={(e) => {
+                  onChange("year", e.target.value);
+                  onChange("branch", "");
+                }}
+              >
+                <option value="" disabled>Select Graduation Year</option>
+                {["2025", "2026", "2027", "2028", "2029"].map((y) => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+            </SelectWrapper>
           </Field>
 
           <Field label="Branch" error={errors.branch}>
-            <select
-              className={inputCls}
-              value={data.branch}
-              disabled={!data.year}
-              onChange={(e) => onChange("branch", e.target.value)}
-            >
-              <option value="" disabled>Select Branch</option>
-              {branches.map((b) => (
-                <option key={b} value={b.replace(/ /g, "_")}>{b}</option>
-              ))}
-            </select>
+            <SelectWrapper>
+              <select
+                className={selectCls}
+                value={data.branch}
+                disabled={!data.year}
+                onChange={(e) => onChange("branch", e.target.value)}
+              >
+                <option value="" disabled>Select Branch</option>
+                {branches.map((b) => (
+                  <option key={b} value={b.replace(/ /g, "_")}>{b}</option>
+                ))}
+              </select>
+            </SelectWrapper>
           </Field>
         </div>
       </div>
