@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+/* dark variant: triggered by .dark class on <html> */
+@custom-variant dark (&:is(html.dark *));
+
+/* semantic tokens → Tailwind utilities */
+@theme inline {
+  --font-fira:      var(--font-family-fira), sans-serif;
+  --font-marcellus: var(--font-family-marcellus), serif;
+
+  --color-bg:        var(--c-bg);
+  --color-surface:   var(--c-surface);
+  --color-surface2:  var(--c-surface2);
+  --color-tx:        var(--c-tx);
+  --color-muted-tx:  var(--c-muted);
+  --color-subtle-tx: var(--c-subtle);
+
+  /* named border colour — avoids rgba() inside Tailwind arbitrary values */
+  --color-border-c:  var(--c-border);
+}
+
+/* ── light ── */
+:root {
+  --c-bg:       #f5f5f7;
+  --c-surface:  #ffffff;
+  --c-surface2: #ebebed;
+  --c-tx:       #18181b;
+  --c-muted:    #52525b;
+  --c-subtle:   #71717a;
+  --c-border:   #e4e4e7;   /* zinc-200 */
+}
+
+/* ── dark ── */
+html.dark {
+  --c-bg:       #121214;
+  --c-surface:  #1c1c1e;
+  --c-surface2: #252527;
+  --c-tx:       #f4f4f5;
+  --c-muted:    #a1a1aa;
+  --c-subtle:   #71717a;
+  --c-border:   #2f2f32;   /* custom dark border */
+}
+
+@utility scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
+}
+
+@layer base {
+  * { box-sizing: border-box; }
+  body {
+    background: var(--c-bg);
+    color: var(--c-tx);
+    transition: background 0.15s, color 0.15s;
+  }
+}
