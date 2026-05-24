@@ -126,7 +126,7 @@ export default function HomeScreen() {
       {/* ── Nearby / Trending ── */}
       {trendingEvents.length > 0 && (
         <section>
-          <SectionHeader title="Upcoming Events" href="/calendar" />
+          <SectionHeader title="Trending Events" href="/calendar" />
           <div className="overflow-x-auto scrollbar-hide flex gap-4 -mx-4 px-4 pb-2 mt-3">
             {trendingEvents.map((event) => {
               const text =

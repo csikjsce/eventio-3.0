@@ -3,7 +3,7 @@ import { use, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  getEventById, PIPELINE_STAGES, getPipelineIndex, getNextAction,
+  getEventById, getNextAction,
   type EventData, type EventDocument, type ApprovalStep,
 } from "@/lib/dummy-data";
 import {
@@ -27,65 +27,26 @@ function fmtTime(iso: string) {
 const DOC_ICON: Record<string, string> = {
   proposal: "📄", noc: "🏛️", budget: "💰", letter: "📜", report: "📊", geo_tag: "📸", other: "📎",
 };
-const STEP_ICON = {
-  done:    <CheckCircle2 size={16} className="text-emerald-500 shrink-0" />,
-  active:  <Clock        size={16} className="text-amber-500 shrink-0"   />,
-  pending: <div className="w-4 h-4 rounded-full border-2 border-border-c shrink-0" />,
-  rejected:<XCircle      size={16} className="text-red-500 shrink-0"    />,
-};
-
-// ─── Pipeline visualizer ──────────────────────────────────────────────────────
-
-function PipelineBar({ event }: { event: EventData }) {
-  const currentIdx = PIPELINE_STAGES.findIndex(s => s.id === event.pipeline_stage);
-  const visibleStages = PIPELINE_STAGES.filter(s => s.id !== "REGISTRATION_CLOSED");
-
-  return (
-    <div className="bg-surface border border-border-c rounded-2xl p-5 sm:p-6 overflow-x-auto">
-      <h3 className="text-tx font-fira font-semibold text-sm mb-4">Event Journey</h3>
-      <div className="flex items-start min-w-max gap-0">
-        {visibleStages.map((stage, i) => {
-          const stageIdx = PIPELINE_STAGES.findIndex(s => s.id === stage.id);
-          const done    = stageIdx < currentIdx;
-          const active  = stageIdx === currentIdx;
-          const rejected= event.pipeline_stage === "REJECTED" && stageIdx === currentIdx;
-          const isLast  = i === visibleStages.length - 1;
-
-          return (
-            <div key={stage.id} className="flex items-center">
-              <div className="flex flex-col items-center">
-                {/* Circle */}
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all ${
-                  rejected ? "bg-red-500/10 border-red-500 text-red-500"
-                  : active  ? "bg-amber-500/10 border-amber-500 text-amber-500"
-                  : done    ? "bg-emerald-500/10 border-emerald-500 text-emerald-500"
-                  : "bg-surface2 border-border-c text-subtle-tx"
-                }`}>
-                  {rejected ? <XCircle size={14} />
-                  : done    ? <CheckCircle2 size={14} />
-                  : active  ? <Clock size={14} />
-                  : <span className="text-[10px] font-bold font-fira">{i + 1}</span>}
-                </div>
-                {/* Label */}
-                <p className={`text-[10px] font-fira text-center mt-1.5 leading-tight max-w-[64px] ${
-                  active  ? "text-amber-500 font-semibold"
-                  : done  ? "text-emerald-600 dark:text-emerald-400"
-                  : "text-subtle-tx"
-                }`}>{stage.short}</p>
-              </div>
-              {/* Connector */}
-              {!isLast && (
-                <div className={`h-0.5 w-8 sm:w-12 mx-0.5 mb-5 transition-colors ${done ? "bg-emerald-400" : "bg-border-c"}`} />
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
 
 // ─── Approval timeline ────────────────────────────────────────────────────────
+
+const STAGE_ICON: Record<string, React.ReactNode> = {
+  PROPOSAL_SUBMITTED:  <Send           size={14} />,
+  PROPOSAL_APPROVED:   <CheckCircle2   size={14} />,
+  BOOKING_PENDING:     <ArrowLeft      size={14} className="rotate-180" />,
+  DIRECTOR_VP_PENDING: <Users          size={14} />,
+  FULLY_APPROVED:      <CheckCircle2   size={14} />,
+  REGISTRATION_OPEN:   <Ticket         size={14} />,
+  REGISTRATION_CLOSED: <Clock          size={14} />,
+  ONGOING:             <ArrowLeft      size={14} className="rotate-180" />,
+  COMPLETED:           <CheckCircle2   size={14} />,
+  REPORT_SUBMITTED:    <FileText       size={14} />,
+};
+
+function fmtShort(iso: string) {
+  return new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) +
+    ", " + new Date(iso).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: false });
+}
 
 function ApprovalTimeline({ chain }: { chain: ApprovalStep[] }) {
   if (chain.length === 0) return (
@@ -94,33 +55,43 @@ function ApprovalTimeline({ chain }: { chain: ApprovalStep[] }) {
     </div>
   );
   return (
-    <div className="space-y-0">
-      {chain.map((step, i) => (
-        <div key={i} className="flex gap-3">
-          <div className="flex flex-col items-center shrink-0 w-6">
-            <div className="mt-0.5">{STEP_ICON[step.status]}</div>
-            {i < chain.length - 1 && <div className="w-px flex-1 bg-border-c min-h-[1.5rem] mt-1" />}
-          </div>
-          <div className="pb-5">
-            <div className="flex items-center gap-2 flex-wrap">
-              <p className="text-tx text-sm font-fira font-semibold">{step.label}</p>
-              <span className={`text-[10px] font-fira px-2 py-0.5 rounded-full border ${
-                step.status === "done"    ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/30"
-                : step.status === "active" ? "bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-500/30"
-                : step.status === "rejected" ? "bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border-red-200 dark:border-red-500/30"
-                : "bg-surface2 text-subtle-tx border-border-c"
-              }`}>{step.status === "active" ? "In Progress" : step.status.charAt(0).toUpperCase() + step.status.slice(1)}</span>
-            </div>
-            <p className="text-subtle-tx text-xs font-fira mt-0.5">{step.actor}</p>
-            {step.date && <p className="text-subtle-tx text-[11px] font-fira mt-0.5">{fmt(step.date)}</p>}
-            {step.note && (
-              <div className="mt-2 px-3 py-2 bg-surface2 border border-border-c rounded-lg">
-                <p className="text-muted-tx text-xs font-fira italic">&ldquo;{step.note}&rdquo;</p>
+    <div>
+      {chain.map((step, i) => {
+        const isLast = i === chain.length - 1;
+        const iconBg =
+          step.status === "done"      ? "bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
+          : step.status === "active"  ? "bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30 text-amber-600 dark:text-amber-400"
+          : step.status === "rejected"? "bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/30 text-red-500"
+          : "bg-surface2 border-border-c text-subtle-tx";
+
+        return (
+          <div key={i} className="flex gap-4">
+            {/* Icon + vertical connector */}
+            <div className="flex flex-col items-center shrink-0">
+              <div className={`w-10 h-10 rounded-full border-2 flex items-center justify-center shrink-0 ${iconBg}`}>
+                {step.status === "rejected" ? <XCircle size={15} /> : (STAGE_ICON[step.stage] ?? <Clock size={15} />)}
               </div>
-            )}
+              {!isLast && <div className="w-px flex-1 bg-border-c my-1 min-h-[2rem]" />}
+            </div>
+
+            {/* Content + date */}
+            <div className={`flex-1 flex items-start justify-between gap-3 min-w-0 ${isLast ? "pb-0" : "pb-5"}`}>
+              <div className="min-w-0">
+                <p className="text-tx text-sm font-fira font-semibold leading-snug">{step.label}</p>
+                <p className="text-muted-tx text-xs font-fira mt-0.5">{step.actor}</p>
+                {step.note && (
+                  <div className="mt-2 px-3 py-2 bg-surface2 border border-border-c rounded-lg">
+                    <p className="text-muted-tx text-xs font-fira italic">&ldquo;{step.note}&rdquo;</p>
+                  </div>
+                )}
+              </div>
+              {step.date && (
+                <p className="text-subtle-tx text-[11px] font-fira shrink-0 mt-0.5 text-right">{fmtShort(step.date)}</p>
+              )}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -198,7 +169,7 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
   const { id } = use(params);
   const router = useRouter();
   const event = getEventById(Number(id));
-  const [tab, setTab] = useState<"journey" | "documents" | "details">("journey");
+  const [tab, setTab] = useState<"journey" | "documents">("journey");
   const [docs, setDocs] = useState(event?.documents ?? []);
   const [toast, setToast] = useState("");
 
@@ -284,8 +255,21 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
 
           {/* ── Left: main content ── */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Pipeline bar */}
-            <PipelineBar event={event} />
+            {/* About card */}
+            <div className="bg-surface border border-border-c rounded-2xl p-5 sm:p-6">
+              <p className="text-muted-tx text-sm font-fira leading-relaxed">{event.long_description}</p>
+              <div className="flex flex-wrap gap-2 mt-4">
+                {[
+                  event.fee === 0 ? "Free Entry" : `₹${event.fee} Registration`,
+                  event.is_only_somaiya ? "Somaiya Students Only" : "Open to All",
+                  event.registration_type === "ONPLATFORM" ? "On-Platform Registration" : "External Registration",
+                  event.is_feedback_enabled ? "Feedback Enabled" : null,
+                  event.is_ticket_feature_enabled ? "Ticketed" : null,
+                ].filter(Boolean).map(tag => (
+                  <span key={tag!} className="text-[11px] font-fira px-2.5 py-1 bg-surface2 border border-border-c text-muted-tx rounded-full">{tag}</span>
+                ))}
+              </div>
+            </div>
 
             {/* Key info strip */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -304,10 +288,10 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
 
             {/* Tabs */}
             <div className="flex gap-1 p-1 bg-surface border border-border-c rounded-xl w-fit">
-              {(["journey", "documents", "details"] as const).map(t => (
+              {(["journey", "documents"] as const).map(t => (
                 <button key={t} type="button" onClick={() => setTab(t)}
-                  className={`px-4 py-2 rounded-lg text-sm font-fira capitalize transition-all ${t === tab ? "bg-red-500 text-white font-semibold" : "text-muted-tx hover:text-tx"}`}>
-                  {t === "journey" ? "Approval Journey" : t === "documents" ? `Documents (${docs.length})` : "Details"}
+                  className={`px-4 py-2 rounded-lg text-sm font-fira transition-all ${t === tab ? "bg-red-500 text-white font-semibold" : "text-muted-tx hover:text-tx"}`}>
+                  {t === "journey" ? "Approval Journey" : `Documents (${docs.length})`}
                 </button>
               ))}
             </div>
@@ -341,27 +325,6 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
                 </>
               )}
 
-              {tab === "details" && (
-                <>
-                  <h3 className="text-tx font-fira font-semibold text-sm mb-3">About</h3>
-                  <p className="text-muted-tx text-sm font-fira leading-relaxed mb-5">{event.long_description}</p>
-                  <div className="grid grid-cols-2 gap-3 text-sm font-fira">
-                    {[
-                      { k: "Fee",              v: event.fee === 0 ? "Free" : `₹${event.fee}` },
-                      { k: "Capacity",         v: `${event.ticket_count} seats` },
-                      { k: "Registration",     v: event.registration_type ?? "—" },
-                      { k: "Attendance",       v: event.attendance_type ?? "Manual" },
-                      { k: "Only Somaiya",     v: event.is_only_somaiya ? "Yes" : "No" },
-                      { k: "Feedback Enabled", v: event.is_feedback_enabled ? "Yes" : "No" },
-                    ].map(({ k, v }) => (
-                      <div key={k} className="flex justify-between py-2 border-b border-border-c">
-                        <span className="text-subtle-tx">{k}</span>
-                        <span className="text-tx font-medium">{v}</span>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
             </div>
           </div>
 

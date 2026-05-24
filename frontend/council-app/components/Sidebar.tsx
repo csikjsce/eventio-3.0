@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, BarChart2, PlusSquare, Users,
   CheckSquare, ClipboardList, Megaphone, Wallet, LogOut,
-  Sun, Moon, X,
+  Sun, Moon, X, Settings,
 } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 
@@ -31,6 +31,12 @@ const NAV_GROUPS = [
     routes: [
       { name: "Announcements", href: "/announcements", Icon: Megaphone, exact: false },
       { name: "Budget",        href: "/budget",         Icon: Wallet,    exact: false },
+    ],
+  },
+  {
+    label: "Council",
+    routes: [
+      { name: "Settings", href: "/settings", Icon: Settings, exact: false },
     ],
   },
 ];
