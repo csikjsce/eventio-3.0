@@ -8,6 +8,7 @@ const validateUpdateFields = require("../middleware/field-validator.middlware");
 const router = express.Router();
 const sendMail = require("../utils/nmail");
 const fetch = require("node-fetch");
+const { get: cGet, set: cSet, del: cDel, keys: cKeys, TTL, invalidateEvent } = require("../utils/cache");
 
 let protected = "/p";
 
@@ -30,6 +31,10 @@ router.post(protected + "/get", authCheck, async (req, res) => {
 
     // Handle COUNCIL role
     if (req.user.role === "COUNCIL") {
+        const councilCacheKey = cKeys.eventListCouncil(req.user.id);
+        const councilCached = cGet(councilCacheKey);
+        if (councilCached) return res.json(councilCached);
+
         try {
             let events = [];
             events = await prisma.events.findMany({
@@ -73,11 +78,13 @@ router.post(protected + "/get", authCheck, async (req, res) => {
                 if (!event[e.state]) [(event[e.state] = [])];
                 event[e.state].push(e);
             });
-            return res.json({
+            const councilPayload = {
                 error: false,
                 events: event,
                 message: "Events fetched successfully",
-            });
+            };
+            cSet(councilCacheKey, councilPayload, TTL.EVENT_LIST);
+            return res.json(councilPayload);
         } catch (err) {
             console.log(err);
             return res
@@ -628,6 +635,7 @@ router.post(protected + "/create", authCheck, (req, res) => {
             },
         })
         .then((event) => {
+            invalidateEvent(event.id, req.user.id);
             res.json({
                 error: false,
                 message: "Event created successfully",
@@ -708,6 +716,7 @@ router.post(
                 },
                 data: field,
             });
+            invalidateEvent(parseInt(req.params.id), req.user.id);
             res.json({
                 error: false,
                 message: "Event updated successfully",
@@ -773,6 +782,11 @@ router.get(protected + "/stats", authCheck, async (req, res) => {
     if (!req.user) {
         return res.status(401).json({ error: true, message: "Unauthorized" });
     }
+
+    const cacheKey = cKeys.stats();
+    const cached = cGet(cacheKey);
+    if (cached) return res.json(cached);
+
     try {
         // Fetch all events with participant stats
         const eventsStats = await prisma.events.findMany({
@@ -837,7 +851,9 @@ router.get(protected + "/stats", authCheck, async (req, res) => {
             };
         });
 
-        return res.json({ error: false, data: result });
+        const payload = { error: false, data: result };
+        cSet(cacheKey, payload, TTL.STATS);
+        return res.json(payload);
     } catch (err) {
         console.error(err);
         return res.status(500).json({
@@ -1639,7 +1655,7 @@ router.post(protected + "/claim-ticket", authCheck, async (req, res) => {
         });
     }
 });
-router.get("/get-event-participants/:id", async (req, res) => {
+router.get("/get-event-participants/:id", authCheck, async (req, res) => {
     let { id } = req.params;
     try {
         let teams = await prisma.team.findMany({
@@ -1674,7 +1690,7 @@ router.get("/get-event-participants/:id", async (req, res) => {
     }
 });
 
-router.post("/checkin", async (req, res) => {
+router.post("/checkin", authCheck, async (req, res) => {
     try {
         let { event_id, participant_id } = req.body;
 

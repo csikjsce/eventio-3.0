@@ -52,6 +52,9 @@ model Events {
   Teams                      Team[]
   report_url                 String?
   urls                       Json?
+  EventDocument              EventDocument[]
+  BudgetItem                 BudgetItem[]
+  Announcement               Announcement[]
 }
 
 model User {
@@ -79,6 +82,8 @@ model User {
   Events             Events[]
   Participant        Participant[]
   Team               Team[]
+  CouncilProfile     CouncilProfile?
+  Announcement       Announcement[]
 }
 
 model Participant {
@@ -119,6 +124,63 @@ model Admins {
   id    Int    @id @default(autoincrement())
   email String @unique
   role  ROLE   @default(COUNCIL)
+}
+
+// ── Council extended profile (one-to-one with COUNCIL User) ──────────
+model CouncilProfile {
+  id               Int      @id @default(autoincrement())
+  user_id          Int      @unique
+  user             User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  tagline          String?
+  about            String?
+  banner_url       String?
+  instagram        String?
+  website          String?
+  // JSON array of { name, email, phone }
+  faculty_advisors Json?
+  // JSON array of { id, name, email, role, team }
+  members          Json?
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+}
+
+// ── Event documents (proposal, report, geotagged pics, etc.) ─────────
+model EventDocument {
+  id          Int      @id @default(autoincrement())
+  event_id    Int
+  event       Events   @relation(fields: [event_id], references: [id], onDelete: Cascade)
+  name        String
+  type        DOC_TYPE
+  url         String
+  required    Boolean  @default(false)
+  uploaded_at DateTime @default(now())
+}
+
+// ── Budget line items ─────────────────────────────────────────────────
+model BudgetItem {
+  id          Int         @id @default(autoincrement())
+  event_id    Int
+  event       Events      @relation(fields: [event_id], references: [id], onDelete: Cascade)
+  category    String
+  description String
+  amount      Float
+  type        BUDGET_TYPE
+  date        DateTime    @default(now())
+  created_at  DateTime    @default(now())
+}
+
+// ── Council announcements ─────────────────────────────────────────────
+model Announcement {
+  id               Int              @id @default(autoincrement())
+  event_id         Int
+  event            Events           @relation(fields: [event_id], references: [id], onDelete: Cascade)
+  title            String
+  body             String
+  channel          ANNOUNCE_CHANNEL @default(PUSH)
+  recipient_count  Int              @default(0)
+  sent_at          DateTime         @default(now())
+  created_by_id    Int
+  created_by       User             @relation(fields: [created_by_id], references: [id])
 }
 
 enum EVENT_TYPE {
@@ -186,4 +248,24 @@ enum PAYMENT_STATUS {
   SUCCESS
   FAILED
   MANUAL
+}
+
+enum DOC_TYPE {
+  PROPOSAL
+  REPORT
+  GEOTAG
+  BUDGET
+  CERTIFICATE
+  OTHER
+}
+
+enum BUDGET_TYPE {
+  INCOME
+  EXPENSE
+}
+
+enum ANNOUNCE_CHANNEL {
+  EMAIL
+  PUSH
+  BOTH
 }
