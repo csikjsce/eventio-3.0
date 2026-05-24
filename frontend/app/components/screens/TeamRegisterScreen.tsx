@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Loader from "@/components/Loader";
 import Spinner from "@/components/Spinner";
 import { getEventById } from "@/lib/dummy-data";
+import { fetchEvent, createTeam as apiCreateTeam, joinTeam as apiJoinTeam } from "@/lib/api";
 import type { EventData } from "@/types/eventio";
 
 interface FormData {
@@ -46,39 +47,69 @@ export default function TeamRegisterScreen() {
   };
 
   useEffect(() => {
-    const eventData = getEventById(Number(id));
-    if (eventData) {
-      setEvent(eventData);
-      if (eventData.Participant && eventData.Participant.team) {
-        router.push(`/team-details/${id}`);
+    async function load() {
+      try {
+        const server = process.env.NEXT_PUBLIC_SERVER_ADDRESS;
+        let eventData = null;
+        if (server && localStorage.getItem("accessToken")) {
+          eventData = await fetchEvent(Number(id));
+        } else {
+          eventData = getEventById(Number(id));
+        }
+        if (eventData) {
+          setEvent(eventData);
+          if (eventData.Participant && (eventData.Participant as { team?: unknown }).team) {
+            router.push(`/team-details/${id}`);
+          }
+        }
+      } catch {
+        const eventData = getEventById(Number(id));
+        if (eventData) setEvent(eventData);
       }
     }
+    load();
   }, [id, router]);
 
   const createTeam = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    const teamName = (e.target as HTMLFormElement).team_name.value;
+    try {
+      const server = process.env.NEXT_PUBLIC_SERVER_ADDRESS;
+      if (server && localStorage.getItem("accessToken")) {
+        const moreDetails = event?.more_details_enabled ? formData : undefined;
+        await apiCreateTeam(Number(id), teamName, moreDetails);
+      }
       router.push(`/team-details/${id}`);
-    }, 800);
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to create team";
+      setSnackbarMessage(msg);
+      setSnackbarVisible(true);
+      setTimeout(() => setSnackbarVisible(false), 3000);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const joinTeam = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     const inviteCode = (e.target as HTMLFormElement).invite_code.value;
-    if (inviteCode !== "CW26X" && inviteCode !== "DEMO1") {
-      setSnackbarMessage("Invalid invite code");
-      setSnackbarVisible(true);
-      setLoading(false);
-      setTimeout(() => setSnackbarVisible(false), 3000);
-      return;
-    }
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      const server = process.env.NEXT_PUBLIC_SERVER_ADDRESS;
+      if (server && localStorage.getItem("accessToken")) {
+        const moreDetails = event?.more_details_enabled ? formData : undefined;
+        await apiJoinTeam(Number(id), inviteCode, moreDetails);
+      }
       router.push(`/team-details/${id}`);
-    }, 800);
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Invalid invite code";
+      setSnackbarMessage(msg);
+      setSnackbarVisible(true);
+      setTimeout(() => setSnackbarVisible(false), 3000);
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!event) {

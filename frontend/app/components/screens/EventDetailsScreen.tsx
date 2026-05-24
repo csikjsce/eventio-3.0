@@ -18,7 +18,7 @@ import Loader from "@/components/Loader";
 import Passage from "@/components/Passage";
 import Spinner from "@/components/Spinner";
 import FeedbackModal from "@/components/FeedbackModal";
-import { getEventById } from "@/lib/dummy-data";
+import { fetchEvent, registerForEvent, claimTicket as apiClaimTicket, rateEvent } from "@/lib/api";
 import type { EventData } from "@/types/eventio";
 
 export default function EventDetailsScreen() {
@@ -43,18 +43,22 @@ export default function EventDetailsScreen() {
   const id = params.id as string;
   const router = useRouter();
 
-  const register = useCallback(() => {
+  const register = useCallback(async () => {
     setButtonState({ text: "Registering", loading: true, disabled: true, onClick: () => {} });
-    setTimeout(() => {
+    try {
+      await registerForEvent(Number(id));
       setButtonState({ text: "Registered ✓", loading: false, disabled: true, onClick: () => {} });
       setSnackbarVisible(true);
       setTimeout(() => setSnackbarVisible(false), 3000);
-    }, 800);
-  }, []);
+    } catch {
+      setButtonState({ text: "Register Now", loading: false, disabled: false, onClick: register });
+    }
+  }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const claimTicket = useCallback(() => {
+  const claimTicket = useCallback(async () => {
     setButtonState({ text: "RSVPing…", loading: true, disabled: true, onClick: () => {} });
-    setTimeout(() => {
+    try {
+      await apiClaimTicket(Number(id));
       setButtonState({
         text: "View Ticket",
         loading: false,
@@ -63,66 +67,84 @@ export default function EventDetailsScreen() {
       });
       setSnackbarVisible(true);
       setTimeout(() => setSnackbarVisible(false), 3000);
-    }, 800);
-  }, [id, router]);
+    } catch {
+      setButtonState({ text: "RSVP for this event", loading: false, disabled: false, onClick: claimTicket });
+    }
+  }, [id, router]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    const eventData = getEventById(Number(id));
-    if (!eventData) { setLoading(false); return; }
-    setEvent(eventData);
-    setLoading(false);
+    let cancelled = false;
 
-    const s = eventData.state;
-    if (s === "REGISTRATION_OPEN") {
-      if (eventData.ma_ppt > 1) {
-        setButtonState({
-          text: eventData.Participant ? "View Team" : "Register",
-          loading: false, disabled: false,
-          onClick: () => eventData.Participant
-            ? router.push("/team-details/" + id)
-            : router.push("/team-register/" + id),
-        });
-      } else if (eventData.Participant) {
-        setButtonState({ text: "Registered ✓", loading: false, disabled: true, onClick: () => {} });
-      } else {
-        setButtonState({ text: "Register Now", loading: false, disabled: false, onClick: register });
-      }
-    } else if (s === "REGISTRATION_CLOSED") {
-      setButtonState({
-        text: eventData.Participant ? "Already registered" : "Registration Closed",
-        loading: false, disabled: true, onClick: () => {},
-      });
-    } else if (s === "TICKET_OPEN" && eventData.is_ticket_feature_enabled) {
-      if (eventData.Participant) {
-        if (eventData.Participant.ticket_collected) {
-          setButtonState({ text: "View Ticket", loading: false, disabled: false, onClick: () => router.push("/ticket/" + eventData.id) });
-        } else if ((eventData.tickets_sold ?? 0) >= (eventData.ticket_count ?? 500)) {
-          setButtonState({ text: "Tickets Sold Out", loading: false, disabled: true, onClick: () => {} });
-        } else {
-          setButtonState({ text: "RSVP for this event", loading: false, disabled: false, onClick: claimTicket });
+    async function load() {
+      try {
+        const server = process.env.NEXT_PUBLIC_SERVER_ADDRESS;
+        let eventData: EventData | null = null;
+        if (server && typeof window !== "undefined" && localStorage.getItem("accessToken")) {
+          eventData = await fetchEvent(Number(id));
         }
-      } else {
-        setButtonState({ text: "Not registered", loading: false, disabled: true, onClick: () => {} });
+        if (!eventData || cancelled) { setLoading(false); return; }
+        setEvent(eventData);
+        setLoading(false);
+
+        // Derive button state from event
+        const s = eventData.state;
+        if (s === "REGISTRATION_OPEN") {
+          if (eventData.ma_ppt > 1) {
+            setButtonState({
+              text: eventData.Participant ? "View Team" : "Register",
+              loading: false, disabled: false,
+              onClick: () => eventData.Participant
+                ? router.push("/team-details/" + id)
+                : router.push("/team-register/" + id),
+            });
+          } else if (eventData.Participant) {
+            setButtonState({ text: "Registered ✓", loading: false, disabled: true, onClick: () => {} });
+          } else {
+            setButtonState({ text: "Register Now", loading: false, disabled: false, onClick: register });
+          }
+        } else if (s === "REGISTRATION_CLOSED") {
+          setButtonState({
+            text: eventData.Participant ? "Already registered" : "Registration Closed",
+            loading: false, disabled: true, onClick: () => {},
+          });
+        } else if (s === "TICKET_OPEN" && eventData.is_ticket_feature_enabled) {
+          if (eventData.Participant) {
+            if (eventData.Participant.ticket_collected) {
+              setButtonState({ text: "View Ticket", loading: false, disabled: false, onClick: () => router.push("/ticket/" + eventData.id) });
+            } else if ((eventData.tickets_sold ?? 0) >= (eventData.ticket_count ?? 500)) {
+              setButtonState({ text: "Tickets Sold Out", loading: false, disabled: true, onClick: () => {} });
+            } else {
+              setButtonState({ text: "RSVP for this event", loading: false, disabled: false, onClick: claimTicket });
+            }
+          } else {
+            setButtonState({ text: "Not registered", loading: false, disabled: true, onClick: () => {} });
+          }
+        } else if (s === "TICKET_CLOSED" || !eventData.is_ticket_feature_enabled) {
+          if (eventData.Participant && eventData.Participant.ticket_collected) {
+            setButtonState({ text: "View Ticket", loading: false, disabled: false, onClick: () => router.push("/ticket/" + eventData.id) });
+          } else {
+            setButtonState({ text: "RSVP closed", loading: false, disabled: true, onClick: () => {} });
+          }
+        } else if (s === "UPCOMING") {
+          setButtonState({ text: "Opening Soon", loading: false, disabled: true, onClick: () => {} });
+        } else if (s === "ONGOING") {
+          if (eventData.registration_type === "EXTERNAL") {
+            setButtonState({ text: "Register Externally", loading: false, disabled: false, onClick: () => { window.location.href = eventData.external_registration_link ?? "#"; } });
+          } else if (eventData.start_in_event_activity) {
+            setButtonState({ text: "Follow Activity", loading: false, disabled: false, onClick: () => { window.location.href = eventData.in_event_activity ?? "#"; } });
+          } else {
+            setButtonState({ text: "Event is Ongoing", loading: false, disabled: true, onClick: () => {} });
+          }
+        } else if (s === "COMPLETED") {
+          setButtonState({ text: "Give Feedback", loading: false, disabled: false, onClick: () => setIsFeedbackPopupOpen(true) });
+        }
+      } catch {
+        if (!cancelled) setLoading(false);
       }
-    } else if (s === "TICKET_CLOSED" || !eventData.is_ticket_feature_enabled) {
-      if (eventData.Participant && eventData.Participant.ticket_collected) {
-        setButtonState({ text: "View Ticket", loading: false, disabled: false, onClick: () => router.push("/ticket/" + eventData.id) });
-      } else {
-        setButtonState({ text: "RSVP closed", loading: false, disabled: true, onClick: () => {} });
-      }
-    } else if (s === "UPCOMING") {
-      setButtonState({ text: "Opening Soon", loading: false, disabled: true, onClick: () => {} });
-    } else if (s === "ONGOING") {
-      if (eventData.registration_type === "EXTERNAL") {
-        setButtonState({ text: "Register Externally", loading: false, disabled: false, onClick: () => { window.location.href = eventData.external_registration_link ?? "#"; } });
-      } else if (eventData.start_in_event_activity) {
-        setButtonState({ text: "Follow Activity", loading: false, disabled: false, onClick: () => { window.location.href = eventData.in_event_activity ?? "#"; } });
-      } else {
-        setButtonState({ text: "Event is Ongoing", loading: false, disabled: true, onClick: () => {} });
-      }
-    } else if (s === "COMPLETED") {
-      setButtonState({ text: "Give Feedback", loading: false, disabled: false, onClick: () => setIsFeedbackPopupOpen(true) });
     }
+
+    load();
+    return () => { cancelled = true; };
   }, [id, router, register, claimTicket]);
 
   if (loading) return <Loader />;

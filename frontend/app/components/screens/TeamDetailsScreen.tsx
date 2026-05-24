@@ -7,6 +7,7 @@ import { UserDataContext } from "@/contexts/userContext";
 import Loader from "@/components/Loader";
 import Spinner from "@/components/Spinner";
 import { getEventById } from "@/lib/dummy-data";
+import { fetchEvent, deleteTeam as apiDeleteTeam } from "@/lib/api";
 import type { EventData } from "@/types/eventio";
 
 function ConfirmationModal({
@@ -70,19 +71,33 @@ export default function TeamDetailsScreen() {
   const router = useRouter();
 
   useEffect(() => {
-    const eventData = getEventById(Number(id));
-    if (eventData) {
-      setEvent(eventData);
+    async function load() {
+      try {
+        const server = process.env.NEXT_PUBLIC_SERVER_ADDRESS;
+        if (server && localStorage.getItem("accessToken")) {
+          const eventData = await fetchEvent(Number(id));
+          if (eventData) { setEvent(eventData); return; }
+        }
+      } catch { /* fallthrough */ }
+      const eventData = getEventById(Number(id));
+      if (eventData) setEvent(eventData);
     }
+    load();
   }, [id]);
 
   const deleteTeam = async () => {
     setShowModal(false);
     setDeleteLoading(true);
-    setTimeout(() => {
+    try {
+      const server = process.env.NEXT_PUBLIC_SERVER_ADDRESS;
+      const team = event?.Participant && (event.Participant as { team?: { id: number } }).team;
+      if (server && localStorage.getItem("accessToken") && team) {
+        await apiDeleteTeam(Number(id), team.id);
+      }
+    } catch { /* ignore */ } finally {
       setDeleteLoading(false);
       router.push(`/team-register/${id}`);
-    }, 800);
+    }
   };
 
   const copy = () => {

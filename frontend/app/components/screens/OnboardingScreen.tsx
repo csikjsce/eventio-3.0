@@ -307,14 +307,30 @@ export default function OnboardingScreen() {
       prev.includes(chip) ? prev.filter((c) => c !== chip) : [...prev, chip],
     );
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setLoading(true);
-    /* In production: POST /user/p/update with form data */
-    setTimeout(() => {
+    try {
+      const server = process.env.NEXT_PUBLIC_SERVER_ADDRESS;
+      if (server && localStorage.getItem("accessToken")) {
+        const { submitOnboarding } = await import("@/lib/api");
+        await submitOnboarding({
+          phone_number: personal.phone,
+          gender: personal.gender,
+          year: education.year,
+          branch: education.branch,
+          degree: "B.E.",
+          college: "KJSCE",
+          roll_number: "",
+          interests,
+        });
+      }
+    } catch {
+      // Proceed even if the API call fails — user can update later
+    } finally {
       localStorage.setItem("eventio-onboarded", "true");
       setLoading(false);
       setStep("AllDone");
-    }, 900);
+    }
   };
 
   const handleGoHome = () => {

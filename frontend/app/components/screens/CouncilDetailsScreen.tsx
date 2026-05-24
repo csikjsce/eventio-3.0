@@ -19,6 +19,7 @@ import {
   getPastEventsByCouncilId,
   type Council,
 } from "@/lib/dummy-data";
+import { fetchCouncilProfile } from "@/lib/api";
 import type { EventData } from "@/types/eventio";
 
 type Tab = "upcoming" | "past";
@@ -35,13 +36,46 @@ export default function CouncilDetailsScreen() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const c = getCouncilById(id);
-    if (c) {
-      setCouncil(c);
-      setUpcomingEvents(getUpcomingEventsByCouncilId(id));
-      setPastEvents(getPastEventsByCouncilId(id));
+    async function load() {
+      try {
+        const server = process.env.NEXT_PUBLIC_SERVER_ADDRESS;
+        if (server && typeof window !== "undefined" && localStorage.getItem("accessToken")) {
+          const data = await fetchCouncilProfile(id);
+          if (data) {
+            // Flatten CouncilProfile fields onto the council object
+            const profile = data.CouncilProfile ?? {};
+            const mapped: Council = {
+              ...data,
+              about: profile.about ?? data.about ?? "",
+              banner_url: profile.banner_url ?? data.banner_url ?? "",
+              tagline: profile.tagline ?? data.tagline ?? "",
+              instagram: profile.instagram ?? data.instagram,
+              website: profile.website ?? data.website,
+            };
+            setCouncil(mapped);
+
+            const evs: EventData[] = data.Events ?? [];
+            const PAST_STATES = ["COMPLETED", "TICKET_CLOSED"];
+            const UPCOMING_STATES = ["UPCOMING", "REGISTRATION_OPEN", "REGISTRATION_CLOSED", "TICKET_OPEN", "ONGOING"];
+            setUpcomingEvents(evs.filter((e) => UPCOMING_STATES.includes(e.state)));
+            setPastEvents(evs.filter((e) => PAST_STATES.includes(e.state)));
+            setLoading(false);
+            return;
+          }
+        }
+      } catch {
+        // Fall through to dummy data
+      }
+      // Fallback to dummy data
+      const c = getCouncilById(id);
+      if (c) {
+        setCouncil(c);
+        setUpcomingEvents(getUpcomingEventsByCouncilId(id));
+        setPastEvents(getPastEventsByCouncilId(id));
+      }
+      setLoading(false);
     }
-    setLoading(false);
+    load();
   }, [id]);
 
   if (loading) return <Loader />;
