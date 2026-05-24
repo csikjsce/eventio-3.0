@@ -1,0 +1,89 @@
+@import "tailwindcss";
+
+@source "../components";
+@source ".";
+
+/* ─── Only truly static tokens live in @theme ─── */
+@theme {
+  --color-primary:  #b61f2d;
+  --color-vitality: #ee1d23;
+
+  /* Dark colors as compiled defaults (overridden in @layer base) */
+  --color-background: #111111;
+  --color-foreground: #f9f9f9;
+  --color-card:       #1c1c1c;
+  --color-surface:    #272727;
+  --color-border:     #2e2e2e;
+  --color-mute:       #8a8a8a;
+
+  --font-marcellus: var(--font-family-marcellus), serif;
+  --font-fira:      var(--font-family-fira), sans-serif;
+  --font-poppins:   var(--font-family-poppins), sans-serif;
+}
+
+@utility scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@layer base {
+  /*
+   * Priority order (later rule wins at same specificity inside a layer):
+   *   1. system light  – only when no manual class is set  (0,2,1 specificity)
+   *   2. :root.light   – manual override                   (0,1,1)
+   *   3. :root.dark    – manual override                   (0,1,1), declared last → wins
+   *
+   * When .dark or .light is on <html>, the :not() guards block the media query.
+   */
+
+  /* System light – never fires when a manual class is present */
+  @media (prefers-color-scheme: light) {
+    :root:not(.dark):not(.light) {
+      --color-background: #f5f5f5;
+      --color-foreground: #111111;
+      --color-card:       #ffffff;
+      --color-surface:    #ebebeb;
+      --color-border:     #e0e0e0;
+      --color-mute:       #6b7280;
+    }
+  }
+
+  /* Manual light */
+  :root.light {
+    --color-background: #f5f5f5;
+    --color-foreground: #111111;
+    --color-card:       #ffffff;
+    --color-surface:    #ebebeb;
+    --color-border:     #e0e0e0;
+    --color-mute:       #6b7280;
+  }
+
+  /* Manual dark – declared last so it beats .light at same specificity */
+  :root.dark {
+    --color-background: #111111;
+    --color-foreground: #f9f9f9;
+    --color-card:       #1c1c1c;
+    --color-surface:    #272727;
+    --color-border:     #2e2e2e;
+    --color-mute:       #8a8a8a;
+  }
+
+  html {
+    @apply bg-background text-foreground;
+  }
+
+  body {
+    @apply bg-background text-foreground font-poppins min-h-full;
+  }
+
+  select {
+    background: url(data:image/svg+xml;base64,PHN2ZyBpZD0iTGF5ZXJfMSIgZGF0YS1uYW1lPSJMYXllciAxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0Ljk1IDEwIj48ZGVmcz48c3R5bGU+LmNscy0xe2ZpbGw6I2ZmZjt9LmNscy0ye2ZpbGw6IzQ0NDt9PC9zdHlsZT48L2RlZnM+PHRpdGxlPmFycm93czwvdGl0bGU+PHJlY3QgY2xhc3M9ImNscy0xIiB3aWR0aD0iNC45NSIgaGVpZ2h0PSIxMCIvPjxwb2x5Z29uIGNsYXNzPSJjbHMtMiIgcG9pbnRzPSIxLjQxIDQuNjcgMi40OCAzLjE4IDMuNTQgNC42NyAxLjQxIDQuNjciLz48cG9seWdvbiBjbGFzcz0iY2xzLTIiIHBvaW50cz0iMy41NCA1LjMzIDIuNDggNi44MiAxLjQxIDUuMzMgMy41NCA1LjMzIi8+PC9zdmc+)
+      no-repeat 95% 50%;
+    -moz-appearance: none;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+}
