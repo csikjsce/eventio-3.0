@@ -19,6 +19,7 @@ import Passage from "@/components/Passage";
 import Spinner from "@/components/Spinner";
 import FeedbackModal from "@/components/FeedbackModal";
 import { fetchEvent, registerForEvent, claimTicket as apiClaimTicket, rateEvent } from "@/lib/api";
+import { EventDetailsSkeleton } from "@/components/Skeletons";
 import type { EventData } from "@/types/eventio";
 
 export default function EventDetailsScreen() {
@@ -77,11 +78,7 @@ export default function EventDetailsScreen() {
 
     async function load() {
       try {
-        const server = process.env.NEXT_PUBLIC_SERVER_ADDRESS;
-        let eventData: EventData | null = null;
-        if (server && typeof window !== "undefined" && localStorage.getItem("accessToken")) {
-          eventData = await fetchEvent(Number(id));
-        }
+        const eventData: EventData | null = await fetchEvent(Number(id));
         if (!eventData || cancelled) { setLoading(false); return; }
         setEvent(eventData);
         setLoading(false);
@@ -147,7 +144,7 @@ export default function EventDetailsScreen() {
     return () => { cancelled = true; };
   }, [id, router, register, claimTicket]);
 
-  if (loading) return <Loader />;
+  if (loading) return <EventDetailsSkeleton />;
   if (!event) return (
     <div className="flex items-center justify-center min-h-screen">
       <p className="text-mute font-poppins">Event not found</p>

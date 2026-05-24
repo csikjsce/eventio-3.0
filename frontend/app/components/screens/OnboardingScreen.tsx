@@ -34,6 +34,22 @@ function Field({ label, error, children }: { label: string; error?: string; chil
 const inputCls =
   "w-full h-12 rounded-2xl px-4 bg-card border border-border text-foreground font-poppins text-sm outline-none focus:border-primary transition-colors placeholder:text-mute/50";
 
+const selectCls = `${inputCls} pr-10 appearance-none cursor-pointer`;
+
+/* ─── Select wrapper with chevron ─── */
+function SelectWrapper({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="relative">
+      {children}
+      <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-mute">
+          <path d="M6 9l6 6 6-6" />
+        </svg>
+      </div>
+    </div>
+  );
+}
+
 /* ─── Quote ─── */
 function Quote() {
   return (
@@ -310,20 +326,17 @@ export default function OnboardingScreen() {
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      const server = process.env.NEXT_PUBLIC_SERVER_ADDRESS;
-      if (server && localStorage.getItem("accessToken")) {
-        const { submitOnboarding } = await import("@/lib/api");
-        await submitOnboarding({
-          phone_number: personal.phone,
-          gender: personal.gender,
-          year: education.year,
-          branch: education.branch,
-          degree: "B.E.",
-          college: "KJSCE",
-          roll_number: "",
-          interests,
-        });
-      }
+      const { submitOnboarding } = await import("@/lib/api");
+      await submitOnboarding({
+        phone_number: personal.phone,
+        gender: personal.gender,
+        year: education.year,
+        branch: education.branch,
+        degree: "B.E.",
+        college: "KJSCE",
+        roll_number: "",
+        interests,
+      });
     } catch {
       // Proceed even if the API call fails — user can update later
     } finally {

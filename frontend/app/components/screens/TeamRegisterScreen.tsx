@@ -2,9 +2,8 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import Loader from "@/components/Loader";
+import { TeamPageSkeleton } from "@/components/Skeletons";
 import Spinner from "@/components/Spinner";
-import { getEventById } from "@/lib/dummy-data";
 import { fetchEvent, createTeam as apiCreateTeam, joinTeam as apiJoinTeam } from "@/lib/api";
 import type { EventData } from "@/types/eventio";
 
@@ -49,23 +48,14 @@ export default function TeamRegisterScreen() {
   useEffect(() => {
     async function load() {
       try {
-        const server = process.env.NEXT_PUBLIC_SERVER_ADDRESS;
-        let eventData = null;
-        if (server && localStorage.getItem("accessToken")) {
-          eventData = await fetchEvent(Number(id));
-        } else {
-          eventData = getEventById(Number(id));
-        }
+        const eventData = await fetchEvent(Number(id));
         if (eventData) {
           setEvent(eventData);
           if (eventData.Participant && (eventData.Participant as { team?: unknown }).team) {
             router.push(`/team-details/${id}`);
           }
         }
-      } catch {
-        const eventData = getEventById(Number(id));
-        if (eventData) setEvent(eventData);
-      }
+      } catch { /* handled by interceptor */ }
     }
     load();
   }, [id, router]);
@@ -112,9 +102,7 @@ export default function TeamRegisterScreen() {
     }
   };
 
-  if (!event) {
-    return <Loader />;
-  }
+  if (!event) return <TeamPageSkeleton />;
 
   if (event.ma_ppt === 1) {
     router.push(`/event-details/${id}`);

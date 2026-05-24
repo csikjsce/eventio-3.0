@@ -42,7 +42,21 @@ const inputCls =
   "w-full bg-card border border-border rounded-2xl px-4 py-3 text-sm font-poppins text-foreground placeholder:text-mute/50 focus:outline-none focus:border-primary transition-colors";
 
 const selectCls =
-  "w-full bg-card border border-border rounded-2xl px-4 py-3 text-sm font-poppins text-foreground focus:outline-none focus:border-primary transition-colors appearance-none";
+  "w-full bg-card border border-border rounded-2xl px-4 py-3 pr-10 text-sm font-poppins text-foreground focus:outline-none focus:border-primary transition-colors appearance-none cursor-pointer";
+
+function SelectWrapper({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="relative">
+      {children}
+      {/* Custom dropdown chevron */}
+      <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-mute">
+          <path d="M6 9l6 6 6-6" />
+        </svg>
+      </div>
+    </div>
+  );
+}
 
 export default function ProfileSettingsScreen() {
   const router = useRouter();
@@ -155,20 +169,18 @@ export default function ProfileSettingsScreen() {
             />
           </Field>
           <Field label="Gender">
-            <select
-              className={selectCls}
-              value={form.gender as string}
-              onChange={(e) => set("gender", e.target.value)}
-            >
-              <option value="" disabled>
-                Select gender
-              </option>
-              {GENDER_OPTIONS.map((g) => (
-                <option key={g} value={g}>
-                  {g}
-                </option>
-              ))}
-            </select>
+            <SelectWrapper>
+              <select
+                className={selectCls}
+                value={form.gender as string}
+                onChange={(e) => set("gender", e.target.value)}
+              >
+                <option value="" disabled>Select gender</option>
+                {GENDER_OPTIONS.map((g) => (
+                  <option key={g} value={g}>{g}</option>
+                ))}
+              </select>
+            </SelectWrapper>
           </Field>
         </div>
 
@@ -186,20 +198,18 @@ export default function ProfileSettingsScreen() {
           <div className="flex gap-3">
             <div className="flex-1">
               <Field label="Degree">
-                <select
-                  className={selectCls}
-                  value={form.degree as string}
-                  onChange={(e) => set("degree", e.target.value)}
-                >
-                  <option value="" disabled>
-                    Degree
-                  </option>
-                  {DEGREE_OPTIONS.map((d) => (
-                    <option key={d} value={d}>
-                      {d}
-                    </option>
-                  ))}
-                </select>
+                <SelectWrapper>
+                  <select
+                    className={selectCls}
+                    value={form.degree as string}
+                    onChange={(e) => set("degree", e.target.value)}
+                  >
+                    <option value="" disabled>Degree</option>
+                    {DEGREE_OPTIONS.map((d) => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
+                  </select>
+                </SelectWrapper>
               </Field>
             </div>
             <div className="flex-1">

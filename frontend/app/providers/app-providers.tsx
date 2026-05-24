@@ -4,8 +4,7 @@ import { useEffect, useState } from "react";
 import { UserDataContext } from "@/contexts/userContext";
 import EventsDataContext from "@/contexts/EventsDataContext";
 import { ThemeProvider } from "@/providers/theme-provider";
-import { dummyUser, dummyEvents } from "@/lib/dummy-data";
-import { fetchMe, fetchEvents, isAuthenticated } from "@/lib/api";
+import { fetchMe, fetchEvents } from "@/lib/api";
 import type { Events, User } from "@/types/eventio";
 
 export default function AppProviders({
@@ -17,29 +16,18 @@ export default function AppProviders({
   const [events, setEvents] = useState<Events | null>(null);
 
   useEffect(() => {
-    async function bootstrap() {
-      // Dev mode fallback: no server configured → use dummy data
-      const server = process.env.NEXT_PUBLIC_SERVER_ADDRESS;
-      if (!server || !isAuthenticated()) {
-        setUserData(dummyUser);
-        setEvents(dummyEvents);
-        return;
-      }
+    const server = process.env.NEXT_PUBLIC_SERVER_ADDRESS;
+    const token = localStorage.getItem("accessToken");
+    if (!server || !token) return;
 
-      try {
-        const [user, evs] = await Promise.all([fetchMe(), fetchEvents()]);
+    Promise.all([fetchMe(), fetchEvents()])
+      .then(([user, evs]) => {
         setUserData(user);
         setEvents(evs);
-      } catch {
-        // Auth error is handled by the axios interceptor (redirect to /login).
-        // For any other network error, fall back to dummy data so the UI is
-        // still usable.
-        setUserData(dummyUser);
-        setEvents(dummyEvents);
-      }
-    }
-
-    bootstrap();
+      })
+      .catch(() => {
+        // Auth errors are handled by the axios interceptor (redirects to /login).
+      });
   }, []);
 
   return (

@@ -12,13 +12,8 @@ import {
   Flash,
 } from "iconsax-react";
 import EventCard from "@/components/EventCard";
-import Loader from "@/components/Loader";
-import {
-  getCouncilById,
-  getUpcomingEventsByCouncilId,
-  getPastEventsByCouncilId,
-  type Council,
-} from "@/lib/dummy-data";
+import { CouncilDetailsSkeleton } from "@/components/Skeletons";
+import { type Council } from "@/lib/dummy-data";
 import { fetchCouncilProfile } from "@/lib/api";
 import type { EventData } from "@/types/eventio";
 
@@ -38,47 +33,32 @@ export default function CouncilDetailsScreen() {
   useEffect(() => {
     async function load() {
       try {
-        const server = process.env.NEXT_PUBLIC_SERVER_ADDRESS;
-        if (server && typeof window !== "undefined" && localStorage.getItem("accessToken")) {
-          const data = await fetchCouncilProfile(id);
-          if (data) {
-            // Flatten CouncilProfile fields onto the council object
-            const profile = data.CouncilProfile ?? {};
-            const mapped: Council = {
-              ...data,
-              about: profile.about ?? data.about ?? "",
-              banner_url: profile.banner_url ?? data.banner_url ?? "",
-              tagline: profile.tagline ?? data.tagline ?? "",
-              instagram: profile.instagram ?? data.instagram,
-              website: profile.website ?? data.website,
-            };
-            setCouncil(mapped);
+        const data = await fetchCouncilProfile(id);
+        if (data) {
+          const profile = data.CouncilProfile ?? {};
+          const mapped: Council = {
+            ...data,
+            about: profile.about ?? data.about ?? "",
+            banner_url: profile.banner_url ?? data.banner_url ?? "",
+            tagline: profile.tagline ?? data.tagline ?? "",
+            instagram: profile.instagram ?? data.instagram,
+            website: profile.website ?? data.website,
+          };
+          setCouncil(mapped);
 
-            const evs: EventData[] = data.Events ?? [];
-            const PAST_STATES = ["COMPLETED", "TICKET_CLOSED"];
-            const UPCOMING_STATES = ["UPCOMING", "REGISTRATION_OPEN", "REGISTRATION_CLOSED", "TICKET_OPEN", "ONGOING"];
-            setUpcomingEvents(evs.filter((e) => UPCOMING_STATES.includes(e.state)));
-            setPastEvents(evs.filter((e) => PAST_STATES.includes(e.state)));
-            setLoading(false);
-            return;
-          }
+          const evs: EventData[] = data.Events ?? [];
+          const PAST_STATES = ["COMPLETED", "TICKET_CLOSED"];
+          const UPCOMING_STATES = ["UPCOMING", "REGISTRATION_OPEN", "REGISTRATION_CLOSED", "TICKET_OPEN", "ONGOING"];
+          setUpcomingEvents(evs.filter((e) => UPCOMING_STATES.includes(e.state)));
+          setPastEvents(evs.filter((e) => PAST_STATES.includes(e.state)));
         }
-      } catch {
-        // Fall through to dummy data
-      }
-      // Fallback to dummy data
-      const c = getCouncilById(id);
-      if (c) {
-        setCouncil(c);
-        setUpcomingEvents(getUpcomingEventsByCouncilId(id));
-        setPastEvents(getPastEventsByCouncilId(id));
-      }
+      } catch { /* handled by interceptor */ }
       setLoading(false);
     }
     load();
   }, [id]);
 
-  if (loading) return <Loader />;
+  if (loading) return <CouncilDetailsSkeleton />;
 
   if (!council) {
     return (

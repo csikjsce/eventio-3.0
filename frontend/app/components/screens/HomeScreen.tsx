@@ -6,6 +6,7 @@ import { UserDataContext } from "@/contexts/userContext";
 import EventsDataContext from "@/contexts/EventsDataContext";
 import EventCard from "@/components/EventCard";
 import TrendingCard from "@/components/TrendingCard";
+import { HomeScreenSkeleton } from "@/components/Skeletons";
 import { SearchNormal1 } from "iconsax-react";
 import { useBookmarks } from "@/hooks/useBookmarks";
 import type { EventData } from "@/types/eventio";
@@ -53,6 +54,9 @@ export default function HomeScreen() {
     month: "long",
     day: "numeric",
   });
+  // Show skeleton while data is loading
+  if (!events) return <HomeScreenSkeleton />;
+
   const firstName = userData?.name?.split(" ")[0] || "there";
 
   const trendingEvents = [

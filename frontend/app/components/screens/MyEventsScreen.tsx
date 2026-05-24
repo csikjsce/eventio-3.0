@@ -2,10 +2,9 @@
 
 import { useEffect, useState } from "react";
 import EventCard from "@/components/EventCard";
-import { getMyEvents } from "@/lib/dummy-data";
 import { fetchMyEvents } from "@/lib/api";
 import type { EventData } from "@/types/eventio";
-import Loader from "@/components/Loader";
+import { MyEventsScreenSkeleton } from "@/components/Skeletons";
 
 export default function MyEventsScreen() {
   const [events, setEvents] = useState<EventData[]>([]);
@@ -14,23 +13,16 @@ export default function MyEventsScreen() {
   useEffect(() => {
     async function load() {
       try {
-        const server = process.env.NEXT_PUBLIC_SERVER_ADDRESS;
-        if (server && localStorage.getItem("accessToken")) {
-          const data = await fetchMyEvents();
-          setEvents((data as EventData[]) ?? []);
-        } else {
-          setEvents(getMyEvents());
-        }
-      } catch {
-        setEvents(getMyEvents());
-      } finally {
+        const data = await fetchMyEvents();
+        setEvents((data as EventData[]) ?? []);
+      } catch { /* handled by interceptor */ } finally {
         setLoading(false);
       }
     }
     load();
   }, []);
 
-  if (loading) return <Loader />;
+  if (loading) return <MyEventsScreenSkeleton />;
 
   return (
     <div className="pb-36">
