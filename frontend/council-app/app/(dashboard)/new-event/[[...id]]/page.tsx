@@ -240,17 +240,6 @@ export default function NewEventPage() {
               className="flex items-center gap-1.5 px-3 py-2 sm:px-4 text-sm font-fira text-muted-tx border border-border-c hover:border-red-500/20 hover:text-tx rounded-lg transition-all disabled:opacity-40">
               <Save size={13} /> <span className="hidden sm:inline">Save</span>
             </button>
-            {step < STEPS.length ? (
-              <button type="button" onClick={goNext}
-                className="flex items-center gap-1.5 px-5 py-2 bg-red-600 hover:bg-red-600 text-white text-sm font-fira font-semibold rounded-lg transition-colors">
-                Continue <ChevronRight size={14} />
-              </button>
-            ) : (
-              <button type="button" onClick={handleSubmit(onSubmit)} disabled={loading}
-                className={`flex items-center gap-1.5 px-5 py-2 text-white text-sm font-fira font-semibold rounded-lg transition-colors ${loading ? "bg-red-700/50 cursor-not-allowed" : "bg-red-600 hover:bg-red-600"}`}>
-                {loading ? <Spinner /> : existing ? "Update" : "Create Event"}
-              </button>
-            )}
           </div>
         </div>
 
