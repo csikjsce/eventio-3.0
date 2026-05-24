@@ -1,30 +1,29 @@
-// const { Pool } = require("pg");
-// const { PrismaPg } = require("@prisma/adapter-pg");
-// const { PrismaClient } = require("@prisma/client");
-
-// const connectionString = `${process.env.DATABASE_URL}`;
-// const pool = new Pool({
-//     connectionString: connectionString,
-// });
-// const adapter = new PrismaPg(pool);
-// const prisma = new PrismaClient({ adapter });
-
-// module.exports = prisma;
-
-const { Pool, neonConfig } = require('@neondatabase/serverless');
-const { PrismaNeon } = require('@prisma/adapter-neon');
-const { PrismaClient } = require('@prisma/client');
-const dotenv = require('dotenv');
-const ws = require('ws');
+const { PrismaClient } = require("@prisma/client");
+const dotenv = require("dotenv");
 
 dotenv.config();
-neonConfig.webSocketConstructor = ws;
 
 const connectionString = process.env.DATABASE_URL;
 
-const pool = new Pool({ connectionString });
-const adapter = new PrismaNeon(pool);
-const prisma = new PrismaClient({ adapter });
+let prisma;
 
+if (connectionString.includes("neon.tech")) {
+    const { Pool, neonConfig } = require("@neondatabase/serverless");
+    const { PrismaNeon } = require("@prisma/adapter-neon");
+    const ws = require("ws");
+
+    neonConfig.webSocketConstructor = ws;
+
+    const pool = new Pool({ connectionString });
+    const adapter = new PrismaNeon(pool);
+    prisma = new PrismaClient({ adapter });
+} else {
+    const { Pool } = require("pg");
+    const { PrismaPg } = require("@prisma/adapter-pg");
+
+    const pool = new Pool({ connectionString });
+    const adapter = new PrismaPg(pool);
+    prisma = new PrismaClient({ adapter });
+}
 
 module.exports = prisma;
