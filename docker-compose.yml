@@ -39,16 +39,16 @@ services:
             retries: 3
             start_period: 40s
 
-    student:
-        image: ghcr.io/csikjsce/eventio-student:latest
+    app:
+        image: ghcr.io/csikjsce/eventio-app:latest
         build:
-            context: ./frontend/student
+            context: ./frontend/app
             dockerfile: Dockerfile
             args:
-                - VITE_APP_SERVER_ADDRESS=${VITE_APP_SERVER_ADDRESS:-http://localhost:8000}
-        container_name: eventio-student
+                - NEXT_PUBLIC_SERVER_ADDRESS=${NEXT_PUBLIC_SERVER_ADDRESS:-http://localhost:8000}
+        container_name: eventio-app
         ports:
-            - "3000:80"
+            - "4173:3000"
         depends_on:
             backend:
                 condition: service_healthy

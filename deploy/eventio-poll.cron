@@ -1,0 +1,7 @@
+# Install with:
+#   crontab deploy/eventio-poll.cron
+#
+# Or append manually:
+#   crontab -e
+
+*/2 * * * * /vm-storage/projects/eventio-3.0/scripts/poll-deploy.sh >> /tmp/eventio/poll-deploy.log 2>&1

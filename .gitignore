@@ -35,3 +35,4 @@ ssl/*.csr
 *.key
 backend/cert/*
 !backend/cert/*.example
+deploy/config.env
