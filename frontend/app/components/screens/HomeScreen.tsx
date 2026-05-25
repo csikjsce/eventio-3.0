@@ -88,12 +88,20 @@ export default function HomeScreen() {
           </span>
         </div>
         <Link href="/profile">
-          <img
-            src={userData?.photo_url || ""}
-            alt="profile"
-            referrerPolicy="no-referrer"
-            className="w-11 h-11 rounded-full object-cover ring-2 ring-primary/40"
-          />
+          {userData?.photo_url ? (
+            <img
+              src={userData.photo_url}
+              alt="profile"
+              referrerPolicy="no-referrer"
+              className="w-11 h-11 rounded-full object-cover ring-2 ring-primary/40"
+            />
+          ) : (
+            <div className="w-11 h-11 rounded-full bg-primary/20 ring-2 ring-primary/40 flex items-center justify-center">
+              <span className="text-primary font-poppins font-bold text-base">
+                {userData?.name?.[0]?.toUpperCase() ?? "?"}
+              </span>
+            </div>
+          )}
         </Link>
       </div>
 
@@ -132,7 +140,7 @@ export default function HomeScreen() {
       {trendingEvents.length > 0 && (
         <section>
           <SectionHeader title="Trending Events" href="/calendar" />
-          <div className="overflow-x-auto scrollbar-hide flex gap-4 -mx-4 px-4 pb-2 mt-3">
+          <div className="flex flex-col gap-4 mt-3">
             {trendingEvents.map((event) => {
               const isRegistered = event.Participant !== false;
               const text =

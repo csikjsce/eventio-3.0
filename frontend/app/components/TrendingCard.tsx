@@ -23,14 +23,14 @@ export default function TrendingCard({
           ? `/child-events/${event.id}`
           : `/event-details/${event.id}`
       }
-      className="min-w-[72vw] max-w-xs flex-shrink-0 flex flex-col bg-card rounded-3xl overflow-hidden shadow-lg"
+      className="w-full flex flex-col bg-card rounded-3xl overflow-hidden shadow-lg"
     >
       {/* Banner image */}
       <div className="relative">
         <img
           src={event.banner_url}
           alt={event.name}
-          className="w-full h-44 object-cover"
+          className="w-full h-48 object-cover"
         />
 
         {/* Bookmark button — separate from Link navigation */}
