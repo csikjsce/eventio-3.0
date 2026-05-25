@@ -548,6 +548,7 @@ router.post(protected + "/get/:id", authCheck, async (req, res) => {
             state: event.state,
             name: event.name,
             tag_line: event.tag_line,
+            event_type: event.event_type,
             Participant:
                 event.Participant.length == 0 ? false : event.Participant[0],
             start_in_event_activity: event.start_in_event_activity,

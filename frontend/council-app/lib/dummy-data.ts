@@ -266,7 +266,7 @@ export function getNextAction(event: EventData): { label: string; cta: string; r
   switch (event.pipeline_stage) {
     case "DRAFT":              return { label: "Submit proposal to faculty advisor",     cta: "Submit Proposal" };
     case "PROPOSAL_SUBMITTED": return { label: "Waiting for faculty advisor approval",  cta: "Check Status" };
-    case "PROPOSAL_APPROVED":  return { label: "Upload venue booking letter and get Gen. Sec. + Faculty Advisor signatures", cta: "Upload Documents" };
+    case "PROPOSAL_APPROVED":  return { label: "Faculty advisor approved! Forward to Director / Vice Principal for sign-off.", cta: "Forward to Director/VP" };
     case "BOOKING_PENDING":    return { label: "Circulate to Director and Vice Principal for sign-off", cta: "Forward to Director/VP" };
     case "DIRECTOR_VP_PENDING":return { label: "Waiting for Director / Vice Principal approval", cta: "Check Status" };
     case "FULLY_APPROVED":     return { label: "All approvals done! Open registrations.",cta: "Open Registration" };

@@ -98,12 +98,30 @@ export function mapStateToPipeline(state: string): PipelineStage {
 export function transformEvent(e: any): EventData {
   return {
     ...e,
-    pipeline_stage: mapStateToPipeline(e.state ?? "DRAFT"),
-    approval_chain: e.approval_chain ?? [],
-    documents:      e.documents      ?? [],
-    children:       e.children       ?? [],
-    organizer:      e.organizer      ?? { id: e.organizer_id, name: "Unknown", photo_url: "" },
-    dates: (e.dates ?? []).map((d: string | Date) => new Date(d).toISOString()),
+    pipeline_stage:        mapStateToPipeline(e.state ?? "DRAFT"),
+    approval_chain:        e.approval_chain        ?? [],
+    documents:             e.documents             ?? [],
+    children:              e.children              ?? [],
+    tags:                  e.tags                  ?? [],
+    organizer:             e.organizer             ?? { id: e.organizer_id ?? 0, name: "Unknown", photo_url: "" },
+    dates:                 (e.dates ?? []).map((d: string | Date) => new Date(d).toISOString()),
+    // String fields — default to empty string to prevent .replace() crashes
+    event_type:            e.event_type            ?? "OTHER",
+    venue:                 e.venue                 ?? "",
+    banner_url:            e.banner_url            ?? "",
+    long_description:      e.long_description      ?? "",
+    tag_line:              e.tag_line              ?? "",
+    // Number fields — default to 0
+    fee:                   e.fee                   ?? 0,
+    ticket_count:          e.ticket_count          ?? 0,
+    tickets_sold:          e.tickets_sold          ?? 0,
+    min_ppt:               e.min_ppt               ?? 1,
+    ma_ppt:                e.ma_ppt                ?? 1,
+    // Boolean fields
+    is_only_somaiya:       e.is_only_somaiya       ?? false,
+    is_feedback_enabled:   e.is_feedback_enabled   ?? false,
+    is_ticket_feature_enabled: e.is_ticket_feature_enabled ?? false,
+    registration_type:     e.registration_type     ?? "ONPLATFORM",
   } as EventData;
 }
 
@@ -145,7 +163,21 @@ export async function createEvent(data: Record<string, unknown>): Promise<EventD
 
 export async function updateEvent(id: number | string, data: Record<string, unknown>): Promise<EventData> {
   const res = await api.post(`/event/p/update/${id}`, data);
-  return transformEvent(res.data.event);
+  return transformEvent(res.data.event ?? {});
+}
+
+/**
+ * Transition an event to a new backend state.
+ * Council-permitted transitions:
+ *   DRAFT → APPLIED_FOR_APPROVAL      (Submit Proposal)
+ *   UNLISTED → APPLIED_FOR_PRINCI_APPROVAL (Forward to Director/VP)
+ *   UPCOMING → REGISTRATION_OPEN      (Open Registration)
+ */
+export async function transitionEventState(
+  id: number | string,
+  newState: string,
+): Promise<void> {
+  await api.post(`/event/p/update/${id}`, { state: newState });
 }
 
 // ── Statistics ─────────────────────────────────────────────────────────────────

@@ -2,6 +2,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { getNextAction, PIPELINE_STAGES, type EventData } from "@/lib/dummy-data";
+import { transitionEventState } from "@/lib/api";
 import { useData } from "@/contexts/DataContext";
 import {
   Inbox, Clock, CheckCircle2, XCircle, AlertCircle, ChevronRight,
@@ -51,9 +52,14 @@ function groupEvents(events: EventData[]) {
 
 // ─── Event Action Card ────────────────────────────────────────────────────────
 
-function ApprovalCard({ event, onAction }: { event: EventData; onAction: (e: EventData, cta: string) => void }) {
+function ApprovalCard({ event, onAction, loadingId }: {
+  event: EventData;
+  onAction: (e: EventData, cta: string) => void;
+  loadingId: number | null;
+}) {
   const [expanded, setExpanded] = useState(false);
   const nextAction = getNextAction(event);
+  const isThisLoading = loadingId === event.id;
   const date = event.dates[0]
     ? new Date(event.dates[0]).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
     : "—";
@@ -99,9 +105,9 @@ function ApprovalCard({ event, onAction }: { event: EventData; onAction: (e: Eve
               {nextAction.cta} <ChevronRight size={11} />
             </Link>
           ) : (
-            <button type="button" onClick={() => onAction(event, nextAction.cta)}
-              className="shrink-0 flex items-center gap-1 px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-xs font-fira rounded-lg transition-colors">
-              {nextAction.cta} <ChevronRight size={11} />
+            <button type="button" onClick={() => onAction(event, nextAction.cta)} disabled={!!loadingId}
+              className="shrink-0 flex items-center gap-1 px-3 py-1.5 bg-red-500 hover:bg-red-600 disabled:opacity-60 disabled:cursor-not-allowed text-white text-xs font-fira rounded-lg transition-colors">
+              {isThisLoading ? "…" : nextAction.cta} {!isThisLoading && <ChevronRight size={11} />}
             </button>
           )}
         </div>
@@ -120,9 +126,9 @@ function ApprovalCard({ event, onAction }: { event: EventData; onAction: (e: Eve
                   {nextAction.cta}
                 </Link>
               ) : (
-                <button type="button" onClick={() => onAction(event, nextAction.cta)}
-                  className="shrink-0 flex items-center gap-1 px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-xs font-fira rounded-lg transition-colors">
-                  {nextAction.cta}
+                <button type="button" onClick={() => onAction(event, nextAction.cta)} disabled={!!loadingId}
+                  className="shrink-0 flex items-center gap-1 px-3 py-1.5 bg-red-500 hover:bg-red-600 disabled:opacity-60 disabled:cursor-not-allowed text-white text-xs font-fira rounded-lg transition-colors">
+                  {isThisLoading ? "Processing…" : nextAction.cta}
                 </button>
               )}
             </div>
@@ -183,9 +189,11 @@ function ApprovalCard({ event, onAction }: { event: EventData; onAction: (e: Eve
 
 // ─── Section ──────────────────────────────────────────────────────────────────
 
-function Section({ title, icon, events, onAction, defaultOpen = true }: {
+function Section({ title, icon, events, onAction, loadingId, defaultOpen = true }: {
   title: string; icon: React.ReactNode; events: EventData[];
-  onAction: (e: EventData, cta: string) => void; defaultOpen?: boolean;
+  onAction: (e: EventData, cta: string) => void;
+  loadingId: number | null;
+  defaultOpen?: boolean;
 }) {
   const [open, setOpen] = useState(defaultOpen);
   if (events.length === 0) return null;
@@ -200,7 +208,7 @@ function Section({ title, icon, events, onAction, defaultOpen = true }: {
       </button>
       {open && (
         <div className="space-y-3">
-          {events.map(e => <ApprovalCard key={e.id} event={e} onAction={onAction} />)}
+          {events.map(e => <ApprovalCard key={e.id} event={e} onAction={onAction} loadingId={loadingId} />)}
         </div>
       )}
     </div>
@@ -209,23 +217,47 @@ function Section({ title, icon, events, onAction, defaultOpen = true }: {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
+const STATE_TRANSITIONS: Record<string, string> = {
+  "Submit Proposal":       "APPLIED_FOR_APPROVAL",
+  "Forward to Director/VP":"APPLIED_FOR_PRINCI_APPROVAL",
+  "Open Registration":     "REGISTRATION_OPEN",
+};
+
 export default function ApprovalsPage() {
-  const { events, loading } = useData();
-  const [toast, setToast] = useState("");
+  const { events, loading, refreshEvents } = useData();
+  const [toast, setToast]       = useState("");
+  const [loadingId, setLoadingId] = useState<number | null>(null);
 
   function showToast(msg: string) {
-    setToast(msg); setTimeout(() => setToast(""), 3000);
+    setToast(msg); setTimeout(() => setToast(""), 3500);
   }
 
-  function handleAction(event: EventData, cta: string) {
-    const messages: Record<string, string> = {
-      "Submit Proposal":        `Proposal for "${event.name}" submitted to faculty advisor!`,
-      "Upload Documents":       `Navigate to Event Details → Documents to upload files.`,
-      "Forward to Director/VP": `"${event.name}" forwarded to Director / Vice Principal.`,
-      "Open Registration":      `Registration for "${event.name}" is now open!`,
-      "Submit Report":          `Navigate to Event Details → Documents to upload report.`,
-    };
-    showToast(messages[cta] ?? `${cta} triggered for "${event.name}"`);
+  async function handleAction(event: EventData, cta: string) {
+    const newState = STATE_TRANSITIONS[cta];
+    if (newState) {
+      if (loadingId !== null) return;
+      setLoadingId(event.id);
+      try {
+        await transitionEventState(event.id, newState);
+        await refreshEvents();
+        const successMsg: Record<string, string> = {
+          "Submit Proposal":        `Proposal for "${event.name}" submitted to faculty advisor!`,
+          "Forward to Director/VP": `"${event.name}" forwarded to Director / Vice Principal.`,
+          "Open Registration":      `Registration for "${event.name}" is now open!`,
+        };
+        showToast(successMsg[cta]);
+      } catch {
+        showToast(`Failed to perform "${cta}" — please try again.`);
+      } finally {
+        setLoadingId(null);
+      }
+    } else {
+      const infoMsg: Record<string, string> = {
+        "Upload Documents": `Go to Event Details → Documents to upload files for "${event.name}".`,
+        "Submit Report":    `Go to Event Details → Documents to upload the post-event report.`,
+      };
+      showToast(infoMsg[cta] ?? `${cta} triggered for "${event.name}"`);
+    }
   }
 
   const groups = groupEvents(events);
@@ -261,13 +293,13 @@ export default function ApprovalsPage() {
 
       <div className="space-y-8">
         <Section title="Needs Your Action" icon={<AlertCircle size={15} className="text-red-500" />}
-          events={groups.urgent} onAction={handleAction} defaultOpen={true} />
+          events={groups.urgent} onAction={handleAction} loadingId={loadingId} defaultOpen={true} />
         <Section title="Waiting for Response" icon={<Clock size={15} className="text-amber-500" />}
-          events={groups.waiting} onAction={handleAction} defaultOpen={true} />
+          events={groups.waiting} onAction={handleAction} loadingId={loadingId} defaultOpen={true} />
         <Section title="In Progress" icon={<ChevronRight size={15} className="text-sky-500" />}
-          events={groups.inProgress} onAction={handleAction} defaultOpen={true} />
+          events={groups.inProgress} onAction={handleAction} loadingId={loadingId} defaultOpen={true} />
         <Section title="Completed" icon={<CheckCircle2 size={15} className="text-emerald-500" />}
-          events={groups.done} onAction={handleAction} defaultOpen={false} />
+          events={groups.done} onAction={handleAction} loadingId={loadingId} defaultOpen={false} />
       </div>
 
       {events.length === 0 && (

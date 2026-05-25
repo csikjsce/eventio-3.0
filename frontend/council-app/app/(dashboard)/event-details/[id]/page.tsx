@@ -3,7 +3,7 @@ import { use, useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getNextAction, type EventData, type EventDocument, type ApprovalStep } from "@/lib/dummy-data";
-import { fetchEvent, fetchDocuments, addDocument, deleteDocument, type DocumentRow } from "@/lib/api";
+import { fetchEvent, fetchDocuments, addDocument, deleteDocument, transitionEventState, type DocumentRow } from "@/lib/api";
 import { uploadFile, type UploadType } from "@/lib/upload";
 import { useData } from "@/contexts/DataContext";
 import {
@@ -270,7 +270,11 @@ function AddDocumentSection({ eventId, docs, onDocUpdated, onDocAdded }: {
 
 // ─── Next Action Panel ────────────────────────────────────────────────────────
 
-function NextActionPanel({ event, onAction }: { event: EventData; onAction: (cta: string) => void }) {
+function NextActionPanel({ event, onAction, actionLoading }: {
+  event: EventData;
+  onAction: (cta: string) => void;
+  actionLoading?: boolean;
+}) {
   const action = getNextAction(event);
   if (!action) return null;
 
@@ -294,9 +298,10 @@ function NextActionPanel({ event, onAction }: { event: EventData; onAction: (cta
           {action.cta} <ChevronRight size={14} />
         </Link>
       ) : (
-        <button type="button" onClick={() => onAction(action.cta)}
-          className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-fira font-semibold transition-all ${isWaiting ? "bg-amber-500 hover:bg-amber-600 text-white" : "bg-red-500 hover:bg-red-600 text-white"}`}>
-          {action.cta} <ChevronRight size={14} />
+        <button type="button" onClick={() => onAction(action.cta)} disabled={actionLoading}
+          className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-fira font-semibold transition-all disabled:opacity-60 disabled:cursor-not-allowed ${isWaiting ? "bg-amber-500 hover:bg-amber-600 text-white" : "bg-red-500 hover:bg-red-600 text-white"}`}>
+          {actionLoading ? "Processing…" : action.cta}
+          {!actionLoading && <ChevronRight size={14} />}
         </button>
       )}
     </div>
@@ -308,14 +313,15 @@ function NextActionPanel({ event, onAction }: { event: EventData; onAction: (cta
 export default function EventDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router  = useRouter();
-  const { events } = useData();
+  const { events, refreshEvents } = useData();
 
-  const [event, setEvent]   = useState<EventData | null>(events.find(e => String(e.id) === id) ?? null);
-  const [tab, setTab]       = useState<"journey" | "documents">("journey");
+  const [event, setEvent]         = useState<EventData | null>(events.find(e => String(e.id) === id) ?? null);
+  const [tab, setTab]             = useState<"journey" | "documents">("journey");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [docs, setDocs]     = useState<any[]>(event?.documents ?? []);
-  const [toast, setToast]   = useState("");
-  const [loading, setLoading] = useState(!event);
+  const [docs, setDocs]           = useState<any[]>(event?.documents ?? []);
+  const [toast, setToast]         = useState("");
+  const [loading, setLoading]     = useState(!event);
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     if (event) {
@@ -356,18 +362,36 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
     setTimeout(() => setToast(""), 3000);
   }
 
-  function handleAction(cta: string) {
-    if (cta === "Submit Proposal") {
-      showToast("Proposal submitted to faculty advisor!");
-    } else if (cta === "Upload Documents") {
+  const STATE_TRANSITIONS: Record<string, string> = {
+    "Submit Proposal":       "APPLIED_FOR_APPROVAL",
+    "Forward to Director/VP":"APPLIED_FOR_PRINCI_APPROVAL",
+    "Open Registration":     "REGISTRATION_OPEN",
+  };
+
+  async function handleAction(cta: string) {
+    const newState = STATE_TRANSITIONS[cta];
+    if (newState) {
+      if (actionLoading) return;
+      setActionLoading(true);
+      try {
+        await transitionEventState(id, newState);
+        // refresh local event + global list
+        const updated = await fetchEvent(id);
+        setEvent(updated);
+        await refreshEvents();
+        showToast(
+          cta === "Submit Proposal"        ? "Proposal submitted to faculty advisor!" :
+          cta === "Forward to Director/VP" ? "Forwarded to Director / Vice Principal!" :
+                                             "Registration opened!"
+        );
+      } catch {
+        showToast("Action failed — please try again.");
+      } finally {
+        setActionLoading(false);
+      }
+    } else if (cta === "Upload Documents" || cta === "Submit Report") {
       setTab("documents");
-    } else if (cta === "Forward to Director/VP") {
-      showToast("Forwarded to Director / Vice Principal for approval!");
-    } else if (cta === "Open Registration") {
-      showToast("Registration opened!");
-    } else if (cta === "Submit Report") {
-      showToast("Use the Documents tab to upload the event report.");
-      setTab("documents");
+      if (cta === "Submit Report") showToast("Upload your post-event report in the Documents tab.");
     } else {
       showToast(`${cta} — action triggered!`);
     }
@@ -414,7 +438,7 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
         {/* Name */}
         <div className="absolute bottom-0 left-0 right-0 px-5 sm:px-8 pb-4">
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-[10px] font-fira uppercase tracking-widest bg-red-500/80 text-white px-2 py-0.5 rounded-md">{event.event_type.replace(/_/g," ")}</span>
+            <span className="text-[10px] font-fira uppercase tracking-widest bg-red-500/80 text-white px-2 py-0.5 rounded-md">{(event.event_type ?? "EVENT").replace(/_/g," ")}</span>
           </div>
           <h1 className="text-white text-xl sm:text-3xl font-marcellus">{event.name}</h1>
           <p className="text-white/70 text-sm font-fira mt-0.5">{event.tag_line}</p>
@@ -486,7 +510,7 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
           {/* ── Right: sidebar ── */}
           <div className="space-y-4">
             {/* Next action */}
-            <NextActionPanel event={event} onAction={handleAction} />
+            <NextActionPanel event={event} onAction={handleAction} actionLoading={actionLoading} />
 
             {/* Ticket progress */}
             {event.is_ticket_feature_enabled && (
