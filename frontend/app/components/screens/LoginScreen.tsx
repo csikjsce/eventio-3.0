@@ -12,6 +12,12 @@ export default function LoginScreen() {
     const params = new URLSearchParams(window.location.search);
     const accessToken = params.get("accessToken");
     const refreshToken = params.get("refreshToken");
+    const nextPath = params.get("next");
+
+    // If there's a ?next= param, stash it before the OAuth redirect wipes search params
+    if (nextPath) {
+      sessionStorage.setItem("login_redirect", nextPath);
+    }
 
     if (accessToken && refreshToken) {
       localStorage.setItem("accessToken", accessToken);
@@ -20,7 +26,14 @@ export default function LoginScreen() {
       window.history.replaceState(null, "", window.location.pathname);
 
       const onboarded = localStorage.getItem("eventio-onboarded");
-      router.replace(onboarded ? "/" : "/onboarding");
+      const redirect = sessionStorage.getItem("login_redirect");
+      sessionStorage.removeItem("login_redirect");
+
+      if (redirect) {
+        router.replace(redirect);
+      } else {
+        router.replace(onboarded ? "/" : "/onboarding");
+      }
     }
   }, [router]);
 
@@ -31,7 +44,9 @@ export default function LoginScreen() {
     } else {
       // Dev fallback — skip auth
       localStorage.setItem("eventio-onboarded", "true");
-      router.replace("/");
+      const redirect = sessionStorage.getItem("login_redirect");
+      sessionStorage.removeItem("login_redirect");
+      router.replace(redirect ?? "/");
     }
   };
 

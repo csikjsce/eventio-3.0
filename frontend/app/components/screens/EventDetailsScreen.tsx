@@ -83,6 +83,7 @@ export default function EventDetailsScreen() {
         setEvent(eventData);
         setLoading(false);
 
+
         // Derive button state from event
         const s = eventData.state;
         if (s === "REGISTRATION_OPEN") {
@@ -135,8 +136,15 @@ export default function EventDetailsScreen() {
         } else if (s === "COMPLETED") {
           setButtonState({ text: "Give Feedback", loading: false, disabled: false, onClick: () => setIsFeedbackPopupOpen(true) });
         }
-      } catch {
-        if (!cancelled) setLoading(false);
+      } catch (err: unknown) {
+        if (cancelled) return;
+        const status = (err as { response?: { status?: number } })?.response?.status;
+        if (status === 401) {
+          // Not logged in — send to login then back here
+          router.replace("/login?next=" + encodeURIComponent("/event-details/" + id));
+          return;
+        }
+        setLoading(false);
       }
     }
 

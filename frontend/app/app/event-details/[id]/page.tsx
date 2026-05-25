@@ -12,24 +12,34 @@ interface EventMeta {
   organizer:   string | null;
 }
 
-const BACKEND_URL =
-  process.env.SERVER_ADDRESS ||
-  process.env.NEXT_PUBLIC_SERVER_ADDRESS ||
-  "https://eventioapi.swdc.somaiya.edu";
+// Try internal localhost first (fastest, works when Next.js + backend share a host),
+// then fall back to the public-facing domain.
+const BACKEND_URLS: string[] = [
+  process.env.SERVER_ADDRESS,
+  "http://localhost:8000",
+  process.env.NEXT_PUBLIC_SERVER_ADDRESS,
+  "https://eventioapi.swdc.somaiya.edu",
+].filter(Boolean) as string[];
+
+// Deduplicate while preserving order
+const BACKEND_URL_LIST = [...new Set(BACKEND_URLS)];
 
 async function fetchEventMeta(id: string): Promise<EventMeta | null> {
-  try {
-    const res = await fetch(`${BACKEND_URL}/api/v1/event/public/${id}`, {
-      // no caching — metadata should always reflect latest event state
-      cache: "no-store",
-    });
-    if (!res.ok) return null;
-    const data = (await res.json()) as { error: boolean; meta?: EventMeta };
-    return data.meta ?? null;
-  } catch (err) {
-    console.error("[generateMetadata] fetchEventMeta failed:", err);
-    return null;
+  for (const base of BACKEND_URL_LIST) {
+    try {
+      const res = await fetch(`${base}/api/v1/event/public/${id}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(4000), // 4 s per attempt
+      });
+      if (!res.ok) continue;
+      const data = (await res.json()) as { error: boolean; meta?: EventMeta };
+      if (data.meta) return data.meta;
+    } catch {
+      // try next URL
+    }
   }
+  console.error("[generateMetadata] all backend URLs failed for event", id);
+  return null;
 }
 
 export async function generateMetadata({
