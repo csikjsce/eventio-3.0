@@ -70,6 +70,7 @@ router.get(p + "/profile/:id", authCheck, async (req, res) => {
                 name: true,
                 email: true,
                 photo_url: true,
+                role: true,
                 council_type: true,
                 about: true,
                 CouncilProfile: true,
@@ -84,7 +85,7 @@ router.get(p + "/profile/:id", authCheck, async (req, res) => {
             },
         });
 
-        if (!user || user.role === undefined) {
+        if (!user || user.role !== "COUNCIL") {
             return res.status(404).json({ error: true, message: "Council not found" });
         }
 
