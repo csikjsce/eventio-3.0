@@ -1,5 +1,6 @@
 "use client";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { fetchCouncilProfile, updateCouncilProfile, type CouncilProfile } from "@/lib/api";
 import {
   Settings, Users, Upload, Plus, X, Edit2, Trash2,
   Mail, Link2, ChevronDown, CheckCircle2, Save, AtSign, Phone, Globe,
@@ -426,8 +427,72 @@ export default function SettingsPage() {
   const [advModal, setAdvModal]   = useState<Partial<FacultyAdvisor> | null | "new">(null);
   const [toast, setToast]         = useState("");
   const [teamFilter, setTeamFilter] = useState("All");
+  const [saving, setSaving]       = useState(false);
   const logoRef   = useRef<HTMLInputElement>(null);
   const bannerRef = useRef<HTMLInputElement>(null);
+
+  // Load real council profile on mount
+  useEffect(() => {
+    fetchCouncilProfile().then((profile: CouncilProfile) => {
+      const p = profile.profile ?? {};
+      setSettings(prev => ({
+        ...prev,
+        name:        profile.name        ?? prev.name,
+        email:       profile.email       ?? prev.email,
+        logo_url:    profile.photo_url   ?? prev.logo_url,
+        tagline:     p.tagline           ?? prev.tagline,
+        description: p.about            ?? prev.description,
+        banner_url:  p.banner_url        ?? prev.banner_url,
+        instagram:   p.instagram         ?? prev.instagram,
+        website:     p.website           ?? prev.website,
+      }));
+      if (Array.isArray(p.faculty_advisors) && p.faculty_advisors.length) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        setAdvisors((p.faculty_advisors as any[]).map((fa: any, i: number) => ({
+          id:          fa.id          ?? `fa${i}`,
+          name:        fa.name        ?? "",
+          email:       fa.email       ?? "",
+          dept:        fa.dept        ?? "",
+          designation: fa.designation ?? "Faculty Advisor",
+        })));
+      }
+      if (Array.isArray(p.members) && p.members.length) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        setMembers((p.members as any[]).map((m: any, i: number) => ({
+          id:        m.id        ?? `m${i}`,
+          name:      m.name      ?? "",
+          email:     m.email     ?? "",
+          role:      m.role      ?? "Member",
+          team:      m.team      ?? "Technical",
+          is_head:   m.is_head   ?? false,
+          photo_url: m.photo_url ?? `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(m.name ?? "M")}&backgroundColor=b61f2d&textColor=ffffff`,
+        })));
+      }
+    }).catch(() => {}); // keep defaults on failure
+  }, []);
+
+  async function handleSaveSettings() {
+    setSaving(true);
+    try {
+      await updateCouncilProfile({
+        name:  settings.name,
+        email: settings.email,
+        photo_url: settings.logo_url,
+        tagline:     settings.tagline,
+        about:       settings.description,
+        banner_url:  settings.banner_url,
+        instagram:   settings.instagram,
+        website:     settings.website,
+        faculty_advisors: advisors,
+        members,
+      });
+      showToast("Settings saved!");
+    } catch {
+      showToast("Failed to save. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  }
 
   function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(""), 3000); }
   function set(k: keyof CouncilSettings, v: string) { setSettings(prev => ({ ...prev, [k]: v })); }
@@ -657,9 +722,9 @@ export default function SettingsPage() {
           </div>
 
           {/* Save */}
-          <button type="button" onClick={() => showToast("Settings saved!")}
-            className="flex items-center gap-2 px-6 py-3 bg-red-500 hover:bg-red-600 text-white text-sm font-fira font-semibold rounded-xl transition-colors">
-            <Save size={15} /> Save Settings
+          <button type="button" onClick={handleSaveSettings} disabled={saving}
+            className="flex items-center gap-2 px-6 py-3 bg-red-500 hover:bg-red-600 disabled:opacity-60 text-white text-sm font-fira font-semibold rounded-xl transition-colors">
+            <Save size={15} /> {saving ? "Saving…" : "Save Settings"}
           </button>
         </div>
 

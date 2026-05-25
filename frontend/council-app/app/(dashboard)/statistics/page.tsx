@@ -1,6 +1,6 @@
 "use client";
-import { useMemo, useState } from "react";
-import { MOCK_STATS } from "@/lib/dummy-data";
+import { useMemo, useState, useEffect } from "react";
+import { fetchStats, type StatsItem } from "@/lib/api";
 import { BarChart, Bar, PieChart, Pie, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Download, Search, CalendarDays, Users, BarChart3, Heart, TrendingUp, TrendingDown, Minus, ArrowLeft } from "lucide-react";
 
@@ -19,7 +19,7 @@ const BRANCH_ABBR: Record<string, string> = {
   Robotics_And_Artificial_Intelligence: "RAI", Electronics: "ETRX",
 };
 
-type StatsData = typeof MOCK_STATS[0];
+type StatsData = StatsItem;
 type Tab = "overview" | "events";
 
 /* ── Tooltip ── */
@@ -95,10 +95,18 @@ function exportCSV(data: StatsData[]) {
 }
 
 export default function StatisticsPage() {
-  const [tab, setTab]       = useState<Tab>("overview");
-  const [drill, setDrill]   = useState<StatsData | null>(null);
-  const [search, setSearch] = useState("");
-  const statsData = MOCK_STATS;
+  const [tab, setTab]         = useState<Tab>("overview");
+  const [drill, setDrill]     = useState<StatsData | null>(null);
+  const [search, setSearch]   = useState("");
+  const [statsData, setStatsData] = useState<StatsData[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchStats()
+      .then(data => setStatsData(data))
+      .catch(() => setStatsData([]))
+      .finally(() => setLoading(false));
+  }, []);
 
   const allBranch = useMemo(() => {
     const agg: Record<string, number> = {};
@@ -106,17 +114,18 @@ export default function StatisticsPage() {
       const k = BRANCH_ABBR[b] || b; agg[k] = (agg[k] || 0) + c;
     }));
     return Object.entries(agg).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
-  }, []);
+  }, [statsData]);
 
   const allGender = useMemo(() => {
     const agg: Record<string, number> = {};
     statsData.forEach(e => Object.entries(e.genderStats).forEach(([g, c]) => { agg[g] = (agg[g] || 0) + c; }));
     return Object.entries(agg).map(([name, value]) => ({ name, value }));
-  }, []);
+  }, [statsData]);
 
   const barData = statsData.map(e => ({ name: e.eventName, value: e.totalParticipants }));
 
   const insights = useMemo(() => {
+    if (!statsData.length) return null;
     const total  = statsData.reduce((s, e) => s + e.totalParticipants, 0);
     const avg    = Math.round(total / statsData.length);
     const best   = statsData.reduce((m, e) => e.totalParticipants > m.totalParticipants ? e : m, statsData[0]);
@@ -127,9 +136,31 @@ export default function StatisticsPage() {
       ? Math.round((sorted[sorted.length - 1].totalParticipants - sorted[0].totalParticipants) / sorted[0].totalParticipants * 100)
       : null;
     return { total, avg, best, femPct, totalF, growth, uniqueBranches: allBranch.length };
-  }, [allBranch]);
+  }, [statsData, allBranch]);
 
   const filteredEvents = statsData.filter(e => e.eventName.toLowerCase().includes(search.toLowerCase()));
+
+  if (loading) {
+    return (
+      <div className="px-4 py-6 sm:px-8 sm:py-8 animate-pulse space-y-6">
+        <div className="h-10 bg-surface rounded-xl w-64" />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => <div key={i} className="h-28 bg-surface rounded-2xl" />)}
+        </div>
+        <div className="h-64 bg-surface rounded-2xl" />
+      </div>
+    );
+  }
+
+  if (!statsData.length || !insights) {
+    return (
+      <div className="px-4 py-6 sm:px-8 sm:py-8 flex flex-col items-center justify-center py-24 text-center">
+        <BarChart3 size={40} className="text-subtle-tx mb-4" />
+        <p className="text-muted-tx font-fira text-sm">No statistics available yet.</p>
+        <p className="text-subtle-tx font-fira text-xs mt-1">Statistics appear after events complete.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="px-4 py-6 sm:px-8 sm:py-8">

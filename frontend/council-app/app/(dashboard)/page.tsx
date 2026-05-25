@@ -1,7 +1,8 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
-import { MOCK_EVENTS, COUNCIL_USER, PIPELINE_STAGES, type EventData } from "@/lib/dummy-data";
+import { PIPELINE_STAGES, type EventData } from "@/lib/dummy-data";
+import { useData } from "@/contexts/DataContext";
 import { Plus, TrendingUp, Activity, CheckCircle, Clock, ChevronRight } from "lucide-react";
 
 const PIPELINE_COLOR: Record<string, string> = {
@@ -83,27 +84,45 @@ function EventCard({ event }: { event: EventData }) {
 }
 
 export default function HomePage() {
+  const { user, events, loading } = useData();
   const [view, setView] = useState<"grid" | "list">("grid");
 
+  const displayName = user?.name ?? "Council";
+  const displayPhoto = user?.photo_url ?? `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(displayName)}&backgroundColor=b61f2d&textColor=ffffff`;
+
   const stats = [
-    { label: "Total Events",      value: MOCK_EVENTS.length,                                               icon: <Activity    size={15} />, color: "text-tx"          },
-    { label: "Awaiting Approval", value: MOCK_EVENTS.filter(e => ["PROPOSAL_SUBMITTED","DIRECTOR_VP_PENDING"].includes(e.pipeline_stage)).length, icon: <Clock size={15} />, color: "text-amber-500" },
-    { label: "Registration Open", value: MOCK_EVENTS.filter(e => e.pipeline_stage === "REGISTRATION_OPEN").length, icon: <TrendingUp size={15} />, color: "text-emerald-500" },
-    { label: "Completed",         value: MOCK_EVENTS.filter(e => ["COMPLETED","REPORT_SUBMITTED"].includes(e.pipeline_stage)).length, icon: <CheckCircle size={15} />, color: "text-muted-tx" },
+    { label: "Total Events",      value: events.length,                                               icon: <Activity    size={15} />, color: "text-tx"          },
+    { label: "Awaiting Approval", value: events.filter(e => ["PROPOSAL_SUBMITTED","DIRECTOR_VP_PENDING"].includes(e.pipeline_stage)).length, icon: <Clock size={15} />, color: "text-amber-500" },
+    { label: "Registration Open", value: events.filter(e => e.pipeline_stage === "REGISTRATION_OPEN").length, icon: <TrendingUp size={15} />, color: "text-emerald-500" },
+    { label: "Completed",         value: events.filter(e => ["COMPLETED","REPORT_SUBMITTED"].includes(e.pipeline_stage)).length, icon: <CheckCircle size={15} />, color: "text-muted-tx" },
   ];
 
-  const sorted = [...MOCK_EVENTS].sort((a, b) => new Date(b.dates[0]).getTime() - new Date(a.dates[0]).getTime());
-  const needsAction = MOCK_EVENTS.filter(e => !["PROPOSAL_SUBMITTED","DIRECTOR_VP_PENDING","REPORT_SUBMITTED"].includes(e.pipeline_stage) && e.pipeline_stage !== "REJECTED");
+  const sorted = [...events].sort((a, b) => new Date(b.dates[0] ?? 0).getTime() - new Date(a.dates[0] ?? 0).getTime());
+  const needsAction = events.filter(e => !["PROPOSAL_SUBMITTED","DIRECTOR_VP_PENDING","REPORT_SUBMITTED"].includes(e.pipeline_stage) && e.pipeline_stage !== "REJECTED");
+
+  if (loading) {
+    return (
+      <div className="px-4 py-6 sm:px-8 sm:py-8 space-y-6 animate-pulse">
+        <div className="h-12 bg-surface rounded-xl w-60" />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => <div key={i} className="h-24 bg-surface rounded-xl" />)}
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+          {[...Array(6)].map((_, i) => <div key={i} className="h-64 bg-surface rounded-2xl" />)}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="px-4 py-6 sm:px-8 sm:py-8">
       {/* Header */}
       <div className="flex items-center justify-between mb-6 sm:mb-8">
         <div className="flex items-center gap-3">
-          <img src={COUNCIL_USER.photo_url} alt={COUNCIL_USER.name} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-red-400/30 object-cover" />
+          <img src={displayPhoto} alt={displayName} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-red-400/30 object-cover" />
           <div>
             <p className="text-subtle-tx text-xs font-fira">Welcome back</p>
-            <h1 className="text-tx text-lg sm:text-xl font-marcellus">{COUNCIL_USER.name}</h1>
+            <h1 className="text-tx text-lg sm:text-xl font-marcellus">{displayName}</h1>
           </div>
         </div>
         <Link href="/new-event"

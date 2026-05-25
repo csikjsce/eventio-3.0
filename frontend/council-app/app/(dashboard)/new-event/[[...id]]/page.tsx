@@ -5,7 +5,8 @@ import { newEventSchema, type NewEventSchema } from "@/lib/validation";
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Spinner from "@/components/Spinner";
-import { MOCK_EVENTS } from "@/lib/dummy-data";
+import { useData } from "@/contexts/DataContext";
+import { createEvent, updateEvent } from "@/lib/api";
 import {
   Trophy, Wrench, Mic2, Monitor, Sparkles,
   CheckCircle2, ChevronRight, X, Save,
@@ -121,8 +122,9 @@ const STEPS = [
 export default function NewEventPage() {
   const router  = useRouter();
   const params  = useParams();
+  const { events, refreshEvents } = useData();
   const idParam = Array.isArray(params.id) ? params.id[0] : params.id;
-  const existing = idParam ? MOCK_EVENTS.find(e => String(e.id) === idParam) : null;
+  const existing = idParam ? events.find(e => String(e.id) === idParam) ?? null : null;
 
   const [step, setStep]               = useState(1);
   const [startDate, setStartDate]     = useState(dateToString(new Date()));
@@ -186,21 +188,45 @@ export default function NewEventPage() {
   }
 
   async function saveDraft() {
+    const data = methods.getValues();
+    data.logo_image_url = data.event_page_image_url;
+    if (!showParent) data.parent_id = null;
     setLoading(true);
-    await new Promise(r => setTimeout(r, 700));
-    setLoading(false);
-    setToast({ msg: "Draft saved.", ok: true });
-    setTimeout(() => setToast(null), 2500);
+    try {
+      if (existing) {
+        await updateEvent(existing.id, data as unknown as Record<string, unknown>);
+      } else {
+        await createEvent(data as unknown as Record<string, unknown>);
+      }
+      await refreshEvents();
+      setToast({ msg: "Draft saved.", ok: true });
+    } catch {
+      setToast({ msg: "Failed to save draft.", ok: false });
+    } finally {
+      setLoading(false);
+      setTimeout(() => setToast(null), 2500);
+    }
   }
 
   const onSubmit = async (data: NewEventSchema) => {
     data.logo_image_url = data.event_page_image_url;
     if (!showParent) data.parent_id = null;
     setLoading(true);
-    await new Promise(r => setTimeout(r, 900));
-    setLoading(false);
-    setToast({ msg: existing ? "Event updated!" : "Event created as Draft!", ok: true });
-    setTimeout(() => { setToast(null); router.push("/"); }, 1800);
+    try {
+      if (existing) {
+        await updateEvent(existing.id, data as unknown as Record<string, unknown>);
+        setToast({ msg: "Event updated!", ok: true });
+      } else {
+        await createEvent(data as unknown as Record<string, unknown>);
+        setToast({ msg: "Event created as Draft!", ok: true });
+      }
+      await refreshEvents();
+      setTimeout(() => { setToast(null); router.push("/"); }, 1800);
+    } catch {
+      setToast({ msg: "Failed to save event. Please try again.", ok: false });
+    } finally {
+      setLoading(false);
+    }
   };
 
   /* watched values */
@@ -323,7 +349,7 @@ export default function NewEventPage() {
                       <FieldWrap label="Parent Event *">
                         <select className={INPUT} {...register("parent_id")}>
                           <option value={-1}>Select parent event…</option>
-                          {MOCK_EVENTS.filter(e => e.id !== existing?.id).map(ev => <option key={ev.id} value={ev.id}>{ev.name}</option>)}
+                          {events.filter((e: { id: number; name: string }) => e.id !== existing?.id).map((ev: { id: number; name: string }) => <option key={ev.id} value={ev.id}>{ev.name}</option>)}
                         </select>
                       </FieldWrap>
                     )}

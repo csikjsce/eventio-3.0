@@ -1,11 +1,10 @@
 "use client";
-import { use, useState } from "react";
+import { use, useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  getEventById, getNextAction,
-  type EventData, type EventDocument, type ApprovalStep,
-} from "@/lib/dummy-data";
+import { getNextAction, type EventData, type EventDocument, type ApprovalStep } from "@/lib/dummy-data";
+import { fetchEvent, fetchDocuments, addDocument, deleteDocument, type DocumentRow } from "@/lib/api";
+import { useData } from "@/contexts/DataContext";
 import {
   ArrowLeft, CalendarDays, MapPin, Users, Ticket, Edit2, ExternalLink,
   Upload, CheckCircle2, Clock, AlertCircle, XCircle, FileText,
@@ -167,11 +166,42 @@ function NextActionPanel({ event, onAction }: { event: EventData; onAction: (cta
 
 export default function EventDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const router = useRouter();
-  const event = getEventById(Number(id));
-  const [tab, setTab] = useState<"journey" | "documents">("journey");
-  const [docs, setDocs] = useState(event?.documents ?? []);
-  const [toast, setToast] = useState("");
+  const router  = useRouter();
+  const { events } = useData();
+
+  const [event, setEvent]   = useState<EventData | null>(events.find(e => String(e.id) === id) ?? null);
+  const [tab, setTab]       = useState<"journey" | "documents">("journey");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [docs, setDocs]     = useState<any[]>(event?.documents ?? []);
+  const [toast, setToast]   = useState("");
+  const [loading, setLoading] = useState(!event);
+
+  useEffect(() => {
+    if (event) {
+      // also load real documents
+      fetchDocuments(id).then(d => setDocs(d)).catch(() => {});
+      return;
+    }
+    setLoading(true);
+    fetchEvent(id)
+      .then(ev => { setEvent(ev); setDocs(ev.documents ?? []); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  useEffect(() => {
+    fetchDocuments(id).then(d => { if (d.length) setDocs(d); }).catch(() => {});
+  }, [id]);
+
+  if (loading) return (
+    <div className="px-4 py-6 sm:px-8 sm:py-8 animate-pulse space-y-4">
+      <div className="h-48 bg-surface rounded-2xl" />
+      <div className="h-10 bg-surface rounded-xl w-64" />
+      <div className="grid grid-cols-3 gap-4">
+        {[...Array(3)].map((_, i) => <div key={i} className="h-20 bg-surface rounded-xl" />)}
+      </div>
+    </div>
+  );
 
   if (!event) return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
