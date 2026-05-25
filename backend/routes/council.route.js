@@ -110,11 +110,40 @@ router.get(p + "/profile/:id", authCheck, async (req, res) => {
 // ─── GET own profile (council-facing) ───────────────────────────────
 // GET /api/v1/council/p/me
 router.get(p + "/me", authCheck, councilOnly, async (req, res) => {
+    const cacheKey = `council:me:${req.user.id}`;
+    const cached = get(cacheKey);
+    if (cached) return res.json(cached);
+
     try {
-        const profile = await prisma.councilProfile.findUnique({
-            where: { user_id: req.user.id },
+        const user = await prisma.user.findUnique({
+            where: { id: req.user.id },
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                photo_url: true,
+                council_type: true,
+                about: true,
+                CouncilProfile: true,
+            },
         });
-        return res.json({ error: false, profile: profile ?? {} });
+
+        if (!user) return res.status(404).json({ error: true, message: "User not found" });
+
+        const payload = {
+            error: false,
+            council: {
+                id:           user.id,
+                name:         user.name,
+                email:        user.email,
+                photo_url:    user.photo_url,
+                council_type: user.council_type,
+                about:        user.about,
+                profile:      user.CouncilProfile ?? {},
+            },
+        };
+        set(cacheKey, payload, TTL.COUNCIL);
+        return res.json(payload);
     } catch (err) {
         console.error(err);
         return res.status(500).json({ error: true, message: "Internal Server Error" });
@@ -124,14 +153,14 @@ router.get(p + "/me", authCheck, councilOnly, async (req, res) => {
 // ─── UPDATE own profile (council-facing) ────────────────────────────
 // PUT /api/v1/council/p/me
 router.put(p + "/me", authCheck, councilOnly, async (req, res) => {
-    const { tagline, about, banner_url, instagram, website, faculty_advisors, members } = req.body;
+    const { tagline, about, banner_url, instagram, linkedin, website, faculty_advisors, members } = req.body;
 
     try {
         const profile = await prisma.councilProfile.upsert({
             where: { user_id: req.user.id },
             create: {
                 user_id: req.user.id,
-                tagline, about, banner_url, instagram, website,
+                tagline, about, banner_url, instagram, linkedin, website,
                 faculty_advisors: faculty_advisors ?? [],
                 members: members ?? [],
             },
@@ -140,6 +169,7 @@ router.put(p + "/me", authCheck, councilOnly, async (req, res) => {
                 ...(about !== undefined && { about }),
                 ...(banner_url !== undefined && { banner_url }),
                 ...(instagram !== undefined && { instagram }),
+                ...(linkedin !== undefined && { linkedin }),
                 ...(website !== undefined && { website }),
                 ...(faculty_advisors !== undefined && { faculty_advisors }),
                 ...(members !== undefined && { members }),
@@ -158,6 +188,7 @@ router.put(p + "/me", authCheck, councilOnly, async (req, res) => {
         }
 
         invalidateCouncil(req.user.id);
+        del(`council:me:${req.user.id}`);
         return res.json({ error: false, profile, message: "Profile updated" });
     } catch (err) {
         console.error(err);

@@ -443,6 +443,7 @@ export default function SettingsPage() {
         description: p.about            ?? prev.description,
         banner_url:  p.banner_url        ?? prev.banner_url,
         instagram:   p.instagram         ?? prev.instagram,
+        linkedin:    (p as { linkedin?: string }).linkedin ?? prev.linkedin,
         website:     p.website           ?? prev.website,
       }));
       if (Array.isArray(p.faculty_advisors) && p.faculty_advisors.length) {
@@ -474,14 +475,15 @@ export default function SettingsPage() {
     setSaving(true);
     try {
       await updateCouncilProfile({
-        name:  settings.name,
-        email: settings.email,
-        photo_url: settings.logo_url,
-        tagline:     settings.tagline,
-        about:       settings.description,
-        banner_url:  settings.banner_url,
-        instagram:   settings.instagram,
-        website:     settings.website,
+        name:             settings.name,
+        email:            settings.email,
+        photo_url:        settings.logo_url,
+        tagline:          settings.tagline,
+        about:            settings.description,
+        banner_url:       settings.banner_url,
+        instagram:        settings.instagram,
+        linkedin:         settings.linkedin,
+        website:          settings.website,
         faculty_advisors: advisors,
         members,
       });

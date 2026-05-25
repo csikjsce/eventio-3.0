@@ -135,6 +135,7 @@ model CouncilProfile {
   about            String?
   banner_url       String?
   instagram        String?
+  linkedin         String?
   website          String?
   // JSON array of { name, email, phone }
   faculty_advisors Json?
