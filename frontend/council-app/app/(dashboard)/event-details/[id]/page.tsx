@@ -3,7 +3,7 @@ import { use, useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getNextAction, type EventData, type EventDocument, type ApprovalStep } from "@/lib/dummy-data";
-import { fetchEvent, fetchDocuments, addDocument, deleteDocument, transitionEventState, type DocumentRow } from "@/lib/api";
+import { fetchEvent, fetchDocuments, addDocument, deleteDocument, transitionEventState, mapStateToPipeline, type DocumentRow } from "@/lib/api";
 import { uploadFile, type UploadType } from "@/lib/upload";
 import { useData } from "@/contexts/DataContext";
 import {
@@ -31,7 +31,11 @@ const DOC_ICON: Record<string, string> = {
 // ─── Approval timeline ────────────────────────────────────────────────────────
 
 const STAGE_ICON: Record<string, React.ReactNode> = {
-  PROPOSAL_SUBMITTED:  <Send           size={14} />,
+  DRAFT:                       <FileText       size={14} />,
+  APPLIED_FOR_APPROVAL:        <Send           size={14} />,
+  APPLIED_FOR_PRINCI_APPROVAL: <CheckCircle2   size={14} />,
+  UNLISTED:                    <CheckCircle2   size={14} />,
+  PROPOSAL_SUBMITTED:          <Send           size={14} />,
   PROPOSAL_APPROVED:   <CheckCircle2   size={14} />,
   BOOKING_PENDING:     <ArrowLeft      size={14} className="rotate-180" />,
   DIRECTOR_VP_PENDING: <Users          size={14} />,
@@ -69,7 +73,7 @@ function ApprovalTimeline({ chain }: { chain: ApprovalStep[] }) {
             {/* Icon + vertical connector */}
             <div className="flex flex-col items-center shrink-0">
               <div className={`w-10 h-10 rounded-full border-2 flex items-center justify-center shrink-0 ${iconBg}`}>
-                {step.status === "rejected" ? <XCircle size={15} /> : (STAGE_ICON[step.stage] ?? <Clock size={15} />)}
+                {step.status === "rejected" ? <XCircle size={15} /> : (STAGE_ICON[step.stage] ?? STAGE_ICON[mapStateToPipeline(step.stage)] ?? <Clock size={15} />)}
               </div>
               {!isLast && <div className="w-px flex-1 bg-border-c my-1 min-h-[2rem]" />}
             </div>
@@ -276,17 +280,12 @@ function NextActionPanel({ event, onAction, actionLoading }: {
   actionLoading?: boolean;
 }) {
   const action = getNextAction(event);
-  if (!action) return null;
-
-  const isWaiting = action.cta === "Check Status";
+  if (!action || action.cta === "Check Status") return null;
 
   return (
-    <div className={`rounded-2xl border p-5 ${isWaiting ? "bg-amber-50 dark:bg-amber-500/5 border-amber-200 dark:border-amber-500/20" : "bg-red-50 dark:bg-red-500/5 border-red-200 dark:border-red-500/20"}`}>
+    <div className="rounded-2xl border p-5 bg-red-50 dark:bg-red-500/5 border-red-200 dark:border-red-500/20">
       <div className="flex items-start gap-3 mb-4">
-        {isWaiting
-          ? <Clock size={18} className="text-amber-500 shrink-0 mt-0.5" />
-          : <AlertCircle size={18} className="text-red-500 shrink-0 mt-0.5" />
-        }
+        <AlertCircle size={18} className="text-red-500 shrink-0 mt-0.5" />
         <div>
           <p className="text-tx text-sm font-fira font-semibold mb-1">Next Step</p>
           <p className="text-muted-tx text-xs font-fira leading-relaxed">{action.label}</p>
@@ -294,12 +293,12 @@ function NextActionPanel({ event, onAction, actionLoading }: {
       </div>
       {action.route ? (
         <Link href={action.route}
-          className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-fira font-semibold transition-all ${isWaiting ? "bg-amber-500 hover:bg-amber-600 text-white" : "bg-red-500 hover:bg-red-600 text-white"}`}>
+          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-fira font-semibold transition-all bg-red-500 hover:bg-red-600 text-white">
           {action.cta} <ChevronRight size={14} />
         </Link>
       ) : (
         <button type="button" onClick={() => onAction(action.cta)} disabled={actionLoading}
-          className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-fira font-semibold transition-all disabled:opacity-60 disabled:cursor-not-allowed ${isWaiting ? "bg-amber-500 hover:bg-amber-600 text-white" : "bg-red-500 hover:bg-red-600 text-white"}`}>
+          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-fira font-semibold transition-all disabled:opacity-60 disabled:cursor-not-allowed bg-red-500 hover:bg-red-600 text-white">
           {actionLoading ? "Processing…" : action.cta}
           {!actionLoading && <ChevronRight size={14} />}
         </button>

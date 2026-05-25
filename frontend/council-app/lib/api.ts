@@ -78,83 +78,95 @@ api.interceptors.response.use(
 
 interface RawApprovalStep {
   stage: string;
-  label: string;
+  doneLabel: string;
+  waitingLabel: string;
   actor: string;
 }
 
-const CHAIN_MILESTONES: RawApprovalStep[] = [
-  { stage: "DRAFT",                       label: "Event Created",                   actor: "You (Council)"             },
-  { stage: "APPLIED_FOR_APPROVAL",        label: "Proposal Submitted",              actor: "You (Council)"             },
-  { stage: "APPLIED_FOR_PRINCI_APPROVAL", label: "Faculty Cleared — With Principal", actor: "Faculty Advisor"          },
-  { stage: "UNLISTED",                    label: "Principal Approved",              actor: "Principal"                 },
-  { stage: "UPCOMING",                    label: "Event Listed",                    actor: "System"                    },
-  { stage: "REGISTRATION_OPEN",           label: "Registration Opened",             actor: "You (Council)"             },
-  { stage: "REGISTRATION_CLOSED",         label: "Registration Closed",             actor: "You (Council)"             },
-  { stage: "ONGOING",                     label: "Event Started",                   actor: "You (Council)"             },
-  { stage: "COMPLETED",                   label: "Event Completed",                 actor: "System"                    },
-  { stage: "TICKET_OPEN",                 label: "Tickets Opened",                  actor: "You (Council)"             },
-  { stage: "TICKET_CLOSED",               label: "Report Submitted",                actor: "You (Council)"             },
-  { stage: "REJECTED",                    label: "Proposal Rejected",               actor: "Faculty / Principal"       },
+const APPROVAL_FLOW: RawApprovalStep[] = [
+  { stage: "DRAFT",                       doneLabel: "Event Created",              waitingLabel: "Finish setup and submit",     actor: "You (Council)"    },
+  { stage: "APPLIED_FOR_APPROVAL",        doneLabel: "Proposal Submitted",         waitingLabel: "Awaiting Faculty Review",     actor: "Faculty Advisor"  },
+  { stage: "APPLIED_FOR_PRINCI_APPROVAL", doneLabel: "Faculty Cleared",            waitingLabel: "Awaiting Principal Approval", actor: "Principal"        },
+  { stage: "UNLISTED",                    doneLabel: "Principal Approved",         waitingLabel: "Ready to Open Registration",  actor: "You (Council)"    },
+  { stage: "UPCOMING",                    doneLabel: "Event Listed",               waitingLabel: "Open Registration",           actor: "You (Council)"    },
+  { stage: "REGISTRATION_OPEN",           doneLabel: "Registration Opened",        waitingLabel: "Registration in progress",    actor: "You (Council)"    },
+  { stage: "REGISTRATION_CLOSED",         doneLabel: "Registration Closed",        waitingLabel: "Prepare for event day",       actor: "You (Council)"    },
+  { stage: "ONGOING",                     doneLabel: "Event Started",              waitingLabel: "Event in progress",           actor: "You (Council)"    },
+  { stage: "COMPLETED",                   doneLabel: "Event Completed",            waitingLabel: "Submit post-event report",    actor: "You (Council)"    },
+  { stage: "TICKET_CLOSED",               doneLabel: "Report Submitted",           waitingLabel: "Complete",                    actor: "You (Council)"    },
 ];
 
-// Matches dean-portal approval flow (faculty → principal → council)
-const CANONICAL_ORDER = [
-  "DRAFT",
-  "APPLIED_FOR_APPROVAL",
-  "APPLIED_FOR_PRINCI_APPROVAL",
-  "UNLISTED",
-  "UPCOMING",
-  "REGISTRATION_OPEN",
-  "REGISTRATION_CLOSED",
-  "ONGOING",
-  "COMPLETED",
-  "TICKET_OPEN",
-  "TICKET_CLOSED",
-];
+// Legacy lookup for any code still referencing milestone labels
+const CHAIN_MILESTONES = APPROVAL_FLOW.map(({ stage, doneLabel, actor }) => ({
+  stage,
+  label: doneLabel,
+  actor,
+}));
+
+const CANONICAL_ORDER = APPROVAL_FLOW.map(s => s.stage);
+
+const EXTERNAL_WAIT_STATES = new Set(["APPLIED_FOR_APPROVAL", "APPLIED_FOR_PRINCI_APPROVAL"]);
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function buildApprovalChain(currentState: string, stateHistory: string[]): any[] {
-  const raw = Array.isArray(stateHistory) ? stateHistory : [];
-
-  // Determine the working history:
-  //   • If state_history already includes the current state, it's a full record — use it.
-  //   • Otherwise the record is missing/incomplete (legacy event or direct DB edit).
-  //     Reconstruct the canonical path up to the current state so the timeline shows
-  //     all expected steps rather than just the last one.
-  let history: string[];
-
-  if (raw.includes(currentState)) {
-    // Drop duplicate/backward jumps from manual re-clicks
-    history = raw.filter((s, i, arr) => i === 0 || s !== arr[i - 1]);
-  } else if (currentState === "REJECTED") {
-    // For rejected events reconstruct up to the point of rejection
-    const lastKnown = raw.filter(s => CANONICAL_ORDER.includes(s));
-    history = lastKnown.length
-      ? [...lastKnown, "REJECTED"]
-      : ["DRAFT", "APPLIED_FOR_APPROVAL", "REJECTED"];
-  } else {
-    const idx = CANONICAL_ORDER.indexOf(currentState);
-    history = idx >= 0
-      ? CANONICAL_ORDER.slice(0, idx + 1)   // every step from DRAFT up to (and including) current
-      : raw.length ? raw : [currentState];
+function buildApprovalChain(currentState: string, _stateHistory: string[]): any[] {
+  if (currentState === "REJECTED") {
+    const base = buildApprovalChain("APPLIED_FOR_APPROVAL", _stateHistory).filter(s => s.status === "done");
+    return [...base, { stage: "REJECTED", label: "Proposal Rejected", status: "rejected", actor: "Faculty / Principal" }];
   }
 
-  const chain = [];
-  for (let i = 0; i < history.length; i++) {
-    const s = history[i];
-    const milestone = CHAIN_MILESTONES.find(m => m.stage === s);
-    if (!milestone) continue;
-
-    const isLast = i === history.length - 1;
-    const status =
-      s === "REJECTED" ? "rejected" :
-      isLast           ? "active"   :
-                         "done";
-
-    chain.push({ stage: s, label: milestone.label, status, actor: milestone.actor });
+  const currentIdx = APPROVAL_FLOW.findIndex(s => s.stage === currentState);
+  if (currentIdx < 0) {
+    return [{ stage: currentState, label: currentState.replace(/_/g, " "), status: "active", actor: "System" }];
   }
 
-  return chain;
+  const lastIdx = Math.min(
+    EXTERNAL_WAIT_STATES.has(currentState) ? currentIdx + 1 : currentIdx,
+    APPROVAL_FLOW.length - 1,
+  );
+
+  return APPROVAL_FLOW.slice(0, lastIdx + 1).map((step, i) => {
+    let status: "done" | "active" | "pending" | "rejected";
+    let label: string;
+
+    if (EXTERNAL_WAIT_STATES.has(currentState)) {
+      if (i < currentIdx) {
+        status = "done";
+        label = step.doneLabel;
+      } else if (i === currentIdx) {
+        status = "done";
+        label = step.doneLabel;
+      } else if (i === currentIdx + 1) {
+        status = "active";
+        label = APPROVAL_FLOW[currentIdx].waitingLabel;
+      } else {
+        status = "pending";
+        label = step.doneLabel;
+      }
+    } else if (i < currentIdx) {
+      status = "done";
+      label = step.doneLabel;
+    } else if (i === currentIdx) {
+      status = "active";
+      label = step.waitingLabel;
+    } else {
+      status = "pending";
+      label = step.doneLabel;
+    }
+
+    return { stage: step.stage, label, status, actor: resolveActor(step, i, currentState, currentIdx) };
+  });
+}
+
+function resolveActor(
+  step: RawApprovalStep,
+  i: number,
+  currentState: string,
+  currentIdx: number,
+): string {
+  if (EXTERNAL_WAIT_STATES.has(currentState) && i === currentIdx + 1) {
+    return APPROVAL_FLOW[currentIdx].actor;
+  }
+  return step.actor;
 }
 
 // ── State ↔ PipelineStage mapping ─────────────────────────────────────────────
