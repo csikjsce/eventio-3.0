@@ -56,7 +56,7 @@ github_deployment_start() {
 EOF
 )")"
 
-  GITHUB_DEPLOYMENT_ID="$(echo "$response" | sed -n 's/.*"id"[[:space:]]*:[[:space:]]*\([0-9]*\).*/\1/p' | head -1)"
+  GITHUB_DEPLOYMENT_ID="$(echo "$response" | python3 -c "import sys,json; print(json.load(sys.stdin).get('id',''))" 2>/dev/null || true)"
 
   if [[ -z "$GITHUB_DEPLOYMENT_ID" ]]; then
     log "WARNING: Could not create GitHub deployment"
