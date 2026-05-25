@@ -54,4 +54,25 @@ html.dark {
     color: var(--c-tx);
     transition: background 0.15s, color 0.15s;
   }
+
+  /* Remove number-input spinners */
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type="number"] {
+    -moz-appearance: textfield;
+  }
+
+  /* Remove browser autofill yellow background */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  textarea:-webkit-autofill,
+  select:-webkit-autofill {
+    -webkit-box-shadow: 0 0 0 1000px var(--c-surface) inset !important;
+    -webkit-text-fill-color: var(--c-tx) !important;
+    caret-color: var(--c-tx);
+  }
 }
