@@ -458,6 +458,17 @@ router.post(protected + "/get/me", authCheck, async (req, res) => {
             .json({ error: true, message: "Internal Server Error" });
     }
 });
+// States that any authenticated (non-privileged) user may view
+const PUBLIC_STATES = new Set([
+    "UPCOMING",
+    "REGISTRATION_OPEN",
+    "REGISTRATION_CLOSED",
+    "TICKET_OPEN",
+    "TICKET_CLOSED",
+    "ONGOING",
+    "COMPLETED",
+]);
+
 router.post(protected + "/get/:id", authCheck, async (req, res) => {
     if (!req.user) {
         return res.status(401).json({ error: true, message: "Unauthorized" });
@@ -526,6 +537,13 @@ router.post(protected + "/get/:id", authCheck, async (req, res) => {
                 },
             },
         });
+
+        // Non-privileged users (students) can only view publicly-visible states
+        const isPrivileged = ["COUNCIL", "FACULTY", "PRINCIPAL", "ADMIN"].includes(req.user.role);
+        if (!isPrivileged && !PUBLIC_STATES.has(event.state)) {
+            return res.status(403).json({ error: true, message: "Event not publicly accessible" });
+        }
+
         let eventResponse = {
             id: event.id,
             description: event.description,
@@ -890,9 +908,26 @@ router.post(protected + "/get-children/:id", authCheck, async (req, res) => {
     if (isNaN(parentId)) {
         return res.status(400).json({ error: true, message: "Invalid event id" });
     }
+
+    const isPrivileged = ["COUNCIL", "FACULTY", "PRINCIPAL", "ADMIN"].includes(req.user.role);
+
     try {
+        // For COUNCIL: verify they own the parent event before showing its children
+        if (req.user.role === "COUNCIL") {
+            const denied = await assertCouncilEventAccess(req.user, parentId);
+            if (denied) {
+                return res.status(denied.status).json({ error: true, message: denied.message });
+            }
+        }
+
+        const childWhere = { parent_id: parentId };
+        // Non-privileged users only see publicly visible children
+        if (!isPrivileged) {
+            childWhere.state = { in: [...PUBLIC_STATES] };
+        }
+
         const children = await prisma.events.findMany({
-            where: { parent_id: parentId },
+            where: childWhere,
             include: {
                 organizer: {
                     select: { id: true, name: true, photo_url: true, email: true },
@@ -913,40 +948,47 @@ router.post(protected + "/get-calendar", authCheck, async (req, res) => {
         return res.status(401).json({ error: true, message: "Unauthorized" });
     }
     const role = req.user.role;
-    let visibleStates;
-    if (role === "COUNCIL" || role === "FACULTY") {
-        visibleStates = [
-            "UPCOMING",
-            "REGISTRATION_OPEN",
-            "REGISTRATION_CLOSED",
-            "TICKET_OPEN",
-            "TICKET_CLOSED",
-            "ONGOING",
-            "COMPLETED",
-        ];
-    } else if (role === "PRINCIPAL") {
-        visibleStates = [
-            "UPCOMING",
-            "REGISTRATION_OPEN",
-            "REGISTRATION_CLOSED",
-            "TICKET_OPEN",
-            "TICKET_CLOSED",
-            "ONGOING",
-            "COMPLETED",
-        ];
-    } else {
-        visibleStates = [
-            "UPCOMING",
-            "REGISTRATION_OPEN",
-            "REGISTRATION_CLOSED",
-            "TICKET_OPEN",
-            "TICKET_CLOSED",
-            "ONGOING",
-        ];
-    }
+
+    // COUNCIL users see their own events in all states (for planning),
+    // plus other councils' publicly-visible events.
+    // Faculty / Principal see all publicly-visible events across all councils.
+    // Students see only publicly-visible events (excluding COMPLETED for cleanliness).
+    const publicCalendarStates = [
+        "UPCOMING",
+        "REGISTRATION_OPEN",
+        "REGISTRATION_CLOSED",
+        "TICKET_OPEN",
+        "TICKET_CLOSED",
+        "ONGOING",
+        "COMPLETED",
+    ];
+    const studentCalendarStates = [
+        "UPCOMING",
+        "REGISTRATION_OPEN",
+        "REGISTRATION_CLOSED",
+        "TICKET_OPEN",
+        "TICKET_CLOSED",
+        "ONGOING",
+    ];
+
     try {
+        let whereClause;
+        if (role === "COUNCIL") {
+            // Show this council's own events (any state) OR other councils' public events
+            whereClause = {
+                OR: [
+                    { organizer_id: req.user.id },
+                    { state: { in: publicCalendarStates } },
+                ],
+            };
+        } else if (role === "FACULTY" || role === "PRINCIPAL") {
+            whereClause = { state: { in: publicCalendarStates } };
+        } else {
+            whereClause = { state: { in: studentCalendarStates } };
+        }
+
         const events = await prisma.events.findMany({
-            where: { state: { in: visibleStates } },
+            where: whereClause,
             select: {
                 id: true,
                 name: true,

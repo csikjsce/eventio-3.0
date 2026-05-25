@@ -27,15 +27,14 @@ async function requireEventAccess(req, res, next) {
 }
 
 // GET /api/v1/document/p/:eventId — list docs for an event
-router.get(p + "/:eventId", authCheck, async (req, res) => {
-    const eventId = parseInt(req.params.eventId);
-    const cacheKey = keys.docs(eventId);
+router.get(p + "/:eventId", authCheck, requireEventAccess, async (req, res) => {
+    const cacheKey = keys.docs(req.eventId);
     const cached = get(cacheKey);
     if (cached) return res.json(cached);
 
     try {
         const docs = await prisma.eventDocument.findMany({
-            where: { event_id: eventId },
+            where: { event_id: req.eventId },
             orderBy: { uploaded_at: "desc" },
         });
         const payload = { error: false, documents: docs };
