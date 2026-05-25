@@ -41,8 +41,18 @@ router.post(protected + "/update", authCheck, (req, res) => {
     if (branch       !== undefined) updateData.branch       = branch;
     if (gender       !== undefined) updateData.gender       = gender;
     if (interests    !== undefined) updateData.interests    = interests;
-    if (phone_number !== undefined) updateData.phone_number = phone_number;
-    if (roll_number  !== undefined) updateData.roll_number  = roll_number;
+    if (phone_number !== undefined) {
+        updateData.phone_number =
+            phone_number === null || phone_number === ""
+                ? null
+                : String(phone_number);
+    }
+    if (roll_number  !== undefined) {
+        updateData.roll_number =
+            roll_number === null || roll_number === ""
+                ? null
+                : String(roll_number);
+    }
     if (year         !== undefined) updateData.year         = parseInt(year);
     if (college      !== undefined) updateData.college      = college;
     if (signature    !== undefined) updateData.signature    = signature;

@@ -83,9 +83,9 @@ type User = {
   branch: string;
   gender: string;
   interests: string[];
-  phone_number: number;
+  phone_number: string | null;
   photo_url: string;
-  roll_number: number;
+  roll_number: string | null;
   year: number;
   about: string;
   college: string;

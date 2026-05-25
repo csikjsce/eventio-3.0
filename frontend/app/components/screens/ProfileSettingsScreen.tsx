@@ -77,7 +77,7 @@ export default function ProfileSettingsScreen() {
 
   const [form, setForm] = useState<Partial<User>>({
     name:         userData?.name         ?? "",
-    phone_number: userData?.phone_number ?? 0,
+    phone_number: userData?.phone_number ? String(userData.phone_number) : "",
     branch:       userData?.branch       ?? "",
     degree:       userData?.degree       ?? "",
     year:         userData?.year         ?? new Date().getFullYear(),
@@ -126,7 +126,7 @@ export default function ProfileSettingsScreen() {
     try {
       await updateProfile({
         name:         form.name         as string,
-        phone_number: Number(form.phone_number),
+        phone_number: String(form.phone_number ?? "").trim(),
         gender:       form.gender       as string,
         year:         Number(form.year),
         branch:       form.branch       as string,
@@ -214,8 +214,10 @@ export default function ProfileSettingsScreen() {
             <input
               className={inputCls}
               type="tel"
-              value={(form.phone_number as number) || ""}
-              onChange={(e) => set("phone_number", Number(e.target.value))}
+              inputMode="numeric"
+              maxLength={10}
+              value={(form.phone_number as string) || ""}
+              onChange={(e) => set("phone_number", e.target.value.replace(/\D/g, "").slice(0, 10))}
               placeholder="10-digit mobile number"
             />
           </Field>

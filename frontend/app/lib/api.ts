@@ -219,7 +219,7 @@ export async function fetchCouncilProfile(id: number) {
 /** Submit onboarding profile update */
 export async function updateProfile(payload: Partial<{
   name: string;
-  phone_number: number;
+  phone_number: string;
   gender: string;
   year: number;
   branch: string;
@@ -229,7 +229,13 @@ export async function updateProfile(payload: Partial<{
   interests: string[];
   photo_url: string;
 }>) {
-  const { data } = await api.post("/user/p/update", payload);
+  const { data } = await api.post("/user/p/update", {
+    ...payload,
+    phone_number:
+      payload.phone_number === undefined
+        ? undefined
+        : payload.phone_number.trim() || null,
+  });
   return data;
 }
 
@@ -245,7 +251,7 @@ export async function submitOnboarding(payload: {
   signature?: unknown;
 }) {
   const { data } = await api.post("/user/p/update", {
-    phone_number: payload.phone_number,
+    phone_number: payload.phone_number.trim() || null,
     gender: payload.gender,
     year: parseInt(payload.year),
     branch: payload.branch,
