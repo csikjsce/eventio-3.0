@@ -99,11 +99,11 @@ function SectionHead({ title, sub }: { title: string; sub?: string }) {
 
 function ReviewRow({ label, value, step, onJump }: { label: string; value: string; step: number; onJump(s: number): void }) {
   return (
-    <div className="flex items-center justify-between py-3 px-4 bg-surface2 border border-border-c rounded-xl">
-      <span className="text-muted-tx text-xs font-fira uppercase tracking-wide">{label}</span>
-      <div className="flex items-center gap-3">
-        <span className="text-tx text-sm font-fira">{value}</span>
-        <button type="button" onClick={() => onJump(step)} className="text-subtle-tx hover:text-red-500 text-xs font-fira transition-colors">Edit</button>
+    <div className="flex items-start sm:items-center justify-between gap-3 py-3 px-4 bg-surface2 border border-border-c rounded-xl">
+      <span className="text-muted-tx text-xs font-fira uppercase tracking-wide shrink-0">{label}</span>
+      <div className="flex items-center gap-3 min-w-0">
+        <span className="text-tx text-sm font-fira truncate">{value}</span>
+        <button type="button" onClick={() => onJump(step)} className="text-subtle-tx hover:text-red-500 text-xs font-fira transition-colors shrink-0">Edit</button>
       </div>
     </div>
   );
@@ -309,18 +309,27 @@ export default function NewEventPage() {
             })}
           </aside>
 
-          {/* Mobile step progress dots */}
-          <div className="md:hidden flex items-center gap-1.5 px-4 py-3 border-b border-border-c bg-surface overflow-x-auto scrollbar-hide">
-            {STEPS.map(s => {
-              const done = step > s.id; const active = step === s.id;
-              return (
-                <button key={s.id} type="button" onClick={() => s.id <= step && setStep(s.id)}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-fira font-medium whitespace-nowrap transition-all ${active ? "bg-red-500 text-white" : done ? "bg-surface2 text-tx border border-border-c" : "text-subtle-tx border border-border-c"}`}>
-                  {done ? "✓" : s.id}
-                  {active && <span>{s.label}</span>}
-                </button>
-              );
-            })}
+          {/* Mobile step progress */}
+          <div className="md:hidden border-b border-border-c bg-surface">
+            <div className="flex items-center gap-1.5 px-4 pt-3 pb-2 overflow-x-auto scrollbar-hide">
+              {STEPS.map(s => {
+                const done = step > s.id; const active = step === s.id;
+                return (
+                  <button key={s.id} type="button" onClick={() => s.id <= step && setStep(s.id)}
+                    className={`flex items-center justify-center shrink-0 w-7 h-7 rounded-full text-[11px] font-fira font-bold transition-all ${active ? "bg-red-500 text-white" : done ? "bg-surface2 text-emerald-500 border border-emerald-500/40" : "text-subtle-tx border border-border-c"}`}>
+                    {done ? "✓" : s.id}
+                  </button>
+                );
+              })}
+              <div className="ml-2 shrink-0">
+                <p className="text-tx text-xs font-fira font-semibold">{STEPS[step - 1].label}</p>
+                <p className="text-subtle-tx text-[10px] font-fira">{STEPS[step - 1].sub}</p>
+              </div>
+            </div>
+            {/* progress bar */}
+            <div className="h-0.5 bg-surface2">
+              <div className="h-full bg-red-500 transition-all" style={{ width: `${((step - 1) / (STEPS.length - 1)) * 100}%` }} />
+            </div>
           </div>
 
           {/* Form content */}
@@ -377,7 +386,7 @@ export default function NewEventPage() {
 
                     <div>
                       <p className={LABEL}>Hierarchy</p>
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <RadioCard selected={!showParent} onSelect={() => setShowParent(false)} label="Main Event" description="Standalone top-level event visible on the discover feed." />
                         <RadioCard selected={showParent}  onSelect={() => setShowParent(true)}  label="Sub-Event"  description="Nested under a parent event in the same series." />
                       </div>
@@ -400,7 +409,7 @@ export default function NewEventPage() {
 
                     <div>
                       <p className={LABEL}>Event Type *</p>
-                      <div className="grid grid-cols-3 gap-3">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                         {[
                           { val: "COMPETETION",    label: "Competition",      icon: <Trophy size={17} />, desc: "Judged contest with prizes" },
                           { val: "WORKSHOP",       label: "Workshop",         icon: <Wrench size={17} />, desc: "Hands-on learning session" },
@@ -445,7 +454,7 @@ export default function NewEventPage() {
 
                     <div>
                       <p className={LABEL}>Registration Mode</p>
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <RadioCard selected={!isExternal} onSelect={() => setValue("registration_type", "ONPLATFORM")} label="On-Platform" description="Registrations handled through the Eventio student app." />
                         <RadioCard selected={isExternal}  onSelect={() => setValue("registration_type", "EXTERNAL")}   label="External Form" description="Redirect to Unstop, Google Form, Devfolio, etc." />
                       </div>
@@ -499,7 +508,7 @@ export default function NewEventPage() {
                     <div>
                       <p className={LABEL}>Attendance Tracking</p>
                       <p className="text-zinc-500 text-xs font-fira mb-3">How participant attendance is recorded on the day of the event.</p>
-                      <div className="grid grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         {[
                           { val: null,     label: "None",        desc: "No in-app tracking"       },
                           { val: "TICKET", label: "Ticket Scan", desc: "QR code at the gate"      },

@@ -457,3 +457,82 @@ export async function updateCouncilProfile(data: Record<string, unknown>): Promi
   const res = await api.put("/council/p/me", data);
   return res.data.council ?? res.data;
 }
+
+// ── Event Controls ─────────────────────────────────────────────────────────────
+
+export interface EventControlStats {
+  total: number;
+  paid: number;
+  pending: number;
+  ticketed: number;
+  attended: number;
+  ticket_count: number | null;
+}
+
+/** Fetch live participant/ticket stats for the controls panel */
+export async function fetchEventStats(eventId: number | string): Promise<EventControlStats> {
+  const res = await api.get(`/event/p/event-stats/${eventId}`);
+  return res.data.stats;
+}
+
+/** Issue tickets to the first `count` paid participants (omit count = all eligible) */
+export async function bulkIssueTickets(
+  eventId: number | string,
+  count?: number,
+): Promise<{ issued: number }> {
+  const res = await api.post("/event/p/bulk-issue-tickets", {
+    event_id: Number(eventId),
+    ...(count !== undefined ? { count } : {}),
+  });
+  return { issued: res.data.issued ?? 0 };
+}
+
+/** Mark the first `count` PENDING participants as manually paid */
+export async function bulkMarkPaid(
+  eventId: number | string,
+  count?: number,
+  participantIds?: number[],
+): Promise<{ updated: number }> {
+  const res = await api.post("/event/p/bulk-mark-paid", {
+    event_id: Number(eventId),
+    ...(count !== undefined ? { count } : {}),
+    ...(participantIds ? { participant_ids: participantIds } : {}),
+  });
+  return { updated: res.data.updated ?? 0 };
+}
+
+/** Update specific event settings (fee, cap, toggles, etc.) without changing state */
+export async function updateEventSettings(
+  eventId: number | string,
+  settings: {
+    ticket_count?: number | null;
+    fee?: number;
+    is_only_somaiya?: boolean;
+    is_ticket_feature_enabled?: boolean;
+    is_feedback_enabled?: boolean;
+    more_details_enabled?: boolean;
+    is_submission_enabled?: boolean;
+    registration_type?: string;
+    external_registration_link?: string;
+    ma_ppt?: number;
+    min_ppt?: number;
+  },
+): Promise<void> {
+  await api.post(`/event/p/update/${eventId}`, settings);
+}
+
+/** Download participants as CSV — triggers browser download dialog */
+export async function downloadParticipantsCsv(
+  eventId: number | string,
+  eventName?: string,
+): Promise<void> {
+  const res = await api.get(`/event/p/export-participants/${eventId}`, {
+    responseType: "blob",
+  });
+  const url = URL.createObjectURL(new Blob([res.data], { type: "text/csv" }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${(eventName ?? "event").replace(/\s+/g, "_")}-participants.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}

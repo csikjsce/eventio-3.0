@@ -44,22 +44,12 @@ interface Member {
 // ─── Initial data ─────────────────────────────────────────────────────────────
 
 const INITIAL_SETTINGS: CouncilSettings = {
-  name: "CSI KJSCE",
-  tagline: "Computer Society of India — K.J. Somaiya College of Engineering",
-  description: "CSI KJSCE is the student chapter of the Computer Society of India at KJSCE, Vidyavihar. We organise technical workshops, hackathons, speaker sessions, and competitions to empower students with industry-relevant skills.",
-  email: "csi@somaiya.edu",
-  phone: "9876543200",
-  logo_url: "/EventioLogo.svg",
-  banner_url: "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=800",
-  instagram: "csi_kjsce",
-  linkedin: "https://linkedin.com/company/csi-kjsce",
-  website: "https://csikjsce.org",
+  name: "", tagline: "", description: "", email: "",
+  phone: "", logo_url: "", banner_url: "",
+  instagram: "", linkedin: "", website: "",
 };
 
-const INITIAL_ADVISORS: FacultyAdvisor[] = [
-  { id: "fa1", name: "Prof. Anita Desai",   email: "anita.desai@somaiya.edu",   dept: "Computer Engineering",     designation: "Faculty Advisor"        },
-  { id: "fa2", name: "Prof. Suresh Nair",   email: "suresh.nair@somaiya.edu",   dept: "Information Technology",   designation: "Co-Faculty Advisor"     },
-];
+const INITIAL_ADVISORS: FacultyAdvisor[] = [];
 
 const ROLES = [
   "President", "Vice President", "General Secretary", "Joint Secretary",
@@ -72,16 +62,7 @@ const TEAMS = [
   "Operations", "Content", "Finance",
 ];
 
-const INITIAL_MEMBERS: Member[] = [
-  { id: "m1", name: "Arnab Sen",       email: "arnab@somaiya.edu",  role: "President",       team: "Core",      is_head: true,  photo_url: "https://api.dicebear.com/7.x/initials/svg?seed=AS&backgroundColor=b61f2d&textColor=ffffff" },
-  { id: "m2", name: "Priya Sharma",    email: "priya@somaiya.edu",  role: "Vice President",  team: "Core",      is_head: true,  photo_url: "https://api.dicebear.com/7.x/initials/svg?seed=PS&backgroundColor=3b82f6&textColor=ffffff" },
-  { id: "m3", name: "Rohan Mehta",     email: "rohan@somaiya.edu",  role: "Technical Head",  team: "Technical", is_head: true,  photo_url: "https://api.dicebear.com/7.x/initials/svg?seed=RM&backgroundColor=8b5cf6&textColor=ffffff" },
-  { id: "m4", name: "Sneha Kulkarni",  email: "sneha@somaiya.edu",  role: "Design Head",     team: "Design",    is_head: true,  photo_url: "https://api.dicebear.com/7.x/initials/svg?seed=SK&backgroundColor=ec4899&textColor=ffffff" },
-  { id: "m5", name: "Dev Patel",       email: "dev@somaiya.edu",    role: "Member",          team: "Technical", is_head: false, photo_url: "https://api.dicebear.com/7.x/initials/svg?seed=DP&backgroundColor=10b981&textColor=ffffff" },
-  { id: "m6", name: "Tanvi Patil",     email: "tanvi@somaiya.edu",  role: "Member",          team: "Design",    is_head: false, photo_url: "https://api.dicebear.com/7.x/initials/svg?seed=TP&backgroundColor=f59e0b&textColor=ffffff" },
-  { id: "m7", name: "Karan Verma",     email: "karan@somaiya.edu",  role: "Marketing Head",  team: "Marketing", is_head: true,  photo_url: "https://api.dicebear.com/7.x/initials/svg?seed=KV&backgroundColor=06b6d4&textColor=ffffff" },
-  { id: "m8", name: "Meera Joshi",     email: "meera@somaiya.edu",  role: "Member",          team: "Marketing", is_head: false, photo_url: "https://api.dicebear.com/7.x/initials/svg?seed=MJ&backgroundColor=f97316&textColor=ffffff" },
-];
+const INITIAL_MEMBERS: Member[] = [];
 
 // ─── Phone mockup ─────────────────────────────────────────────────────────────
 
@@ -466,11 +447,13 @@ export default function SettingsPage() {
   const [savingTeam, setSavingTeam]           = useState(false);
   const [uploadingLogo, setUploadingLogo]     = useState(false);
   const [uploadingBanner, setUploadingBanner] = useState(false);
+  const [profileLoading, setProfileLoading]   = useState(true);
   const logoRef   = useRef<HTMLInputElement>(null);
   const bannerRef = useRef<HTMLInputElement>(null);
 
   // Load real council profile on mount
   useEffect(() => {
+    setProfileLoading(true);
     fetchCouncilProfile().then((profile: CouncilProfile) => {
       const p = profile.profile ?? {};
       setSettings(prev => ({
@@ -507,7 +490,7 @@ export default function SettingsPage() {
           photo_url: m.photo_url ?? `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(m.name ?? "M")}&backgroundColor=b61f2d&textColor=ffffff`,
         })));
       }
-    }).catch(() => {}); // keep defaults on failure
+    }).catch(() => {}).finally(() => setProfileLoading(false));
   }, []);
 
   async function handleSaveSettings() {
@@ -600,6 +583,16 @@ export default function SettingsPage() {
   const allTeams = ["All", ...TEAMS.filter(t => members.some(m => m.team === t))];
   const heads    = members.filter(m => m.is_head);
   const filtered = members.filter(m => teamFilter === "All" || m.team === teamFilter);
+
+  if (profileLoading) return (
+    <div className="px-4 py-6 sm:px-8 sm:py-8 animate-pulse space-y-5">
+      <div className="h-8 bg-surface rounded-xl w-56" />
+      <div className="h-4 bg-surface rounded-xl w-80" />
+      <div className="h-36 bg-surface rounded-2xl" />
+      <div className="h-36 bg-surface rounded-2xl" />
+      <div className="h-52 bg-surface rounded-2xl" />
+    </div>
+  );
 
   return (
     <div className="px-4 py-6 sm:px-8 sm:py-8">

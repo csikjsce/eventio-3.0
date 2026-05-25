@@ -9,7 +9,7 @@ import { useData } from "@/contexts/DataContext";
 import {
   ArrowLeft, CalendarDays, MapPin, Users, Ticket, Edit2, ExternalLink,
   Upload, CheckCircle2, Clock, AlertCircle, XCircle, FileText,
-  ChevronRight, Share2, BarChart2, ClipboardList, Send,
+  ChevronRight, Share2, BarChart2, ClipboardList, Send, Settings,
 } from "lucide-react";
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
@@ -428,6 +428,10 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
             className="p-2 bg-black/50 backdrop-blur-sm text-white rounded-lg hover:bg-black/70 transition-all">
             <Share2 size={14} />
           </button>
+          <Link href={`/controls/${event.id}`}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/80 backdrop-blur-sm text-white text-xs font-fira rounded-lg hover:bg-red-500 transition-all">
+            <Settings size={13} /> Controls
+          </Link>
           <Link href={`/new-event/${event.id}`}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-black/50 backdrop-blur-sm text-white text-xs font-fira rounded-lg hover:bg-black/70 transition-all">
             <Edit2 size={13} /> Edit
@@ -533,6 +537,7 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
               <p className="text-tx text-sm font-fira font-semibold mb-3">Quick Links</p>
               <div className="space-y-1">
                 {[
+                  { label: "Event Controls",icon: <Settings size={14} />,   href: `/controls/${event.id}` },
                   { label: "Edit Event",   icon: <Edit2 size={14} />,       href: `/new-event/${event.id}` },
                   { label: "Participants", icon: <Users size={14} />,        href: `/participants?event=${event.id}` },
                   { label: "Statistics",  icon: <BarChart2 size={14} />,    href: `/statistics` },

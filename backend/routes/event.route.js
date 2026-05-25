@@ -1785,6 +1785,174 @@ router.post("/checkin", authCheck, async (req, res) => {
     }
 });
 
+// ── Council bulk controls ───────────────────────────────────────────────────
+
+/**
+ * POST /p/bulk-issue-tickets
+ * Body: { event_id, count? }
+ * Mark ticket_collected = true for the first `count` participants
+ * (ordered by registered_on). Defaults to ALL eligible participants.
+ * Only marks participants whose payment_status is SUCCESS or MANUAL.
+ */
+router.post(protected + "/bulk-issue-tickets", authCheck, async (req, res) => {
+    if (!req.user) return res.status(401).json({ error: true, message: "Unauthorized" });
+    const eventId = parseInt(req.body.event_id);
+    const count = req.body.count ? parseInt(req.body.count) : undefined;
+    if (isNaN(eventId)) return res.status(400).json({ error: true, message: "Invalid event_id" });
+
+    const denied = await assertCouncilEventAccess(req.user, eventId);
+    if (denied) return res.status(denied.status).json({ error: true, message: denied.message });
+
+    try {
+        // Find eligible participants (paid, ticket not yet collected), ordered by registration date
+        const eligible = await prisma.participant.findMany({
+            where: {
+                event_id: eventId,
+                ticket_collected: false,
+                payment_status: { in: ["SUCCESS", "MANUAL"] },
+            },
+            orderBy: { registered_on: "asc" },
+            take: count,
+            select: { id: true },
+        });
+
+        const ids = eligible.map((p) => p.id);
+        const { count: issued } = await prisma.participant.updateMany({
+            where: { id: { in: ids } },
+            data: { ticket_collected: true },
+        });
+
+        invalidateEvent(eventId, req.user.id);
+        return res.json({ error: false, issued, message: `Issued ${issued} ticket(s)` });
+    } catch (err) {
+        logger.error(err);
+        return res.status(500).json({ error: true, message: "Error issuing tickets" });
+    }
+});
+
+/**
+ * POST /p/bulk-mark-paid
+ * Body: { event_id, count?, participant_ids? }
+ * Mark payment_status = MANUAL for first `count` PENDING participants
+ * OR for a specific list of participant_ids.
+ */
+router.post(protected + "/bulk-mark-paid", authCheck, async (req, res) => {
+    if (!req.user) return res.status(401).json({ error: true, message: "Unauthorized" });
+    const eventId = parseInt(req.body.event_id);
+    const count = req.body.count ? parseInt(req.body.count) : undefined;
+    const participantIds = Array.isArray(req.body.participant_ids)
+        ? req.body.participant_ids.map(Number)
+        : null;
+
+    if (isNaN(eventId)) return res.status(400).json({ error: true, message: "Invalid event_id" });
+
+    const denied = await assertCouncilEventAccess(req.user, eventId);
+    if (denied) return res.status(denied.status).json({ error: true, message: denied.message });
+
+    try {
+        let ids;
+        if (participantIds && participantIds.length > 0) {
+            ids = participantIds;
+        } else {
+            const pending = await prisma.participant.findMany({
+                where: { event_id: eventId, payment_status: "PENDING" },
+                orderBy: { registered_on: "asc" },
+                take: count,
+                select: { id: true },
+            });
+            ids = pending.map((p) => p.id);
+        }
+
+        const { count: updated } = await prisma.participant.updateMany({
+            where: { id: { in: ids }, event_id: eventId },
+            data: { payment_status: "MANUAL" },
+        });
+
+        invalidateEvent(eventId, req.user.id);
+        return res.json({ error: false, updated, message: `Marked ${updated} participant(s) as paid` });
+    } catch (err) {
+        logger.error(err);
+        return res.status(500).json({ error: true, message: "Error marking participants as paid" });
+    }
+});
+
+/**
+ * GET /p/event-stats/:id
+ * Quick stats for the controls panel:
+ * total registered, payment breakdown, tickets claimed, attended count.
+ */
+router.get(protected + "/event-stats/:id", authCheck, async (req, res) => {
+    if (!req.user) return res.status(401).json({ error: true, message: "Unauthorized" });
+    const eventId = parseInt(req.params.id);
+    if (isNaN(eventId)) return res.status(400).json({ error: true, message: "Invalid id" });
+
+    const denied = await assertCouncilEventAccess(req.user, eventId);
+    if (denied) return res.status(denied.status).json({ error: true, message: denied.message });
+
+    try {
+        const [event, total, paid, ticketed, attended] = await Promise.all([
+            prisma.events.findUnique({ where: { id: eventId }, select: { ticket_count: true, state: true, is_ticket_feature_enabled: true, fee: true } }),
+            prisma.participant.count({ where: { event_id: eventId } }),
+            prisma.participant.count({ where: { event_id: eventId, payment_status: { in: ["SUCCESS", "MANUAL"] } } }),
+            prisma.participant.count({ where: { event_id: eventId, ticket_collected: true } }),
+            prisma.participant.count({ where: { event_id: eventId, attended: true } }),
+        ]);
+        return res.json({ error: false, stats: { total, paid, pending: total - paid, ticketed, attended, ticket_count: event?.ticket_count ?? null } });
+    } catch (err) {
+        logger.error(err);
+        return res.status(500).json({ error: true, message: "Error fetching stats" });
+    }
+});
+
+/**
+ * GET /p/export-participants/:id
+ * Returns a CSV of all participants for the event.
+ */
+router.get(protected + "/export-participants/:id", authCheck, async (req, res) => {
+    if (!req.user) return res.status(401).json({ error: true, message: "Unauthorized" });
+    const eventId = parseInt(req.params.id);
+    if (isNaN(eventId)) return res.status(400).json({ error: true, message: "Invalid id" });
+
+    const denied = await assertCouncilEventAccess(req.user, eventId);
+    if (denied) return res.status(denied.status).json({ error: true, message: denied.message });
+
+    try {
+        const [event, participants] = await Promise.all([
+            prisma.events.findUnique({ where: { id: eventId }, select: { name: true } }),
+            prisma.participant.findMany({
+                where: { event_id: eventId },
+                include: {
+                    user: { select: { name: true, email: true, roll_number: true, branch: true, year: true, phone_number: true, gender: true } },
+                    team: { select: { name: true } },
+                },
+                orderBy: { registered_on: "asc" },
+            }),
+        ]);
+
+        const header = "Name,Email,Roll Number,Branch,Year,Gender,Phone,Team,Payment Status,Ticket Collected,Attended,Registered On";
+        const rows = participants.map((p) => {
+            const u = p.user || {};
+            return [
+                `"${u.name || ""}"`, `"${u.email || ""}"`, `"${u.roll_number || ""}"`,
+                `"${u.branch || ""}"`, u.year || "", `"${u.gender || ""}"`,
+                `"${u.phone_number || ""}"`, `"${p.team?.name || "Individual"}"`,
+                p.payment_status, p.ticket_collected ? "Yes" : "No",
+                p.attended ? "Yes" : "No",
+                new Date(p.registered_on).toLocaleDateString("en-IN"),
+            ].join(",");
+        });
+
+        const csv = [header, ...rows].join("\n");
+        const filename = `${(event?.name || "event").replace(/\s+/g, "_")}-participants.csv`;
+        res.setHeader("Content-Type", "text/csv");
+        res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+        return res.send(csv);
+    } catch (err) {
+        logger.error(err);
+        return res.status(500).json({ error: true, message: "Error exporting participants" });
+    }
+});
+
 router.get(
     protected + "/attendance-report/:id",
     authCheck,
