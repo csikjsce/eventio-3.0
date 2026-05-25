@@ -45,7 +45,8 @@ const keys = {
     eventListCouncil: (uid)  => `events:council:${uid}`,
     eventListStudent: ()     => `events:student:all`,
     eventListCalendar: ()    => `events:calendar`,
-    stats: ()                => `stats:all`,
+    stats: (councilUserId) =>
+        councilUserId ? `stats:council:${councilUserId}` : `stats:all`,
     councilList: ()          => `councils:all`,
     councilProfile: (id)     => `council:profile:${id}`,
     search: (q)              => `search:${q}`,
@@ -59,7 +60,9 @@ const keys = {
 /** Call whenever an event is created or updated */
 function invalidateEvent(eventId, councilUserId) {
     const toDelete = [keys.event(eventId), keys.eventListStudent(), keys.eventListCalendar(), keys.stats()];
-    if (councilUserId) toDelete.push(keys.eventListCouncil(councilUserId));
+    if (councilUserId) {
+        toDelete.push(keys.eventListCouncil(councilUserId), keys.stats(councilUserId));
+    }
     del(...toDelete);
 }
 

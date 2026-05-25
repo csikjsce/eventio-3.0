@@ -23,6 +23,22 @@ function generateRandomCode() {
     return code;
 }
 
+async function assertCouncilEventAccess(user, eventId) {
+    if (user.role !== "COUNCIL") return null;
+
+    const event = await prisma.events.findUnique({
+        where: { id: eventId },
+        select: { organizer_id: true },
+    });
+    if (!event) {
+        return { status: 404, message: "Event not found" };
+    }
+    if (event.organizer_id !== user.id) {
+        return { status: 403, message: "Not your event" };
+    }
+    return null;
+}
+
 router.post(protected + "/get", authCheck, async (req, res) => {
     console.log(req.query);
     if (!req.user) {
@@ -38,24 +54,7 @@ router.post(protected + "/get", authCheck, async (req, res) => {
         try {
             let events = [];
             events = await prisma.events.findMany({
-                where: {
-                    OR: [
-                        { organizer_id: req.user.id },
-                        {
-                            state: {
-                                in: [
-                                    "UPCOMING",
-                                    "REGISTRATION_OPEN",
-                                    "REGISTRATION_CLOSED",
-                                    "TICKET_OPEN",
-                                    "TICKET_CLOSED",
-                                    "ONGOING",
-                                    "COMPLETED",
-                                ],
-                            },
-                        },
-                    ],
-                },
+                where: { organizer_id: req.user.id },
                 relationLoadStrategy: "join",
                 include: {
                     organizer: {
@@ -464,9 +463,15 @@ router.post(protected + "/get/:id", authCheck, async (req, res) => {
         return res.status(401).json({ error: true, message: "Unauthorized" });
     }
     try {
+        const eventId = parseInt(req.params.id);
+        const denied = await assertCouncilEventAccess(req.user, eventId);
+        if (denied) {
+            return res.status(denied.status).json({ error: true, message: denied.message });
+        }
+
         let event = await prisma.events.findUnique({
             where: {
-                id: parseInt(req.params.id),
+                id: eventId,
             },
             include: {
                 organizer: {
@@ -783,16 +788,19 @@ router.get(protected + "/stats", authCheck, async (req, res) => {
         return res.status(401).json({ error: true, message: "Unauthorized" });
     }
 
-    const cacheKey = cKeys.stats();
+    const cacheKey =
+        req.user.role === "COUNCIL"
+            ? cKeys.stats(req.user.id)
+            : cKeys.stats();
     const cached = cGet(cacheKey);
     if (cached) return res.json(cached);
 
     try {
-        // Fetch all events with participant stats
         const eventsStats = await prisma.events.findMany({
-            // where: {
-            //     organizer_id: req.user.id,
-            // },
+            where:
+                req.user.role === "COUNCIL"
+                    ? { organizer_id: req.user.id }
+                    : undefined,
             select: {
                 id: true,
                 name: true,
@@ -1658,6 +1666,10 @@ router.post(protected + "/claim-ticket", authCheck, async (req, res) => {
 router.get("/get-event-participants/:id", authCheck, async (req, res) => {
     let { id } = req.params;
     const eventId = parseInt(id);
+    const denied = await assertCouncilEventAccess(req.user, eventId);
+    if (denied) {
+        return res.status(denied.status).json({ error: true, message: denied.message });
+    }
     try {
         let teams = await prisma.team.findMany({
             where: {
@@ -1725,9 +1737,16 @@ router.post("/checkin", authCheck, async (req, res) => {
                 message: "Invalid event_id or participant_id",
             });
         }
+
+        const denied = await assertCouncilEventAccess(req.user, event_id);
+        if (denied) {
+            return res.status(denied.status).json({ error: true, message: denied.message });
+        }
+
         const participant_attendend = await prisma.participant.update({
             where: {
                 id: participant_id,
+                event_id,
             },
             data: {
                 attended: true,
@@ -1767,6 +1786,11 @@ router.get(
 
         try {
             const eventId = parseInt(req.params.id);
+
+            const denied = await assertCouncilEventAccess(req.user, eventId);
+            if (denied) {
+                return res.status(denied.status).json({ error: true, message: denied.message });
+            }
 
             const event = await prisma.events.findUnique({
                 where: { id: eventId },
