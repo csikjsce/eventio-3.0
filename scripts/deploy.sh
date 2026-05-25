@@ -99,6 +99,7 @@ main() {
 
   GITHUB_STATUS_REPORTED=1
   github_deployment_report success "Deployed to production"
+  echo "$DEPLOY_SHA" > "${LAST_DEPLOYED_FILE:-/tmp/eventio/last-deployed.sha}"
   log "Eventio deploy finished successfully"
 }
 

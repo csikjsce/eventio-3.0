@@ -17,6 +17,7 @@ fi
 : "${GIT_BRANCH:=main}"
 : "${LOG_DIR:=/tmp/eventio}"
 : "${LOCK_FILE:=/tmp/eventio/poll-deploy.lock}"
+: "${LAST_DEPLOYED_FILE:=/tmp/eventio/last-deployed.sha}"
 
 mkdir -p "$LOG_DIR"
 
@@ -26,14 +27,18 @@ if ! flock -n 9; then
   exit 0
 fi
 
-LOCAL_SHA="$(git -C "$REPO_DIR" rev-parse HEAD)"
 git -C "$REPO_DIR" fetch "$GIT_REMOTE" "$GIT_BRANCH" --quiet
 REMOTE_SHA="$(git -C "$REPO_DIR" rev-parse "${GIT_REMOTE}/${GIT_BRANCH}")"
+LAST_DEPLOYED=""
+if [[ -f "$LAST_DEPLOYED_FILE" ]]; then
+  LAST_DEPLOYED="$(tr -d '[:space:]' < "$LAST_DEPLOYED_FILE")"
+fi
 
-if [[ "$LOCAL_SHA" == "$REMOTE_SHA" ]]; then
-  log "No new commits on ${GIT_REMOTE}/${GIT_BRANCH} (${LOCAL_SHA:0:7})"
+if [[ "$REMOTE_SHA" == "$LAST_DEPLOYED" ]]; then
+  log "Already deployed ${REMOTE_SHA:0:7}"
   exit 0
 fi
 
-log "New commit detected: ${LOCAL_SHA:0:7} -> ${REMOTE_SHA:0:7}"
+LOCAL_SHA="$(git -C "$REPO_DIR" rev-parse HEAD)"
+log "Deploy needed: last=${LAST_DEPLOYED:0:7} remote=${REMOTE_SHA:0:7} local=${LOCAL_SHA:0:7}"
 bash "$ROOT_DIR/scripts/deploy.sh"
