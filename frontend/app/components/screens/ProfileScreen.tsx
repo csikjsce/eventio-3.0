@@ -1,10 +1,11 @@
 "use client";
 
-import { ArrowRight2, CallCalling, Clock, Icon as Icontype, Moon, Setting2, Sun } from "iconsax-react";
+import { ArrowRight2, CallCalling, Clock, Icon as Icontype, LogoutCurve, Moon, Setting2, Sun } from "iconsax-react";
 import Link from "next/link";
 import { UserDataContext } from "@/contexts/userContext";
 import { useContext } from "react";
 import { useTheme, type Theme } from "@/providers/theme-provider";
+import { logout } from "@/lib/api";
 
 const themeOptions: { value: Theme; label: string }[] = [
   { value: "dark", label: "Dark" },
@@ -79,6 +80,22 @@ function ProfileItem({
   );
 }
 
+function LogoutButton() {
+  return (
+    <button
+      onClick={() => logout()}
+      className="w-full flex items-center justify-between bg-primary/10 rounded-2xl p-4 border border-primary/20 active:scale-95 transition-all"
+    >
+      <div className="flex items-center gap-3">
+        <div className="w-9 h-9 rounded-xl bg-primary/20 flex items-center justify-center">
+          <LogoutCurve size={20} color="#b61f2d" />
+        </div>
+        <p className="font-poppins text-sm font-medium text-primary">Log Out</p>
+      </div>
+    </button>
+  );
+}
+
 export default function ProfileScreen() {
   const { userData } = useContext(UserDataContext);
 
@@ -128,6 +145,7 @@ export default function ProfileScreen() {
           to="tel:+918657432101"
         />
         <ThemeToggle />
+        <LogoutButton />
       </div>
 
       {/* Credits */}
