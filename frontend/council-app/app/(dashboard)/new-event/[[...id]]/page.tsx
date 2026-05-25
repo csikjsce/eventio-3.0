@@ -2,14 +2,15 @@
 import { useForm, FormProvider } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { newEventSchema, type NewEventSchema } from "@/lib/validation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Spinner from "@/components/Spinner";
 import { useData } from "@/contexts/DataContext";
 import { createEvent, updateEvent } from "@/lib/api";
+import { uploadFile } from "@/lib/upload";
 import {
   Trophy, Wrench, Mic2, Monitor, Sparkles,
-  CheckCircle2, ChevronRight, X, Save,
+  CheckCircle2, ChevronRight, X, Save, Upload,
 } from "lucide-react";
 
 /* ─── helpers ─── */
@@ -135,6 +136,10 @@ export default function NewEventPage() {
   const [showParent, setShowParent]   = useState(false);
   const [loading, setLoading]         = useState(false);
   const [toast, setToast]             = useState<{ msg: string; ok: boolean } | null>(null);
+  const [uploadingBanner, setUploadingBanner]   = useState(false);
+  const [uploadingDetail, setUploadingDetail]   = useState(false);
+  const bannerFileRef = useRef<HTMLInputElement>(null);
+  const detailFileRef = useRef<HTMLInputElement>(null);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const methods = useForm<NewEventSchema>({ resolver: yupResolver(newEventSchema) as any,
@@ -334,8 +339,40 @@ export default function NewEventPage() {
                     <FieldWrap label="Short Description *" error={errors.description?.message}><textarea rows={3} className={`${INPUT} resize-none`} {...register("description")} placeholder="2–3 lines shown on event cards." /></FieldWrap>
                     <FieldWrap label="Full Description *" error={errors.long_description?.message}><textarea rows={6} className={`${INPUT} resize-none`} {...register("long_description")} placeholder="Detailed overview of the event for the event page." /></FieldWrap>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <FieldWrap label="Card / Banner Image (16:9) *" error={errors.banner_url?.message}><input className={INPUT} {...register("banner_url")} placeholder="https://…" /></FieldWrap>
-                      <FieldWrap label="Detail Page Image (1:1) *" error={errors.event_page_image_url?.message}><input className={INPUT} {...register("event_page_image_url")} placeholder="https://…" /></FieldWrap>
+                      <FieldWrap label="Card / Banner Image (16:9) *" error={errors.banner_url?.message}>
+                        <div className="flex gap-2">
+                          <input className={`${INPUT} flex-1 min-w-0`} {...register("banner_url")} placeholder="https://… or upload →" />
+                          <input ref={bannerFileRef} type="file" accept="image/*" className="hidden"
+                            onChange={async e => {
+                              const f = e.target.files?.[0]; if (!f) return;
+                              setUploadingBanner(true);
+                              try { setValue("banner_url", await uploadFile(f, "eventio-event-images")); }
+                              catch { /* keep existing value */ }
+                              finally { setUploadingBanner(false); e.target.value = ""; }
+                            }} />
+                          <button type="button" onClick={() => bannerFileRef.current?.click()} disabled={uploadingBanner}
+                            className="shrink-0 px-3 py-2 bg-surface2 border border-border-c hover:border-red-500/30 text-muted-tx hover:text-tx rounded-lg transition-all disabled:opacity-60 text-xs font-fira flex items-center gap-1">
+                            <Upload size={13} />{uploadingBanner ? "…" : ""}
+                          </button>
+                        </div>
+                      </FieldWrap>
+                      <FieldWrap label="Detail Page Image (1:1) *" error={errors.event_page_image_url?.message}>
+                        <div className="flex gap-2">
+                          <input className={`${INPUT} flex-1 min-w-0`} {...register("event_page_image_url")} placeholder="https://… or upload →" />
+                          <input ref={detailFileRef} type="file" accept="image/*" className="hidden"
+                            onChange={async e => {
+                              const f = e.target.files?.[0]; if (!f) return;
+                              setUploadingDetail(true);
+                              try { setValue("event_page_image_url", await uploadFile(f, "eventio-event-images")); }
+                              catch { /* keep existing value */ }
+                              finally { setUploadingDetail(false); e.target.value = ""; }
+                            }} />
+                          <button type="button" onClick={() => detailFileRef.current?.click()} disabled={uploadingDetail}
+                            className="shrink-0 px-3 py-2 bg-surface2 border border-border-c hover:border-red-500/30 text-muted-tx hover:text-tx rounded-lg transition-all disabled:opacity-60 text-xs font-fira flex items-center gap-1">
+                            <Upload size={13} />{uploadingDetail ? "…" : ""}
+                          </button>
+                        </div>
+                      </FieldWrap>
                     </div>
 
                     <div>

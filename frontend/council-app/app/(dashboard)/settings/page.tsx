@@ -1,6 +1,7 @@
 "use client";
 import { useState, useRef, useEffect, useMemo } from "react";
 import { fetchCouncilProfile, updateCouncilProfile, type CouncilProfile } from "@/lib/api";
+import { uploadFile } from "@/lib/upload";
 import { useData } from "@/contexts/DataContext";
 import {
   Settings, Users, Upload, Plus, X, Edit2, Trash2,
@@ -426,7 +427,9 @@ export default function SettingsPage() {
   const [advModal, setAdvModal]   = useState<Partial<FacultyAdvisor> | null | "new">(null);
   const [toast, setToast]         = useState("");
   const [teamFilter, setTeamFilter] = useState("All");
-  const [saving, setSaving]       = useState(false);
+  const [saving, setSaving]         = useState(false);
+  const [uploadingLogo, setUploadingLogo]     = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
   const logoRef   = useRef<HTMLInputElement>(null);
   const bannerRef = useRef<HTMLInputElement>(null);
 
@@ -587,13 +590,20 @@ export default function SettingsPage() {
               </div>
               <div>
                 <input ref={logoRef} type="file" accept="image/*" className="hidden"
-                  onChange={e => {
+                  onChange={async e => {
                     const f = e.target.files?.[0];
-                    if (f) { set("logo_url", URL.createObjectURL(f)); showToast("Logo updated!"); }
+                    if (!f) return;
+                    setUploadingLogo(true);
+                    try {
+                      const url = await uploadFile(f, "eventio-council-images");
+                      set("logo_url", url);
+                      showToast("Logo uploaded!");
+                    } catch { showToast("Logo upload failed. Please try again."); }
+                    finally { setUploadingLogo(false); e.target.value = ""; }
                   }} />
-                <button type="button" onClick={() => logoRef.current?.click()}
-                  className="flex items-center gap-2 px-4 py-2 bg-surface2 border border-border-c hover:border-red-500/30 text-muted-tx hover:text-tx text-sm font-fira rounded-xl transition-all mb-2">
-                  <Upload size={14} /> Upload Logo
+                <button type="button" onClick={() => logoRef.current?.click()} disabled={uploadingLogo}
+                  className="flex items-center gap-2 px-4 py-2 bg-surface2 border border-border-c hover:border-red-500/30 text-muted-tx hover:text-tx text-sm font-fira rounded-xl transition-all mb-2 disabled:opacity-60">
+                  <Upload size={14} /> {uploadingLogo ? "Uploading…" : "Upload Logo"}
                 </button>
                 <p className="text-subtle-tx text-[11px] font-fira">PNG, SVG or JPG. Recommended: 256×256px</p>
               </div>
@@ -614,14 +624,21 @@ export default function SettingsPage() {
               <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
             </div>
             <input ref={bannerRef} type="file" accept="image/*" className="hidden"
-              onChange={e => {
+              onChange={async e => {
                 const f = e.target.files?.[0];
-                if (f) { set("banner_url", URL.createObjectURL(f)); showToast("Banner updated!"); }
+                if (!f) return;
+                setUploadingBanner(true);
+                try {
+                  const url = await uploadFile(f, "eventio-council-images");
+                  set("banner_url", url);
+                  showToast("Banner uploaded!");
+                } catch { showToast("Banner upload failed. Please try again."); }
+                finally { setUploadingBanner(false); e.target.value = ""; }
               }} />
             <div className="flex items-center gap-3">
-              <button type="button" onClick={() => bannerRef.current?.click()}
-                className="flex items-center gap-2 px-4 py-2 bg-surface2 border border-border-c hover:border-red-500/30 text-muted-tx hover:text-tx text-sm font-fira rounded-xl transition-all">
-                <Upload size={14} /> Upload Banner
+              <button type="button" onClick={() => bannerRef.current?.click()} disabled={uploadingBanner}
+                className="flex items-center gap-2 px-4 py-2 bg-surface2 border border-border-c hover:border-red-500/30 text-muted-tx hover:text-tx text-sm font-fira rounded-xl transition-all disabled:opacity-60">
+                <Upload size={14} /> {uploadingBanner ? "Uploading…" : "Upload Banner"}
               </button>
               {settings.banner_url && (
                 <button type="button" onClick={() => set("banner_url", "")}

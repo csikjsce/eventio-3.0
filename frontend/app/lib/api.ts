@@ -200,6 +200,22 @@ export async function fetchCouncilProfile(id: number) {
 }
 
 /** Submit onboarding profile update */
+export async function updateProfile(payload: Partial<{
+  name: string;
+  phone_number: number;
+  gender: string;
+  year: number;
+  branch: string;
+  degree: string;
+  college: string;
+  about: string;
+  interests: string[];
+  photo_url: string;
+}>) {
+  const { data } = await api.post("/user/p/update", payload);
+  return data;
+}
+
 export async function submitOnboarding(payload: {
   phone_number: string;
   gender: string;

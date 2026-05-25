@@ -1,9 +1,10 @@
 "use client";
-import { use, useState, useEffect } from "react";
+import { use, useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getNextAction, type EventData, type EventDocument, type ApprovalStep } from "@/lib/dummy-data";
 import { fetchEvent, fetchDocuments, addDocument, deleteDocument, type DocumentRow } from "@/lib/api";
+import { uploadFile, type UploadType } from "@/lib/upload";
 import { useData } from "@/contexts/DataContext";
 import {
   ArrowLeft, CalendarDays, MapPin, Users, Ticket, Edit2, ExternalLink,
@@ -97,33 +98,173 @@ function ApprovalTimeline({ chain }: { chain: ApprovalStep[] }) {
 
 // ─── Documents ────────────────────────────────────────────────────────────────
 
-function DocumentsPanel({ docs, onUpload }: { docs: EventDocument[]; onUpload: (id: string) => void }) {
+function docUploadType(type: string): UploadType {
+  if (type === "report")              return "eventio-reports";
+  if (type === "geo_tag")             return "eventio-event-images";
+  if (["proposal", "noc", "budget", "letter", "other"].includes(type))
+                                      return "eventio-approval-documents";
+  return "eventio-approval-documents";
+}
+
+function DocumentRow({ doc, eventId, onUpdated }: {
+  doc: EventDocument & { url?: string; uploaded_at?: string };
+  eventId: string;
+  onUpdated: (url: string) => void;
+}) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [err, setErr]             = useState("");
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    setErr("");
+    try {
+      const url = await uploadFile(file, docUploadType(doc.type));
+      await addDocument({ event_id: Number(eventId), name: doc.name, type: doc.type, url });
+      onUpdated(url);
+    } catch {
+      setErr("Upload failed. Please try again.");
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center gap-3 p-3 bg-surface2 border border-border-c rounded-xl">
+        <span className="text-lg shrink-0">{DOC_ICON[doc.type] ?? "📎"}</span>
+        <div className="flex-1 min-w-0">
+          <p className="text-tx text-sm font-fira font-medium truncate">{doc.name}</p>
+          <p className="text-subtle-tx text-[11px] font-fira">
+            {doc.uploaded_at
+              ? `Uploaded ${new Date(doc.uploaded_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}`
+              : <span className="text-amber-500">Not uploaded</span>}
+            {doc.required && !doc.uploaded_at && " · Required"}
+          </p>
+        </div>
+        <input ref={fileRef} type="file" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" className="hidden" onChange={handleFile} />
+        {doc.url ? (
+          <div className="flex items-center gap-1.5 shrink-0">
+            <a href={doc.url} target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-1 px-2.5 py-1.5 bg-surface border border-border-c text-muted-tx hover:text-tx text-xs font-fira rounded-lg transition-all">
+              <ExternalLink size={11} /> View
+            </a>
+            <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading}
+              className="flex items-center gap-1 px-2.5 py-1.5 bg-surface border border-border-c text-muted-tx hover:text-red-500 hover:border-red-500/30 text-xs font-fira rounded-lg transition-all disabled:opacity-60">
+              <Upload size={11} /> {uploading ? "…" : "Replace"}
+            </button>
+          </div>
+        ) : (
+          <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading}
+            className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 bg-red-500 hover:bg-red-600 text-white text-xs font-fira rounded-lg transition-all disabled:opacity-60">
+            <Upload size={11} /> {uploading ? "Uploading…" : "Upload"}
+          </button>
+        )}
+      </div>
+      {err && <p className="text-red-500 text-xs font-fira px-1">{err}</p>}
+    </div>
+  );
+}
+
+function DocumentsPanel({ docs, eventId, onDocUpdated }: {
+  docs: (EventDocument & { url?: string; uploaded_at?: string })[];
+  eventId: string;
+  onDocUpdated: (docId: string, url: string) => void;
+}) {
   return (
     <div className="space-y-2">
       {docs.map(doc => (
-        <div key={doc.id} className="flex items-center gap-3 p-3 bg-surface2 border border-border-c rounded-xl">
-          <span className="text-lg shrink-0">{DOC_ICON[doc.type] ?? "📎"}</span>
-          <div className="flex-1 min-w-0">
-            <p className="text-tx text-sm font-fira font-medium truncate">{doc.name}</p>
-            <p className="text-subtle-tx text-[11px] font-fira">
-              {doc.uploaded_at ? `Uploaded ${doc.uploaded_at}` : <span className="text-amber-500">Not uploaded</span>}
-              {doc.required && !doc.uploaded_at && " · Required"}
-            </p>
-          </div>
-          {doc.url ? (
-            <a href={doc.url} target="_blank" rel="noopener noreferrer"
-              className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 bg-surface border border-border-c text-muted-tx hover:text-tx text-xs font-fira rounded-lg transition-all">
-              <ExternalLink size={11} /> View
-            </a>
-          ) : (
-            <button type="button" onClick={() => onUpload(doc.id)}
-              className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 bg-surface border border-border-c text-muted-tx hover:text-red-500 hover:border-red-500/30 text-xs font-fira rounded-lg transition-all">
-              <Upload size={11} /> Upload
-            </button>
-          )}
-        </div>
+        <DocumentRow key={doc.id} doc={doc} eventId={eventId} onUpdated={(url) => onDocUpdated(String(doc.id), url)} />
       ))}
     </div>
+  );
+}
+
+const DOC_TYPES = [
+  { value: "proposal", label: "Proposal" },
+  { value: "noc",      label: "NOC" },
+  { value: "budget",   label: "Budget" },
+  { value: "letter",   label: "Letter" },
+  { value: "report",   label: "Report" },
+  { value: "geo_tag",  label: "Geo-Tag Photo" },
+  { value: "other",    label: "Other" },
+] as const;
+
+type DocType = typeof DOC_TYPES[number]["value"];
+
+function AddDocumentSection({ eventId, docs, onDocUpdated, onDocAdded }: {
+  eventId: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  docs: any[];
+  onDocUpdated: (id: string, url: string) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onDocAdded: (doc: any) => void;
+}) {
+  const addFileRef = useRef<HTMLInputElement>(null);
+  const [addType, setAddType]         = useState<DocType>("other");
+  const [addName, setAddName]         = useState("");
+  const [addUploading, setAddUploading] = useState(false);
+  const [addErr, setAddErr]           = useState("");
+  const [showForm, setShowForm]       = useState(false);
+
+  async function handleAddFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAddUploading(true);
+    setAddErr("");
+    try {
+      const url = await uploadFile(file, docUploadType(addType));
+      const name = addName.trim() || file.name;
+      const saved = await addDocument({ event_id: Number(eventId), name, type: addType, url });
+      onDocAdded({ ...(saved ?? {}), name, type: addType, url, uploaded_at: new Date().toISOString() });
+      setAddName("");
+      setShowForm(false);
+    } catch {
+      setAddErr("Upload failed. Please try again.");
+    } finally {
+      setAddUploading(false);
+      e.target.value = "";
+    }
+  }
+
+  return (
+    <>
+      <div className="flex items-center justify-between mb-5">
+        <h3 className="text-tx font-fira font-semibold text-sm">Documents</h3>
+        <button type="button" onClick={() => setShowForm(v => !v)}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-surface2 border border-border-c hover:border-red-500/30 text-muted-tx hover:text-tx text-xs font-fira rounded-lg transition-all">
+          <Upload size={12} /> Add Document
+        </button>
+      </div>
+
+      {showForm && (
+        <div className="mb-4 p-4 bg-surface2 border border-border-c rounded-xl space-y-3">
+          <p className="text-tx text-xs font-fira font-semibold">Upload New Document</p>
+          <div className="flex gap-2">
+            <select value={addType} onChange={e => setAddType(e.target.value as DocType)}
+              className="flex-1 bg-surface border border-border-c rounded-lg px-3 py-2 text-sm font-fira text-tx outline-none focus:border-red-500/40">
+              {DOC_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+            </select>
+            <input type="text" placeholder="Document name (optional)" value={addName} onChange={e => setAddName(e.target.value)}
+              className="flex-1 bg-surface border border-border-c rounded-lg px-3 py-2 text-sm font-fira text-tx outline-none focus:border-red-500/40 placeholder-subtle-tx" />
+          </div>
+          <input ref={addFileRef} type="file" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" className="hidden" onChange={handleAddFile} />
+          <button type="button" onClick={() => addFileRef.current?.click()} disabled={addUploading}
+            className="w-full flex items-center justify-center gap-2 py-2.5 bg-red-500 hover:bg-red-600 text-white text-sm font-fira font-semibold rounded-xl transition-colors disabled:opacity-60">
+            <Upload size={14} /> {addUploading ? "Uploading…" : "Choose File & Upload"}
+          </button>
+          {addErr && <p className="text-red-500 text-xs font-fira">{addErr}</p>}
+        </div>
+      )}
+
+      {docs.length === 0 && !showForm
+        ? <p className="text-muted-tx text-sm font-fira text-center py-8">No documents yet. Click &ldquo;Add Document&rdquo; to upload one.</p>
+        : <DocumentsPanel docs={docs} eventId={eventId} onDocUpdated={onDocUpdated} />
+      }
+    </>
   );
 }
 
@@ -232,9 +373,9 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
     }
   }
 
-  function handleUpload(docId: string) {
+  function handleDocUpdated(docId: string, url: string) {
     setDocs(prev => prev.map(d =>
-      d.id === docId ? { ...d, url: "#", uploaded_at: new Date().toISOString().split("T")[0] } : d
+      String(d.id) === docId ? { ...d, url, uploaded_at: new Date().toISOString() } : d
     ));
     showToast("Document uploaded successfully!");
   }
@@ -336,23 +477,7 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
               )}
 
               {tab === "documents" && (
-                <>
-                  <div className="flex items-center justify-between mb-5">
-                    <h3 className="text-tx font-fira font-semibold text-sm">Documents</h3>
-                    <button type="button"
-                      onClick={() => {
-                        const newDoc = { id: `d${Date.now()}`, name: "New Document.pdf", type: "other" as const, required: false };
-                        setDocs(prev => [...prev, newDoc]);
-                      }}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-surface2 border border-border-c hover:border-red-500/30 text-muted-tx hover:text-tx text-xs font-fira rounded-lg transition-all">
-                      <Upload size={12} /> Add Document
-                    </button>
-                  </div>
-                  {docs.length === 0
-                    ? <p className="text-muted-tx text-sm font-fira text-center py-8">No documents yet.</p>
-                    : <DocumentsPanel docs={docs} onUpload={handleUpload} />
-                  }
-                </>
+                <AddDocumentSection eventId={id} docs={docs} onDocUpdated={handleDocUpdated} onDocAdded={(doc) => setDocs(prev => [...prev, doc])} />
               )}
 
             </div>

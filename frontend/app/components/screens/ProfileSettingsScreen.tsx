@@ -4,6 +4,8 @@ import { useContext, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Camera, TickCircle } from "iconsax-react";
 import { UserDataContext } from "@/contexts/userContext";
+import { updateProfile } from "@/lib/api";
+import { uploadFile } from "@/lib/upload";
 import type { User } from "@/types/eventio";
 
 const INTEREST_SUGGESTIONS = [
@@ -61,20 +63,24 @@ function SelectWrapper({ children }: { children: React.ReactNode }) {
 export default function ProfileSettingsScreen() {
   const router = useRouter();
   const { userData, setUserData } = useContext(UserDataContext);
-  const [saved, setSaved] = useState(false);
+  const [saved, setSaved]               = useState(false);
+  const [saving, setSaving]             = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [customInterest, setCustomInterest] = useState("");
-  const customRef = useRef<HTMLInputElement>(null);
+  const customRef  = useRef<HTMLInputElement>(null);
+  const photoRef   = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState<Partial<User>>({
-    name: userData?.name ?? "",
+    name:         userData?.name         ?? "",
     phone_number: userData?.phone_number ?? 0,
-    branch: userData?.branch ?? "",
-    degree: userData?.degree ?? "",
-    year: userData?.year ?? new Date().getFullYear(),
-    gender: userData?.gender ?? "",
-    college: userData?.college ?? "",
-    about: userData?.about ?? "",
-    interests: userData?.interests ?? [],
+    branch:       userData?.branch       ?? "",
+    degree:       userData?.degree       ?? "",
+    year:         userData?.year         ?? new Date().getFullYear(),
+    gender:       userData?.gender       ?? "",
+    college:      userData?.college      ?? "",
+    about:        userData?.about        ?? "",
+    interests:    userData?.interests    ?? [],
+    photo_url:    userData?.photo_url    ?? "",
   });
 
   const set = (key: keyof User, value: unknown) =>
@@ -97,14 +103,38 @@ export default function ProfileSettingsScreen() {
     customRef.current?.focus();
   };
 
-  const handleSave = () => {
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingPhoto(true);
+    try {
+      const url = await uploadFile(file, "eventio-council-images");
+      set("photo_url", url);
+    } catch { /* keep existing */ }
+    finally { setUploadingPhoto(false); e.target.value = ""; }
+  };
+
+  const handleSave = async () => {
     if (!setUserData || !userData) return;
-    setUserData({ ...userData, ...form } as User);
-    setSaved(true);
-    setTimeout(() => {
-      setSaved(false);
-      router.back();
-    }, 1200);
+    setSaving(true);
+    try {
+      await updateProfile({
+        name:         form.name,
+        phone_number: Number(form.phone_number),
+        gender:       form.gender,
+        year:         Number(form.year),
+        branch:       form.branch,
+        degree:       form.degree,
+        college:      form.college,
+        about:        form.about,
+        interests:    form.interests as string[],
+        photo_url:    form.photo_url,
+      });
+      setUserData({ ...userData, ...form } as User);
+      setSaved(true);
+      setTimeout(() => { setSaved(false); router.back(); }, 1200);
+    } catch { /* toast handled globally */ }
+    finally { setSaving(false); }
   };
 
   const interests = (form.interests as string[]) ?? [];
@@ -124,9 +154,10 @@ export default function ProfileSettingsScreen() {
         </h1>
         <button
           onClick={handleSave}
-          className="bg-primary text-white text-sm font-poppins font-semibold px-5 py-2 rounded-full shadow-md shadow-primary/30 transition-all active:scale-95"
+          disabled={saving || uploadingPhoto}
+          className="bg-primary text-white text-sm font-poppins font-semibold px-5 py-2 rounded-full shadow-md shadow-primary/30 transition-all active:scale-95 disabled:opacity-60"
         >
-          Save
+          {saving ? "Saving…" : "Save"}
         </button>
       </div>
 
@@ -135,16 +166,22 @@ export default function ProfileSettingsScreen() {
         <div className="flex flex-col items-center py-6">
           <div className="relative">
             <img
-              src={userData?.photo_url}
+              src={(form.photo_url as string) || userData?.photo_url}
               alt="avatar"
               className="w-24 h-24 rounded-full object-cover ring-4 ring-primary/30"
             />
-            <button className="absolute bottom-0 right-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center shadow-lg">
+            <input ref={photoRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
+            <button
+              type="button"
+              onClick={() => photoRef.current?.click()}
+              disabled={uploadingPhoto}
+              className="absolute bottom-0 right-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center shadow-lg disabled:opacity-60"
+            >
               <Camera size={15} color="white" variant="Bold" />
             </button>
           </div>
           <p className="text-xs text-mute font-poppins mt-2">
-            Tap to change photo
+            {uploadingPhoto ? "Uploading…" : "Tap to change photo"}
           </p>
         </div>
 
