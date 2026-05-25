@@ -79,6 +79,15 @@ router.get(p + "/profile/:id", authCheck, async (req, res) => {
                     select: {
                         id: true, name: true, banner_url: true, state: true,
                         dates: true, venue: true, fee: true, tags: true,
+                        logo_image__url: true,
+                        organizer: {
+                            select: {
+                                id: true,
+                                name: true,
+                                photo_url: true,
+                                email: true,
+                            },
+                        },
                     },
                     orderBy: { created_at: "desc" },
                 },
