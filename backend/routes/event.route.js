@@ -752,20 +752,32 @@ router.get(protected + "/search/", authCheck, async (req, res) => {
         let events = await prisma.events.findMany({
             where: {
                 OR: [
-                    { name: { contains: q } },
-                    { description: { contains: q } },
-                    { long_description: { contains: q } },
+                    { name: { contains: q, mode: "insensitive" } },
+                    { description: { contains: q, mode: "insensitive" } },
+                    { long_description: { contains: q, mode: "insensitive" } },
+                    { tag_line: { contains: q, mode: "insensitive" } },
                     { tags: { hasSome: [q] } },
                 ],
             },
             orderBy: {
                 created_at: "desc",
             },
-            take: 10,
+            take: 20,
             select: {
                 id: true,
                 name: true,
-                name: true,
+                tag_line: true,
+                description: true,
+                banner_url: true,
+                logo_image__url: true,
+                event_page_image_url: true,
+                venue: true,
+                state: true,
+                event_type: true,
+                fee: true,
+                dates: true,
+                is_only_somaiya: true,
+                registration_type: true,
                 organizer: {
                     select: {
                         id: true,
@@ -773,7 +785,6 @@ router.get(protected + "/search/", authCheck, async (req, res) => {
                         photo_url: true,
                     },
                 },
-                tag_line: true,
             },
         });
         res.json({ error: false, events });

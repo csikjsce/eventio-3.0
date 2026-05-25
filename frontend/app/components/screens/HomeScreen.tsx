@@ -108,12 +108,13 @@ export default function HomeScreen() {
       </div>
 
       {/* ── Search ── */}
-      <div className="flex items-center gap-3 bg-card rounded-2xl px-4 py-3.5 border border-border">
+      <Link href="/search"
+        className="flex items-center gap-3 bg-card rounded-2xl px-4 py-3.5 border border-border active:opacity-80 transition-opacity">
         <SearchNormal1 size={18} color="#8a8a8a" />
         <span className="text-mute text-sm font-poppins">
-          Search by location or date
+          Search events, councils…
         </span>
-      </div>
+      </Link>
 
       {/* ── Your Tickets ── */}
       {ticketEvents.length > 0 && (

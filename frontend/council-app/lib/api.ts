@@ -97,11 +97,46 @@ const CHAIN_MILESTONES: RawApprovalStep[] = [
   { stage: "REJECTED",                    label: "Proposal Rejected",            actor: "Faculty Advisor / Director"},
 ];
 
+// Canonical happy-path order — used to reconstruct chain when history is missing/incomplete
+const CANONICAL_ORDER = [
+  "DRAFT",
+  "APPLIED_FOR_APPROVAL",
+  "UNLISTED",
+  "APPLIED_FOR_PRINCI_APPROVAL",
+  "UPCOMING",
+  "REGISTRATION_OPEN",
+  "REGISTRATION_CLOSED",
+  "ONGOING",
+  "COMPLETED",
+  "TICKET_OPEN",
+  "TICKET_CLOSED",
+];
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function buildApprovalChain(currentState: string, stateHistory: string[]): any[] {
-  const history: string[] = Array.isArray(stateHistory) && stateHistory.length
-    ? stateHistory
-    : [currentState];
+  const raw = Array.isArray(stateHistory) ? stateHistory : [];
+
+  // Determine the working history:
+  //   • If state_history already includes the current state, it's a full record — use it.
+  //   • Otherwise the record is missing/incomplete (legacy event or direct DB edit).
+  //     Reconstruct the canonical path up to the current state so the timeline shows
+  //     all expected steps rather than just the last one.
+  let history: string[];
+
+  if (raw.includes(currentState)) {
+    history = raw;
+  } else if (currentState === "REJECTED") {
+    // For rejected events reconstruct up to the point of rejection
+    const lastKnown = raw.filter(s => CANONICAL_ORDER.includes(s));
+    history = lastKnown.length
+      ? [...lastKnown, "REJECTED"]
+      : ["DRAFT", "APPLIED_FOR_APPROVAL", "REJECTED"];
+  } else {
+    const idx = CANONICAL_ORDER.indexOf(currentState);
+    history = idx >= 0
+      ? CANONICAL_ORDER.slice(0, idx + 1)   // every step from DRAFT up to (and including) current
+      : raw.length ? raw : [currentState];
+  }
 
   const chain = [];
   for (let i = 0; i < history.length; i++) {
@@ -111,16 +146,11 @@ function buildApprovalChain(currentState: string, stateHistory: string[]): any[]
 
     const isLast = i === history.length - 1;
     const status =
-      s === "REJECTED"      ? "rejected" :
-      isLast                ? "active"   :
-                              "done";
+      s === "REJECTED" ? "rejected" :
+      isLast           ? "active"   :
+                         "done";
 
     chain.push({ stage: s, label: milestone.label, status, actor: milestone.actor });
-  }
-
-  // If current state is REJECTED but it wasn't the last item pushed, append it
-  if (currentState === "REJECTED" && !history.includes("REJECTED")) {
-    chain.push({ stage: "REJECTED", label: "Proposal Rejected", status: "rejected", actor: "Faculty Advisor / Director" });
   }
 
   return chain;

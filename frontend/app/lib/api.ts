@@ -181,10 +181,27 @@ export async function deleteTeam(eventId: number, teamId: number) {
   return data;
 }
 
-/** Search events */
-export async function searchEvents(q: string) {
+export interface SearchResult {
+  id: number;
+  name: string;
+  tag_line: string;
+  description: string;
+  banner_url: string;
+  logo_image__url: string;
+  venue: string;
+  state: string;
+  event_type: string;
+  fee: number;
+  dates: string[];
+  is_only_somaiya: boolean;
+  registration_type: string;
+  organizer: { id: number; name: string; photo_url: string };
+}
+
+/** Search events by name / description / tag_line */
+export async function searchEvents(q: string): Promise<SearchResult[]> {
   const { data } = await api.get("/event/p/search/", { params: { q } });
-  return data.events as unknown[];
+  return (data.events ?? []) as SearchResult[];
 }
 
 /** Fetch all councils */
