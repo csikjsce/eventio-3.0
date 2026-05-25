@@ -71,6 +71,8 @@ start_detached() {
     cd "$workdir" || exit 1
     load_nvm
     export PORT="$port"
+    # Prevent long-running services from inheriting the poll-deploy flock fd.
+    for fd in $(seq 3 9); do eval "exec ${fd}>&-" 2>/dev/null || true; done
     nohup "$@" >"$log_file" 2>&1 &
     echo $! >"$pid_file"
   )
