@@ -128,21 +128,45 @@ model Admins {
 
 // ── Council extended profile (one-to-one with COUNCIL User) ──────────
 model CouncilProfile {
-  id               Int      @id @default(autoincrement())
-  user_id          Int      @unique
-  user             User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  id               Int              @id @default(autoincrement())
+  user_id          Int              @unique
+  user             User             @relation(fields: [user_id], references: [id], onDelete: Cascade)
   tagline          String?
   about            String?
   banner_url       String?
   instagram        String?
   linkedin         String?
   website          String?
-  // JSON array of { name, email, phone }
-  faculty_advisors Json?
-  // JSON array of { id, name, email, role, team }
-  members          Json?
-  created_at       DateTime @default(now())
-  updated_at       DateTime @updatedAt
+  created_at       DateTime         @default(now())
+  updated_at       DateTime         @updatedAt
+  members          CouncilMember[]
+  faculty_advisors FacultyAdvisor[]
+}
+
+// ── Council team members ──────────────────────────────────────────────
+model CouncilMember {
+  id         Int            @id @default(autoincrement())
+  council_id Int
+  council    CouncilProfile @relation(fields: [council_id], references: [id], onDelete: Cascade)
+  name       String
+  email      String
+  role       String         @default("Member")
+  team       String         @default("Technical")
+  is_head    Boolean        @default(false)
+  photo_url  String?
+  created_at DateTime       @default(now())
+}
+
+// ── Council faculty advisors ──────────────────────────────────────────
+model FacultyAdvisor {
+  id          Int            @id @default(autoincrement())
+  council_id  Int
+  council     CouncilProfile @relation(fields: [council_id], references: [id], onDelete: Cascade)
+  name        String
+  email       String
+  dept        String         @default("")
+  designation String         @default("Faculty Advisor")
+  created_at  DateTime       @default(now())
 }
 
 // ── Event documents (proposal, report, geotagged pics, etc.) ─────────

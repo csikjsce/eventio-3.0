@@ -1,6 +1,11 @@
 "use client";
 import { useState, useRef, useEffect, useMemo } from "react";
-import { fetchCouncilProfile, updateCouncilProfile, type CouncilProfile } from "@/lib/api";
+import {
+  fetchCouncilProfile, updateCouncilProfile,
+  createMember, updateMember, deleteMember as apiDeleteMember,
+  createAdvisor, updateAdvisor, deleteAdvisor as apiDeleteAdvisor,
+  type CouncilProfile, type CouncilMemberRow, type FacultyAdvisorRow,
+} from "@/lib/api";
 import { uploadFile } from "@/lib/upload";
 import { useData } from "@/contexts/DataContext";
 import {
@@ -10,8 +15,20 @@ import {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+// Locally mirrors CouncilMemberRow / FacultyAdvisorRow from api.ts.
+// id = 0 means the row is not yet persisted (optimistic placeholder).
+interface Member {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+  team: string;
+  is_head: boolean;
+  photo_url: string;
+}
+
 interface FacultyAdvisor {
-  id: string;
+  id: number;
   name: string;
   email: string;
   dept: string;
@@ -29,16 +46,6 @@ interface CouncilSettings {
   instagram: string;
   linkedin: string;
   website: string;
-}
-
-interface Member {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  team: string;
-  is_head: boolean;
-  photo_url: string;
 }
 
 // ─── Initial data ─────────────────────────────────────────────────────────────
@@ -190,7 +197,7 @@ const SELECT = INPUT + " appearance-none pr-8 cursor-pointer";
 
 function FacultyModal({ advisor, onSave, onClose }: {
   advisor: Partial<FacultyAdvisor> | null;
-  onSave: (a: FacultyAdvisor) => void;
+  onSave: (a: FacultyAdvisor) => Promise<void>;
   onClose: () => void;
 }) {
   const [form, setForm] = useState({
@@ -237,7 +244,7 @@ function FacultyModal({ advisor, onSave, onClose }: {
               Cancel
             </button>
             <button type="button" disabled={!form.name.trim() || !form.email.trim()}
-              onClick={() => onSave({ id: advisor?.id ?? `fa${Date.now()}`, ...form })}
+              onClick={() => onSave({ id: advisor?.id ?? 0, ...form })}
               className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-red-500 hover:bg-red-600 disabled:opacity-40 text-white text-sm font-fira font-semibold rounded-xl transition-all">
               <Save size={14} /> {advisor?.id ? "Save Changes" : "Add Advisor"}
             </button>
@@ -252,7 +259,7 @@ function FacultyModal({ advisor, onSave, onClose }: {
 
 function MemberModal({ member, onSave, onClose }: {
   member: Partial<Member> | null;
-  onSave: (m: Member) => void;
+  onSave: (m: Member) => Promise<void>;
   onClose: () => void;
 }) {
   const [form, setForm] = useState<Omit<Member, "id">>({
@@ -284,7 +291,7 @@ function MemberModal({ member, onSave, onClose }: {
   function handleSave() {
     if (!form.name.trim() || !form.email.trim()) return;
     const auto = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(form.name)}&backgroundColor=b61f2d&textColor=ffffff`;
-    onSave({ id: member?.id ?? `m${Date.now()}`, ...form, photo_url: form.photo_url || auto });
+    onSave({ id: member?.id ?? 0, ...form, photo_url: form.photo_url || auto });
   }
 
   const previewPhoto = form.photo_url ||
@@ -439,12 +446,11 @@ export default function SettingsPage() {
   const [settings, setSettings]   = useState<CouncilSettings>(INITIAL_SETTINGS);
   const [advisors, setAdvisors]   = useState<FacultyAdvisor[]>(INITIAL_ADVISORS);
   const [members, setMembers]     = useState<Member[]>(INITIAL_MEMBERS);
-  const [modal, setModal]         = useState<Partial<Member> | null | "new">(null);
-  const [advModal, setAdvModal]   = useState<Partial<FacultyAdvisor> | null | "new">(null);
+  const [modal, setModal]         = useState<Partial<Member> | null>(null);
+  const [advModal, setAdvModal]   = useState<Partial<FacultyAdvisor> | null>(null);
   const [toast, setToast]         = useState("");
   const [teamFilter, setTeamFilter] = useState("All");
   const [saving, setSaving]                   = useState(false);
-  const [savingTeam, setSavingTeam]           = useState(false);
   const [uploadingLogo, setUploadingLogo]     = useState(false);
   const [uploadingBanner, setUploadingBanner] = useState(false);
   const [profileLoading, setProfileLoading]   = useState(true);
@@ -458,30 +464,30 @@ export default function SettingsPage() {
       const p = profile.profile ?? {};
       setSettings(prev => ({
         ...prev,
-        name:        profile.name        ?? prev.name,
-        email:       profile.email       ?? prev.email,
-        logo_url:    profile.photo_url   ?? prev.logo_url,
-        tagline:     p.tagline           ?? prev.tagline,
-        description: p.about            ?? prev.description,
-        banner_url:  p.banner_url        ?? prev.banner_url,
-        instagram:   p.instagram         ?? prev.instagram,
-        linkedin:    (p as { linkedin?: string }).linkedin ?? prev.linkedin,
-        website:     p.website           ?? prev.website,
+        name:        profile.name      ?? prev.name,
+        email:       profile.email     ?? prev.email,
+        logo_url:    profile.photo_url ?? prev.logo_url,
+        tagline:     p.tagline         ?? prev.tagline,
+        description: p.about          ?? prev.description,
+        banner_url:  p.banner_url      ?? prev.banner_url,
+        instagram:   p.instagram       ?? prev.instagram,
+        linkedin:    p.linkedin        ?? prev.linkedin,
+        website:     p.website         ?? prev.website,
       }));
-      if (Array.isArray(p.faculty_advisors) && p.faculty_advisors.length) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        setAdvisors((p.faculty_advisors as any[]).map((fa: any, i: number) => ({
-          id:          fa.id          ?? `fa${i}`,
+
+      if (Array.isArray(p.faculty_advisors)) {
+        setAdvisors(p.faculty_advisors.map((fa: FacultyAdvisorRow) => ({
+          id:          fa.id,
           name:        fa.name        ?? "",
           email:       fa.email       ?? "",
           dept:        fa.dept        ?? "",
           designation: fa.designation ?? "Faculty Advisor",
         })));
       }
-      if (Array.isArray(p.members) && p.members.length) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        setMembers((p.members as any[]).map((m: any, i: number) => ({
-          id:        m.id        ?? `m${i}`,
+
+      if (Array.isArray(p.members)) {
+        setMembers(p.members.map((m: CouncilMemberRow) => ({
+          id:        m.id,
           name:      m.name      ?? "",
           email:     m.email     ?? "",
           role:      m.role      ?? "Member",
@@ -530,54 +536,70 @@ export default function SettingsPage() {
     [events]
   );
 
-  async function handleSaveTeam(updatedMembers: Member[], updatedAdvisors: FacultyAdvisor[]) {
-    setSavingTeam(true);
+  async function saveAdvisor(a: FacultyAdvisor) {
+    setAdvModal(null);
     try {
-      await updateCouncilProfile({ members: updatedMembers, faculty_advisors: updatedAdvisors });
-      showToast("Team saved!");
+      if (a.id === 0) {
+        // new record
+        const created = await createAdvisor({ name: a.name, email: a.email, dept: a.dept, designation: a.designation });
+        setAdvisors(prev => [...prev, { id: created.id, name: created.name, email: created.email, dept: created.dept, designation: created.designation }]);
+        showToast("Advisor added!");
+      } else {
+        // existing record
+        const updated = await updateAdvisor(a.id, { name: a.name, email: a.email, dept: a.dept, designation: a.designation });
+        setAdvisors(prev => prev.map(x => x.id === a.id ? { ...x, name: updated.name, email: updated.email, dept: updated.dept, designation: updated.designation } : x));
+        showToast("Advisor updated!");
+      }
     } catch {
-      showToast("Failed to save. Please try again.");
-    } finally {
-      setSavingTeam(false);
+      showToast("Failed to save advisor. Please try again.");
     }
   }
 
-  function saveAdvisor(a: FacultyAdvisor) {
-    const isEdit = advisors.some(x => x.id === a.id);
-    const updated = isEdit ? advisors.map(x => x.id === a.id ? a : x) : [...advisors, a];
-    setAdvisors(updated);
-    setAdvModal(null);
-    // auto-persist faculty advisor changes
-    updateCouncilProfile({ faculty_advisors: updated })
-      .then(() => showToast(isEdit ? "Advisor updated!" : "Advisor added!"))
-      .catch(() => showToast("Saved locally — sync failed, try Save Settings."));
+  async function handleDeleteAdvisor(id: number) {
+    setAdvisors(prev => prev.filter(x => x.id !== id));
+    try {
+      await apiDeleteAdvisor(id);
+      showToast("Advisor removed.");
+    } catch {
+      showToast("Failed to remove advisor — please refresh.");
+    }
   }
 
-  function deleteAdvisor(id: string) {
-    const updated = advisors.filter(x => x.id !== id);
-    setAdvisors(updated);
-    updateCouncilProfile({ faculty_advisors: updated })
-      .then(() => showToast("Advisor removed."))
-      .catch(() => showToast("Removed locally — sync failed."));
-  }
-
-  function saveMember(m: Member) {
-    const isEdit = members.some(x => x.id === m.id);
-    const updated = isEdit ? members.map(x => x.id === m.id ? m : x) : [...members, m];
-    setMembers(updated);
+  async function saveMember(m: Member) {
     setModal(null);
-    // auto-persist member changes
-    updateCouncilProfile({ members: updated })
-      .then(() => showToast(isEdit ? "Member updated!" : "Member added!"))
-      .catch(() => showToast("Saved locally — sync failed, use Save Team."));
+    try {
+      if (m.id === 0) {
+        // new record
+        const created = await createMember({ name: m.name, email: m.email, role: m.role, team: m.team, is_head: m.is_head, photo_url: m.photo_url || undefined });
+        setMembers(prev => [...prev, {
+          id: created.id, name: created.name, email: created.email,
+          role: created.role, team: created.team, is_head: created.is_head,
+          photo_url: created.photo_url ?? `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(created.name)}&backgroundColor=b61f2d&textColor=ffffff`,
+        }]);
+        showToast("Member added!");
+      } else {
+        // existing record
+        const updated = await updateMember(m.id, { name: m.name, email: m.email, role: m.role, team: m.team, is_head: m.is_head, photo_url: m.photo_url || null });
+        setMembers(prev => prev.map(x => x.id === m.id ? {
+          ...x, name: updated.name, email: updated.email, role: updated.role,
+          team: updated.team, is_head: updated.is_head,
+          photo_url: updated.photo_url ?? x.photo_url,
+        } : x));
+        showToast("Member updated!");
+      }
+    } catch {
+      showToast("Failed to save member. Please try again.");
+    }
   }
 
-  function deleteMember(id: string) {
-    const updated = members.filter(x => x.id !== id);
-    setMembers(updated);
-    updateCouncilProfile({ members: updated })
-      .then(() => showToast("Member removed."))
-      .catch(() => showToast("Removed locally — sync failed."));
+  async function handleDeleteMember(id: number) {
+    setMembers(prev => prev.filter(x => x.id !== id));
+    try {
+      await apiDeleteMember(id);
+      showToast("Member removed.");
+    } catch {
+      showToast("Failed to remove member — please refresh.");
+    }
   }
 
   const allTeams = ["All", ...TEAMS.filter(t => members.some(m => m.team === t))];
@@ -606,7 +628,7 @@ export default function SettingsPage() {
       {/* Faculty advisor modal */}
       {advModal !== null && (
         <FacultyModal
-          advisor={advModal === "new" ? {} : advModal}
+          advisor={advModal}
           onSave={saveAdvisor}
           onClose={() => setAdvModal(null)}
         />
@@ -615,7 +637,7 @@ export default function SettingsPage() {
       {/* Member modal */}
       {modal !== null && (
         <MemberModal
-          member={modal === "new" ? {} : modal}
+          member={modal}
           onSave={saveMember}
           onClose={() => setModal(null)}
         />
@@ -758,7 +780,7 @@ export default function SettingsPage() {
                 <h2 className="text-tx font-fira font-semibold text-sm">Faculty Advisors</h2>
                 <p className="text-subtle-tx text-[11px] font-fira mt-0.5">{advisors.length} advisor{advisors.length !== 1 ? "s" : ""} configured</p>
               </div>
-              <button type="button" onClick={() => setAdvModal("new")}
+              <button type="button" onClick={() => setAdvModal({})}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-surface2 border border-border-c hover:border-red-500/30 text-muted-tx hover:text-tx text-xs font-fira rounded-lg transition-all">
                 <Plus size={13} /> Add Advisor
               </button>
@@ -781,7 +803,7 @@ export default function SettingsPage() {
                       className="w-7 h-7 rounded-lg bg-surface border border-border-c hover:border-red-500/30 text-muted-tx hover:text-tx flex items-center justify-center transition-all">
                       <Edit2 size={12} />
                     </button>
-                    <button type="button" onClick={() => deleteAdvisor(a.id)}
+                    <button type="button" onClick={() => handleDeleteAdvisor(a.id)}
                       className="w-7 h-7 rounded-lg bg-surface border border-border-c hover:bg-red-50 dark:hover:bg-red-500/10 hover:border-red-500/30 text-muted-tx hover:text-red-500 flex items-center justify-center transition-all">
                       <Trash2 size={12} />
                     </button>
@@ -789,7 +811,7 @@ export default function SettingsPage() {
                 </div>
               ))}
               {advisors.length === 0 && (
-                <button type="button" onClick={() => setAdvModal("new")}
+                <button type="button" onClick={() => setAdvModal({})}
                   className="w-full flex items-center justify-center gap-2 p-4 border-2 border-dashed border-border-c hover:border-red-500/40 rounded-xl text-subtle-tx hover:text-red-500 text-sm font-fira transition-all">
                   <Plus size={15} /> Add your first faculty advisor
                 </button>
@@ -844,7 +866,7 @@ export default function SettingsPage() {
               {heads.map(m => (
                 <MemberCard key={m.id} member={m}
                   onEdit={() => setModal(m)}
-                  onDelete={() => deleteMember(m.id)}
+                  onDelete={() => handleDeleteMember(m.id)}
                 />
               ))}
             </div>
@@ -857,7 +879,7 @@ export default function SettingsPage() {
                 <h2 className="text-tx font-fira font-semibold">All Members</h2>
                 <p className="text-subtle-tx text-xs font-fira mt-0.5">{members.length} total members</p>
               </div>
-              <button type="button" onClick={() => setModal("new")}
+              <button type="button" onClick={() => setModal({})}
                 className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-fira font-semibold rounded-xl transition-colors">
                 <Plus size={15} /> Add Member
               </button>
@@ -878,12 +900,12 @@ export default function SettingsPage() {
               {filtered.map(m => (
                 <MemberCard key={m.id} member={m}
                   onEdit={() => setModal(m)}
-                  onDelete={() => deleteMember(m.id)}
+                  onDelete={() => handleDeleteMember(m.id)}
                 />
               ))}
 
               {/* Add button card */}
-              <button type="button" onClick={() => setModal("new")}
+              <button type="button" onClick={() => setModal({})}
                 className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-border-c hover:border-red-500/40 rounded-2xl p-4 min-h-[80px] text-subtle-tx hover:text-red-500 transition-all group">
                 <div className="w-8 h-8 rounded-full border-2 border-current flex items-center justify-center group-hover:bg-red-500/10 transition-colors">
                   <Plus size={16} />
@@ -891,15 +913,6 @@ export default function SettingsPage() {
                 <span className="text-xs font-fira">Add Member</span>
               </button>
             </div>
-          </div>
-
-          {/* Save Team button — fallback if auto-save fails */}
-          <div className="flex items-center justify-between pt-2 border-t border-border-c">
-            <p className="text-subtle-tx text-xs font-fira">Changes auto-save after each action. Click here to force sync.</p>
-            <button type="button" onClick={() => handleSaveTeam(members, advisors)} disabled={savingTeam}
-              className="flex items-center gap-2 px-5 py-2.5 bg-red-500 hover:bg-red-600 disabled:opacity-60 text-white text-sm font-fira font-semibold rounded-xl transition-colors">
-              <Save size={14} /> {savingTeam ? "Saving…" : "Save Team"}
-            </button>
           </div>
         </div>
       )}

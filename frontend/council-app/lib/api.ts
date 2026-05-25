@@ -430,6 +430,28 @@ export async function deleteDocument(docId: number | string): Promise<void> {
 
 // ── Council profile ────────────────────────────────────────────────────────────
 
+export interface CouncilMemberRow {
+  id: number;
+  council_id: number;
+  name: string;
+  email: string;
+  role: string;
+  team: string;
+  is_head: boolean;
+  photo_url: string | null;
+  created_at: string;
+}
+
+export interface FacultyAdvisorRow {
+  id: number;
+  council_id: number;
+  name: string;
+  email: string;
+  dept: string;
+  designation: string;
+  created_at: string;
+}
+
 export interface CouncilProfile {
   id: number;
   name: string;
@@ -438,13 +460,15 @@ export interface CouncilProfile {
   about?: string;
   council_type?: string;
   profile?: {
+    id?: number;
     tagline?: string;
     about?: string;
     banner_url?: string;
     instagram?: string;
+    linkedin?: string;
     website?: string;
-    faculty_advisors?: unknown[];
-    members?: unknown[];
+    members?: CouncilMemberRow[];
+    faculty_advisors?: FacultyAdvisorRow[];
   };
 }
 
@@ -456,6 +480,42 @@ export async function fetchCouncilProfile(): Promise<CouncilProfile> {
 export async function updateCouncilProfile(data: Record<string, unknown>): Promise<CouncilProfile> {
   const res = await api.put("/council/p/me", data);
   return res.data.council ?? res.data;
+}
+
+// ── Member CRUD ────────────────────────────────────────────────────────────────
+
+export async function createMember(data: {
+  name: string; email: string; role?: string; team?: string; is_head?: boolean; photo_url?: string;
+}): Promise<CouncilMemberRow> {
+  const res = await api.post("/council/p/members", data);
+  return res.data.member;
+}
+
+export async function updateMember(id: number, data: Partial<Omit<CouncilMemberRow, "id" | "council_id" | "created_at">>): Promise<CouncilMemberRow> {
+  const res = await api.put(`/council/p/members/${id}`, data);
+  return res.data.member;
+}
+
+export async function deleteMember(id: number): Promise<void> {
+  await api.delete(`/council/p/members/${id}`);
+}
+
+// ── Faculty Advisor CRUD ───────────────────────────────────────────────────────
+
+export async function createAdvisor(data: {
+  name: string; email: string; dept?: string; designation?: string;
+}): Promise<FacultyAdvisorRow> {
+  const res = await api.post("/council/p/advisors", data);
+  return res.data.advisor;
+}
+
+export async function updateAdvisor(id: number, data: Partial<Omit<FacultyAdvisorRow, "id" | "council_id" | "created_at">>): Promise<FacultyAdvisorRow> {
+  const res = await api.put(`/council/p/advisors/${id}`, data);
+  return res.data.advisor;
+}
+
+export async function deleteAdvisor(id: number): Promise<void> {
+  await api.delete(`/council/p/advisors/${id}`);
 }
 
 // ── Event Controls ─────────────────────────────────────────────────────────────
