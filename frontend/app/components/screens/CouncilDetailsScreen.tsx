@@ -10,6 +10,7 @@ import {
   Global,
   Calendar,
   Flash,
+  People,
 } from "iconsax-react";
 import EventCard from "@/components/EventCard";
 import { CouncilDetailsSkeleton } from "@/components/Skeletons";
@@ -17,7 +18,25 @@ import { type Council } from "@/lib/dummy-data";
 import { fetchCouncilProfile } from "@/lib/api";
 import type { EventData } from "@/types/eventio";
 
-type Tab = "upcoming" | "past";
+type Tab = "upcoming" | "past" | "team";
+
+interface TeamMember {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+  team: string;
+  is_head: boolean;
+  photo_url?: string;
+}
+
+interface FacultyAdvisor {
+  id: number;
+  name: string;
+  email: string;
+  dept: string;
+  designation: string;
+}
 
 export default function CouncilDetailsScreen() {
   const params = useParams();
@@ -27,6 +46,8 @@ export default function CouncilDetailsScreen() {
   const [council, setCouncil] = useState<Council | null>(null);
   const [upcomingEvents, setUpcomingEvents] = useState<EventData[]>([]);
   const [pastEvents, setPastEvents] = useState<EventData[]>([]);
+  const [members, setMembers] = useState<TeamMember[]>([]);
+  const [advisors, setAdvisors] = useState<FacultyAdvisor[]>([]);
   const [tab, setTab] = useState<Tab>("upcoming");
   const [loading, setLoading] = useState(true);
 
@@ -51,6 +72,19 @@ export default function CouncilDetailsScreen() {
           const UPCOMING_STATES = ["UPCOMING", "REGISTRATION_OPEN", "REGISTRATION_CLOSED", "TICKET_OPEN", "ONGOING"];
           setUpcomingEvents(evs.filter((e) => UPCOMING_STATES.includes(e.state)));
           setPastEvents(evs.filter((e) => PAST_STATES.includes(e.state)));
+
+          // Extract team members + faculty advisors from profile
+          const cp = data.CouncilProfile ?? {};
+          if (Array.isArray(cp.members)) {
+            setMembers(cp.members.map((m: TeamMember) => ({
+              ...m,
+              photo_url: m.photo_url ||
+                `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(m.name ?? "M")}&backgroundColor=b61f2d&textColor=ffffff`,
+            })));
+          }
+          if (Array.isArray(cp.faculty_advisors)) {
+            setAdvisors(cp.faculty_advisors);
+          }
         }
       } catch { /* handled by interceptor */ }
       setLoading(false);
@@ -175,37 +209,133 @@ export default function CouncilDetailsScreen() {
         </div>
 
         {/* ── Tab bar ── */}
-        <div className="flex gap-2 bg-card rounded-2xl p-1 border border-border">
-          {(["upcoming", "past"] as Tab[]).map((t) => (
+        <div className="flex gap-1 bg-card rounded-2xl p-1 border border-border">
+          {([
+            { id: "upcoming", label: "Upcoming" },
+            { id: "past",     label: "Past" },
+            { id: "team",     label: `Team${members.length ? ` (${members.length})` : ""}` },
+          ] as { id: Tab; label: string }[]).map((t) => (
             <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`flex-1 py-2.5 rounded-xl text-sm font-poppins font-semibold transition-all ${
-                tab === t
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className={`flex-1 py-2.5 rounded-xl text-xs font-poppins font-semibold transition-all ${
+                tab === t.id
                   ? "bg-primary text-white shadow-sm"
                   : "text-mute"
               }`}
             >
-              {t === "upcoming" ? "Upcoming" : "Past Events"}
+              {t.label}
             </button>
           ))}
         </div>
 
-        {/* ── Event list ── */}
-        {displayedEvents.length > 0 ? (
-          <div className="flex flex-col gap-3">
-            {displayedEvents.map((event) => (
-              <EventCard key={event.id} event={event} />
-            ))}
-          </div>
-        ) : (
-          <div className="py-10 flex flex-col items-center gap-3 text-center">
-            <Calendar size={40} color="#2e2e2e" variant="Bold" />
-            <p className="font-poppins text-mute text-sm">
-              {tab === "upcoming"
-                ? "No upcoming events right now"
-                : "No past events yet"}
-            </p>
+        {/* ── Event list (upcoming / past) ── */}
+        {tab !== "team" && (
+          displayedEvents.length > 0 ? (
+            <div className="flex flex-col gap-3">
+              {displayedEvents.map((event) => (
+                <EventCard key={event.id} event={event} />
+              ))}
+            </div>
+          ) : (
+            <div className="py-10 flex flex-col items-center gap-3 text-center">
+              <Calendar size={40} color="#2e2e2e" variant="Bold" />
+              <p className="font-poppins text-mute text-sm">
+                {tab === "upcoming"
+                  ? "No upcoming events right now"
+                  : "No past events yet"}
+              </p>
+            </div>
+          )
+        )}
+
+        {/* ── Team tab ── */}
+        {tab === "team" && (
+          <div className="flex flex-col gap-5">
+
+            {/* Heads & Core */}
+            {members.filter(m => m.is_head).length > 0 && (
+              <div>
+                <p className="text-xs font-poppins font-semibold text-mute uppercase tracking-widest mb-3">
+                  Heads & Core Team
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  {members.filter(m => m.is_head).map(m => (
+                    <div key={m.id} className="bg-card border border-border rounded-2xl p-3 flex flex-col items-center gap-2 text-center">
+                      <div className="relative">
+                        <img
+                          src={m.photo_url}
+                          alt={m.name}
+                          className="w-14 h-14 rounded-full object-cover ring-2 ring-primary/40"
+                        />
+                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center text-white text-[8px]">★</span>
+                      </div>
+                      <div>
+                        <p className="font-poppins font-semibold text-foreground text-xs leading-tight">{m.name}</p>
+                        <p className="font-poppins text-mute text-[10px] mt-0.5">{m.role}</p>
+                        <span className="inline-block mt-1 text-[9px] font-poppins bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                          {m.team}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* All other members */}
+            {members.filter(m => !m.is_head).length > 0 && (
+              <div>
+                <p className="text-xs font-poppins font-semibold text-mute uppercase tracking-widest mb-3">
+                  Members
+                </p>
+                <div className="grid grid-cols-3 gap-2">
+                  {members.filter(m => !m.is_head).map(m => (
+                    <div key={m.id} className="bg-card border border-border rounded-2xl p-2.5 flex flex-col items-center gap-1.5 text-center">
+                      <img
+                        src={m.photo_url}
+                        alt={m.name}
+                        className="w-10 h-10 rounded-full object-cover"
+                      />
+                      <div>
+                        <p className="font-poppins font-medium text-foreground text-[10px] leading-tight line-clamp-1">{m.name}</p>
+                        <p className="font-poppins text-mute text-[9px] mt-0.5 line-clamp-1">{m.role}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Faculty Advisors */}
+            {advisors.length > 0 && (
+              <div>
+                <p className="text-xs font-poppins font-semibold text-mute uppercase tracking-widest mb-3">
+                  Faculty Advisors
+                </p>
+                <div className="flex flex-col gap-2">
+                  {advisors.map(a => (
+                    <div key={a.id} className="bg-card border border-border rounded-2xl p-3 flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary text-xs font-poppins font-bold shrink-0">
+                        {a.name.split(" ").filter((w: string) => /^[A-Z]/.test(w)).slice(0, 2).map((w: string) => w[0]).join("")}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-poppins font-semibold text-foreground text-sm leading-tight">{a.name}</p>
+                        <p className="font-poppins text-mute text-xs mt-0.5">{a.designation} · {a.dept}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Empty state */}
+            {members.length === 0 && advisors.length === 0 && (
+              <div className="py-12 flex flex-col items-center gap-3 text-center">
+                <People size={40} color="#2e2e2e" variant="Bold" />
+                <p className="font-poppins text-mute text-sm">Team info not available</p>
+              </div>
+            )}
           </div>
         )}
       </div>
