@@ -220,6 +220,7 @@ export async function fetchCouncilProfile(id: number) {
 export async function updateProfile(payload: Partial<{
   name: string;
   phone_number: string;
+  roll_number: string;
   gender: string;
   year: number;
   branch: string;

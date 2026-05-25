@@ -78,6 +78,7 @@ export default function ProfileSettingsScreen() {
   const [form, setForm] = useState<Partial<User>>({
     name:         userData?.name         ?? "",
     phone_number: userData?.phone_number ? String(userData.phone_number) : "",
+    roll_number:  userData?.roll_number  ?? "",
     branch:       userData?.branch       ?? "",
     degree:       userData?.degree       ?? "",
     year:         userData?.year         ?? new Date().getFullYear(),
@@ -140,6 +141,7 @@ export default function ProfileSettingsScreen() {
       if (form.college?.toString().trim())      payload.college      = form.college as string;
       if (form.gender?.toString().trim())       payload.gender       = form.gender as string;
       if (form.photo_url?.toString().trim())    payload.photo_url    = form.photo_url as string;
+      if (form.roll_number?.toString().trim())  payload.roll_number  = form.roll_number as string;
       if ((form.interests as string[])?.length) payload.interests    = form.interests as string[];
       const ph = String(form.phone_number ?? "").trim();
       if (ph)  payload.phone_number = ph;
@@ -294,6 +296,15 @@ export default function ProfileSettingsScreen() {
               value={form.branch as string}
               onChange={(e) => set("branch", e.target.value)}
               placeholder="e.g. Computer Engineering"
+            />
+          </Field>
+          <Field label="Roll Number">
+            <input
+              className={inputCls}
+              value={(form.roll_number as string) || ""}
+              onChange={(e) => set("roll_number", e.target.value.trim())}
+              placeholder="e.g. 21CE001"
+              autoCapitalize="characters"
             />
           </Field>
         </div>
