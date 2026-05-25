@@ -1,7 +1,8 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { MOCK_EVENTS, getNextAction, PIPELINE_STAGES, type EventData } from "@/lib/dummy-data";
+import { getNextAction, PIPELINE_STAGES, type EventData } from "@/lib/dummy-data";
+import { useData } from "@/contexts/DataContext";
 import {
   Inbox, Clock, CheckCircle2, XCircle, AlertCircle, ChevronRight,
   CalendarDays, MapPin, Send, Edit2,
@@ -209,6 +210,7 @@ function Section({ title, icon, events, onAction, defaultOpen = true }: {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function ApprovalsPage() {
+  const { events, loading } = useData();
   const [toast, setToast] = useState("");
 
   function showToast(msg: string) {
@@ -226,8 +228,15 @@ export default function ApprovalsPage() {
     showToast(messages[cta] ?? `${cta} triggered for "${event.name}"`);
   }
 
-  const groups = groupEvents(MOCK_EVENTS);
+  const groups = groupEvents(events);
   const totalPending = groups.urgent.length + groups.waiting.length + groups.inProgress.length;
+
+  if (loading) return (
+    <div className="px-4 py-6 sm:px-8 sm:py-8 animate-pulse space-y-4">
+      <div className="h-8 bg-surface rounded-xl w-48" />
+      {[...Array(3)].map((_, i) => <div key={i} className="h-24 bg-surface rounded-2xl" />)}
+    </div>
+  );
 
   return (
     <div className="px-4 py-6 sm:px-8 sm:py-8">
@@ -261,7 +270,7 @@ export default function ApprovalsPage() {
           events={groups.done} onAction={handleAction} defaultOpen={false} />
       </div>
 
-      {MOCK_EVENTS.length === 0 && (
+      {events.length === 0 && (
         <div className="flex flex-col items-center justify-center py-24 text-center">
           <Inbox size={40} className="text-subtle-tx mb-4" />
           <p className="text-muted-tx font-fira text-sm">No events yet.</p>

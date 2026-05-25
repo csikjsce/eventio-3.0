@@ -1,6 +1,7 @@
 "use client";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { fetchCouncilProfile, updateCouncilProfile, type CouncilProfile } from "@/lib/api";
+import { useData } from "@/contexts/DataContext";
 import {
   Settings, Users, Upload, Plus, X, Edit2, Trash2,
   Mail, Link2, ChevronDown, CheckCircle2, Save, AtSign, Phone, Globe,
@@ -83,11 +84,8 @@ const INITIAL_MEMBERS: Member[] = [
 
 // ─── Phone mockup ─────────────────────────────────────────────────────────────
 
-function PhoneMockup({ settings, className }: { settings: CouncilSettings; className?: string }) {
-  const MOCK_EVENTS = [
-    { name: "HackSphere 2026", date: "15 Jun 2026", venue: "KJSCE Auditorium", img: "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=400" },
-    { name: "UI/UX Workshop",  date: "5 Jul 2026",  venue: "Seminar Hall 1",   img: "https://images.unsplash.com/photo-1561070791-2526d30994b5?w=400" },
-  ];
+function PhoneMockup({ settings, previewEvents, className }: { settings: CouncilSettings; previewEvents: { name: string; date: string; venue: string; img: string }[]; className?: string }) {
+  const MOCK_EVENTS = previewEvents;
 
   return (
     <div className={`hidden lg:flex flex-col items-center justify-center sticky top-0 self-start h-[calc(100vh-4rem)] ${className ?? ""}`}>
@@ -158,7 +156,7 @@ function PhoneMockup({ settings, className }: { settings: CouncilSettings; class
 
           {/* Stats */}
           <div className="grid grid-cols-2 gap-2 mx-4 mb-3">
-            {[{ label: "Total Events", value: MOCK_EVENTS.length }, { label: "Upcoming", value: 1 }].map(s => (
+            {[{ label: "Total Events", value: MOCK_EVENTS.length }, { label: "Upcoming", value: MOCK_EVENTS.filter(e => e.date > new Date().toLocaleDateString("en-IN")).length || 0 }].map(s => (
               <div key={s.label} className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 text-center">
                 <p className="text-zinc-900 dark:text-zinc-100 text-xl font-bold">{s.value}</p>
                 <p className="text-zinc-400 text-xs">{s.label}</p>
@@ -419,6 +417,7 @@ function MemberCard({ member, onEdit, onDelete }: { member: Member; onEdit: () =
 type Tab = "general" | "members";
 
 export default function SettingsPage() {
+  const { events } = useData();
   const [tab, setTab]             = useState<Tab>("general");
   const [settings, setSettings]   = useState<CouncilSettings>(INITIAL_SETTINGS);
   const [advisors, setAdvisors]   = useState<FacultyAdvisor[]>(INITIAL_ADVISORS);
@@ -496,6 +495,16 @@ export default function SettingsPage() {
 
   function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(""), 3000); }
   function set(k: keyof CouncilSettings, v: string) { setSettings(prev => ({ ...prev, [k]: v })); }
+
+  const previewEvents = useMemo(() =>
+    events.slice(0, 3).map(e => ({
+      name:  e.name,
+      date:  e.dates?.[0] ? new Date(e.dates[0]).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "—",
+      venue: e.venue ?? "—",
+      img:   e.banner_url ?? "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=400",
+    })),
+    [events]
+  );
 
   function saveAdvisor(a: FacultyAdvisor) {
     setAdvisors(prev => prev.find(x => x.id === a.id) ? prev.map(x => x.id === a.id ? a : x) : [...prev, a]);
@@ -729,7 +738,7 @@ export default function SettingsPage() {
         </div>
 
         {/* Phone mockup — right column fills remaining space */}
-        <PhoneMockup settings={settings} className="flex-1 min-w-0" />
+        <PhoneMockup settings={settings} previewEvents={previewEvents} className="flex-1 min-w-0" />
         </div>
       )}
 
