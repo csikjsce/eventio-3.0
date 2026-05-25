@@ -16,6 +16,7 @@ fi
 : "${REPO_DIR:=$ROOT_DIR}"
 : "${BACKEND_PORT:=3500}"
 : "${APP_PORT:=4173}"
+: "${COUNCIL_APP_PORT:=4174}"
 : "${LOG_DIR:=/tmp/eventio}"
 : "${RUN_DIR:=/tmp/eventio}"
 : "${GIT_REMOTE:=origin}"
@@ -24,7 +25,9 @@ fi
 : "${SKIP_GIT_PULL:=0}"
 : "${DEPLOY_BACKEND:=1}"
 : "${DEPLOY_APP:=1}"
+: "${DEPLOY_COUNCIL_APP:=1}"
 : "${STOP_STUDENT_PREVIEW:=1}"
+: "${STOP_OLD_COUNCIL_PREVIEW:=1}"
 
 DEPLOY_SHA=""
 GITHUB_STATUS_REPORTED=0
@@ -85,6 +88,24 @@ deploy_app() {
   wait_for_http "http://127.0.0.1:${APP_PORT}/login"
 }
 
+deploy_council_app() {
+  log "Deploying frontend/council-app (Next.js)"
+  load_nvm
+  cd "$REPO_DIR/frontend/council-app"
+
+  export NEXT_PUBLIC_SERVER_ADDRESS
+  npm ci
+  npm run build
+
+  if [[ "$STOP_OLD_COUNCIL_PREVIEW" == "1" ]]; then
+    stop_port "$COUNCIL_APP_PORT"
+  fi
+
+  start_detached council-app "$REPO_DIR/frontend/council-app" "$COUNCIL_APP_PORT" \
+    env PORT="$COUNCIL_APP_PORT" npm run start -- --port "$COUNCIL_APP_PORT"
+  wait_for_http "http://127.0.0.1:${COUNCIL_APP_PORT}/login"
+}
+
 main() {
   trap on_deploy_exit EXIT
 
@@ -96,6 +117,7 @@ main() {
 
   [[ "$DEPLOY_BACKEND" == "1" ]] && deploy_backend
   [[ "$DEPLOY_APP" == "1" ]] && deploy_app
+  [[ "$DEPLOY_COUNCIL_APP" == "1" ]] && deploy_council_app
 
   GITHUB_STATUS_REPORTED=1
   github_deployment_report success "Deployed to production"

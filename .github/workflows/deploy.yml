@@ -49,3 +49,15 @@ jobs:
             NEXT_PUBLIC_SERVER_ADDRESS=${{ vars.NEXT_PUBLIC_SERVER_ADDRESS }}
           cache-from: type=gha,scope=app
           cache-to: type=gha,scope=app,mode=max
+
+      - name: Build and push council portal image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend/council-app
+          file: ./frontend/council-app/Dockerfile
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/eventio-council-app:latest
+          build-args: |
+            NEXT_PUBLIC_SERVER_ADDRESS=${{ vars.NEXT_PUBLIC_SERVER_ADDRESS }}
+          cache-from: type=gha,scope=council-app
+          cache-to: type=gha,scope=council-app,mode=max

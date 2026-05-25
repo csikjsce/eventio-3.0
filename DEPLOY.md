@@ -8,8 +8,11 @@ Production runs on the SWDC server behind **Nginx Proxy Manager**. Deployments a
 |---------|------|------|------------|
 | Backend API | `backend/` | 3500 | https://eventioapi.swdc.somaiya.edu |
 | Student app (Next.js) | `frontend/app/` | 4173 | https://eventio.somaiya.edu |
+| Council app (Next.js) | `frontend/council-app/` | 4174 | https://eventio-council.swdc.somaiya.edu |
 
-NPM forwards `eventio.somaiya.edu` → `127.0.0.1:4173`.
+NPM forwards `eventio.somaiya.edu` → `127.0.0.1:4173` and `eventio-council.swdc.somaiya.edu` → `127.0.0.1:4174`.
+
+Both Next.js apps are built with `NEXT_PUBLIC_SERVER_ADDRESS=https://eventioapi.swdc.somaiya.edu`. Ensure `COUNCIL_CLIENT_URL` in `backend/.env` matches the council public URL.
 
 ## One-time server setup
 
@@ -46,11 +49,13 @@ bash /vm-storage/projects/eventio-3.0/scripts/deploy.sh
 Useful env overrides:
 
 ```bash
-SKIP_GIT_PULL=1 DEPLOY_BACKEND=0 bash scripts/deploy.sh   # app only
-DEPLOY_APP=0 bash scripts/deploy.sh                        # backend only
+SKIP_GIT_PULL=1 DEPLOY_BACKEND=0 bash scripts/deploy.sh   # frontends only
+DEPLOY_APP=0 bash scripts/deploy.sh                        # backend + council
+DEPLOY_COUNCIL_APP=0 bash scripts/deploy.sh                # backend + student app
+SKIP_GIT_PULL=1 DEPLOY_BACKEND=0 DEPLOY_APP=0 bash scripts/deploy.sh  # council only
 ```
 
-Service logs: `/tmp/eventio/backend.log`, `/tmp/eventio/app.log`
+Service logs: `/tmp/eventio/backend.log`, `/tmp/eventio/app.log`, `/tmp/eventio/council-app.log`
 
 ## How it works
 
@@ -67,11 +72,13 @@ Deploy fails if these checks fail:
 
 - `http://127.0.0.1:3500/api/v1/health`
 - `http://127.0.0.1:4173/login`
+- `http://127.0.0.1:4174/login`
 
 Public verification:
 
 - https://eventioapi.swdc.somaiya.edu/api/v1/health
 - https://eventio.somaiya.edu/login
+- https://eventio-council.swdc.somaiya.edu/login
 
 ## GitHub Actions
 
