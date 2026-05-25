@@ -177,12 +177,14 @@ export interface ParticipantUser {
   year?: number;
   gender?: string;
   photo_url?: string;
+  roll_number?: string | number;
 }
 
 export interface ParticipantRow {
   id: number;
   user: ParticipantUser;
   ticket_collected: boolean;
+  attended?: boolean;
   payment_status: string;
 }
 

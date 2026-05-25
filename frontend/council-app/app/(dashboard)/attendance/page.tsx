@@ -1,7 +1,7 @@
 "use client";
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { useData } from "@/contexts/DataContext";
-import { fetchParticipants } from "@/lib/api";
+import { fetchParticipants, type TeamRow } from "@/lib/api";
 import type { EventData } from "@/lib/dummy-data";
 import { QrCode, CheckCircle2, XCircle, Users, ChevronRight, ArrowLeft, Search, CalendarDays, MapPin, Download, Hash } from "lucide-react";
 
@@ -17,24 +17,34 @@ interface FlatParticipant {
   branch:  string;
   year:    string;
   teamName?: string;
+  attended: boolean;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function flattenParticipants(teams: any[]): FlatParticipant[] {
+function flattenParticipants(teams: TeamRow[]): FlatParticipant[] {
   return teams.flatMap(team =>
-    (team.participants ?? []).map((p: any) => ({
+    (team.Participant ?? []).map((p) => ({
       id:       p.id,
       name:     p.user?.name ?? "Unknown",
-      roll:     p.user?.roll_number ?? "—",
+      roll:     p.user?.roll_number ? String(p.user.roll_number) : "—",
       email:    p.user?.email ?? "",
       branch:   p.user?.branch ?? "—",
-      year:     p.user?.graduation_year ? `${p.user.graduation_year}` : "—",
+      year:     p.user?.year ? String(p.user.year) : "—",
       teamName: team.name ?? undefined,
+      attended: p.attended ?? false,
     }))
   );
 }
+
+const ATTENDANCE_ELIGIBLE_STATES = [
+  "REGISTRATION_OPEN",
+  "REGISTRATION_CLOSED",
+  "TICKET_OPEN",
+  "TICKET_CLOSED",
+  "ONGOING",
+  "COMPLETED",
+];
 
 function exportCSV(participants: FlatParticipant[], attendance: Record<string, boolean>, eventName: string) {
   const rows = [
@@ -58,7 +68,7 @@ export default function AttendancePage() {
   const { events, loading: eventsLoading } = useData();
 
   const eligibleEvents = useMemo(() =>
-    events.filter(e => ["REGISTRATION_OPEN", "REGISTRATION_CLOSED", "ONGOING", "COMPLETED"].includes(e.pipeline_stage)),
+    events.filter(e => ATTENDANCE_ELIGIBLE_STATES.includes(e.state)),
     [events]
   );
 
@@ -83,6 +93,9 @@ export default function AttendancePage() {
       const teams = await fetchParticipants(id);
       const flat = flattenParticipants(teams);
       setParticipants(flat);
+      const initial: Record<string, boolean> = {};
+      flat.forEach(p => { initial[String(p.id)] = p.attended; });
+      setAttendance(initial);
     } catch {
       setParticipants([]);
     } finally {
@@ -176,13 +189,13 @@ export default function AttendancePage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {eligibleEvents.map((ev: EventData) => {
             const date = ev.dates?.[0] ? new Date(ev.dates[0]).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "—";
-            const stageColor = ev.pipeline_stage === "ONGOING" ? "text-amber-500" : ev.pipeline_stage === "COMPLETED" ? "text-muted-tx" : "text-sky-500";
+            const stageColor = ev.state === "ONGOING" ? "text-amber-500" : ev.state === "COMPLETED" ? "text-muted-tx" : "text-sky-500";
             return (
               <button key={ev.id} type="button" onClick={() => setEventId(ev.id)}
                 className="bg-surface border border-border-c hover:border-red-500/30 rounded-xl p-5 text-left transition-all group">
                 <div className="flex items-center justify-between mb-3">
                   <span className={`text-[10px] font-fira font-semibold uppercase tracking-widest ${stageColor}`}>
-                    {ev.pipeline_stage.replace(/_/g, " ")}
+                    {ev.state.replace(/_/g, " ")}
                   </span>
                   <ChevronRight size={14} className="text-subtle-tx group-hover:text-red-500 transition-colors" />
                 </div>

@@ -1657,10 +1657,11 @@ router.post(protected + "/claim-ticket", authCheck, async (req, res) => {
 });
 router.get("/get-event-participants/:id", authCheck, async (req, res) => {
     let { id } = req.params;
+    const eventId = parseInt(id);
     try {
         let teams = await prisma.team.findMany({
             where: {
-                event_id: parseInt(id),
+                event_id: eventId,
             },
             include: {
                 Participant: {
@@ -1679,6 +1680,27 @@ router.get("/get-event-participants/:id", authCheck, async (req, res) => {
                 user: participant.user || {},
             })),
         }));
+
+        const soloParticipants = await prisma.participant.findMany({
+            where: { event_id: eventId, team_id: null },
+            include: { user: true },
+        });
+
+        if (soloParticipants.length > 0) {
+            teams.push({
+                id: 0,
+                name: "Individual",
+                leader_id: 0,
+                event_id: eventId,
+                invite_code: "",
+                approved: true,
+                submissions: null,
+                Participant: soloParticipants.map((participant) => ({
+                    ...participant,
+                    user: participant.user || {},
+                })),
+            });
+        }
 
         res.json({ error: false, teams });
     } catch (err) {
