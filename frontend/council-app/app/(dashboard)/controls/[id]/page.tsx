@@ -339,7 +339,7 @@ export default function EventControlsPage({ params }: { params: Promise<{ id: st
   const actions = STATE_ACTIONS[event.state] ?? [];
 
   return (
-    <div className="px-4 py-6 sm:px-8 sm:py-8 pb-24 space-y-5">
+    <div className="px-4 py-6 sm:px-6 lg:px-8 sm:py-8 pb-16">
 
       {/* Toast */}
       {toast && (
@@ -369,10 +369,10 @@ export default function EventControlsPage({ params }: { params: Promise<{ id: st
         </div>
       )}
 
-      {/* Header */}
-      <div className="flex items-center gap-3">
+      {/* ── Header ── */}
+      <div className="flex items-center gap-3 mb-5">
         <button type="button" onClick={() => router.back()}
-          className="w-9 h-9 flex items-center justify-center rounded-full bg-surface border border-border-c hover:bg-surface2 transition-colors">
+          className="w-9 h-9 flex items-center justify-center rounded-full bg-surface border border-border-c hover:bg-surface2 transition-colors shrink-0">
           <ArrowLeft size={17} />
         </button>
         <div className="flex-1 min-w-0">
@@ -383,164 +383,171 @@ export default function EventControlsPage({ params }: { params: Promise<{ id: st
           <p className="text-subtle-tx text-xs font-fira mt-0.5">Event Controls</p>
         </div>
         <Link href={`/new-event/${event.id}`}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-fira text-muted-tx hover:text-tx bg-surface border border-border-c rounded-xl transition-colors">
-          <Edit2 size={12} /> Edit
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-fira text-muted-tx hover:text-tx bg-surface border border-border-c rounded-xl transition-colors shrink-0">
+          <Edit2 size={12} /> Edit Event
         </Link>
       </div>
 
-      {/* Live stats */}
+      {/* ── Live stats strip (full width) ── */}
       {stats && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <StatBox label="Registered" value={stats.total} sub={ticketCount ? `/ ${ticketCount} cap` : undefined} />
-          <StatBox label="Paid" value={stats.paid} sub={`${stats.pending} pending`} />
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+          <StatBox label="Registered"    value={stats.total}    sub={ticketCount ? `/ ${ticketCount} cap` : undefined} />
+          <StatBox label="Paid"          value={stats.paid}     sub={`${stats.pending} pending`} />
           <StatBox label="Tickets Issued" value={stats.ticketed} sub={stats.ticket_count ? `/ ${stats.ticket_count} cap` : undefined} />
-          <StatBox label="Attended" value={stats.attended} />
+          <StatBox label="Attended"      value={stats.attended} />
         </div>
       )}
 
-      {/* ── Lifecycle Controls ── */}
-      <SectionCard title="Lifecycle Controls" icon={<Zap size={16} />}>
-        {actions.length === 0 ? (
-          <p className="text-subtle-tx text-sm font-fira">
-            {["DRAFT","APPLIED_FOR_APPROVAL","APPLIED_FOR_PRINCI_APPROVAL"].includes(event.state)
-              ? "Event is in the approval pipeline. Use the Action Inbox to advance."
-              : "No further lifecycle actions available for this state."}
-          </p>
-        ) : (
-          <div className="flex flex-col gap-2">
-            {actions.map((action) => (
-              <button key={action.newState} type="button"
-                onClick={() => handleTransition(action.newState, action.confirm)}
-                disabled={transitioning}
-                className={`flex items-center justify-between gap-3 px-4 py-3 rounded-xl text-sm font-fira font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed ${VARIANT_CLS[action.variant]}`}>
-                <span className="flex items-center gap-2">
-                  {action.icon} {action.label}
-                </span>
-                {transitioning ? <RefreshCcw size={14} className="animate-spin" /> : <ChevronRight size={14} />}
+      {/* ── Two-column body (desktop) / stacked (mobile) ── */}
+      <div className="flex flex-col lg:flex-row gap-5 items-start">
+
+        {/* ── LEFT COLUMN — Actions ── */}
+        <div className="w-full lg:w-[340px] shrink-0 space-y-5">
+
+          {/* Lifecycle Controls */}
+          <SectionCard title="Lifecycle Controls" icon={<Zap size={16} />}>
+            {actions.length === 0 ? (
+              <p className="text-subtle-tx text-sm font-fira">
+                {["DRAFT","APPLIED_FOR_APPROVAL","APPLIED_FOR_PRINCI_APPROVAL"].includes(event.state)
+                  ? "Event is in the approval pipeline. Use the Action Inbox to advance."
+                  : "No further lifecycle actions available for this state."}
+              </p>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {actions.map((action) => (
+                  <button key={action.newState} type="button"
+                    onClick={() => handleTransition(action.newState, action.confirm)}
+                    disabled={transitioning}
+                    className={`flex items-center justify-between gap-3 px-4 py-3 rounded-xl text-sm font-fira font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed ${VARIANT_CLS[action.variant]}`}>
+                    <span className="flex items-center gap-2">{action.icon} {action.label}</span>
+                    {transitioning ? <RefreshCcw size={14} className="animate-spin" /> : <ChevronRight size={14} />}
+                  </button>
+                ))}
+              </div>
+            )}
+          </SectionCard>
+
+          {/* Payment Controls */}
+          <SectionCard title="Payment Controls" icon={<CreditCard size={16} />}>
+            <p className="text-subtle-tx text-xs font-fira mb-4">
+              Mark offline / cash payments as manually paid. Affects eligibility for ticket issuing.
+            </p>
+            <div className="space-y-3">
+              <p className="text-tx text-sm font-fira font-semibold">Mark first N as paid</p>
+              <div className="flex gap-2">
+                <input type="number" value={bulkCount} onChange={e => setBulkCount(e.target.value)}
+                  placeholder="e.g. 100" min={1}
+                  className="w-28 bg-bg border border-border-c rounded-xl px-3 py-2 text-sm font-fira text-tx outline-none focus:border-red-500/50" />
+                <button type="button" onClick={handleBulkMarkPaid} disabled={bulkLoading === "paid"}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-fira font-semibold disabled:opacity-50 transition-colors">
+                  {bulkLoading === "paid" ? <RefreshCcw size={13} className="animate-spin" /> : <CreditCard size={13} />}
+                  Mark as Paid
+                </button>
+              </div>
+              <p className="text-subtle-tx text-[11px] font-fira">
+                Only PENDING records updated · ordered by registration date (earliest first).
+              </p>
+            </div>
+          </SectionCard>
+
+          {/* Quick Actions */}
+          <SectionCard title="Quick Actions" icon={<Zap size={16} />}>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { label: "Participants",  icon: <Users size={14} />,       href: `/participants?event=${id}` },
+                { label: "Attendance",    icon: <ClipboardList size={14}/>, href: `/attendance?event=${id}` },
+                { label: "Budget",        icon: <BarChart2 size={14} />,    href: `/budget?event=${id}` },
+                { label: "Announcements", icon: <Send size={14} />,         href: `/announcements?event=${id}` },
+                { label: "Statistics",    icon: <BarChart2 size={14} />,    href: `/statistics?event=${id}` },
+                { label: "Edit Event",    icon: <Edit2 size={14} />,        href: `/new-event/${id}` },
+              ].map(({ label, icon, href }) => (
+                <Link key={label} href={href}
+                  className="flex items-center gap-2 px-3 py-2.5 bg-bg border border-border-c hover:border-red-500/30 text-muted-tx hover:text-tx text-xs font-fira rounded-xl transition-colors">
+                  {icon} {label}
+                </Link>
+              ))}
+            </div>
+            <div className="mt-3 pt-3 border-t border-border-c">
+              <button type="button" onClick={handleExport} disabled={bulkLoading === "export"}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-surface2 hover:bg-border-c text-tx text-sm font-fira border border-border-c transition-colors disabled:opacity-50">
+                {bulkLoading === "export" ? <RefreshCcw size={13} className="animate-spin" /> : <Download size={13} />}
+                Export Participants CSV
               </button>
-            ))}
-          </div>
-        )}
-      </SectionCard>
+            </div>
+          </SectionCard>
 
-      {/* ── Registration & Capacity ── */}
-      <SectionCard title="Registration & Capacity" icon={<Users size={16} />}>
-        <NumberInput label="Registration Cap" description="Max students who can register (blank = unlimited)"
-          value={ticketCount} onChange={setTicketCount} min={0} />
-        <NumberInput label="Entry Fee (₹)" description="0 = free event"
-          value={fee} onChange={(v) => setFee(v ?? 0)} min={0} />
-        <NumberInput label="Max team size" description="Set 1 for solo events"
-          value={maPpt} onChange={(v) => setMaPpt(v ?? 1)} min={1} />
-        <NumberInput label="Min team size" description="Minimum for submission"
-          value={minPpt} onChange={(v) => setMinPpt(v ?? 1)} min={1} />
-        <Toggle label="Somaiya Students Only" description="Restrict to @somaiya.edu"
-          checked={somaiyaOnly} onChange={setSomaiyaOnly} />
-        <Toggle label="More Details Form" description="Show custom fields during registration"
-          checked={moreDetailsEnabled} onChange={setMoreDetailsEnabled} />
-        <Toggle label="Submission Enabled" description="Allow teams to submit work"
-          checked={submissionEnabled} onChange={setSubmissionEnabled} />
-
-        <div className="py-3 border-b border-border-c">
-          <p className="text-tx text-sm font-fira mb-2">Registration Type</p>
-          <div className="flex gap-2">
-            {(["ONPLATFORM", "EXTERNAL"] as const).map(t => (
-              <button key={t} type="button" onClick={() => setRegType(t)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-fira border transition-colors ${regType === t ? "bg-red-500 border-red-500 text-white" : "bg-bg border-border-c text-muted-tx hover:border-red-500/30"}`}>
-                {t === "ONPLATFORM" ? "On Platform" : "External Link"}
-              </button>
-            ))}
-          </div>
-          {regType === "EXTERNAL" && (
-            <input type="url" value={extLink} onChange={e => setExtLink(e.target.value)}
-              placeholder="https://forms.google.com/..."
-              className="mt-2 w-full bg-bg border border-border-c rounded-xl px-3 py-2 text-sm font-fira text-tx outline-none focus:border-red-500/50" />
-          )}
-        </div>
-      </SectionCard>
-
-      {/* ── Ticket Controls ── */}
-      <SectionCard title="Ticket Controls" icon={<Ticket size={16} />}>
-        <Toggle label="Ticket Feature" description="Enable ticket claiming for this event"
-          checked={ticketEnabled} onChange={setTicketEnabled} />
-        <NumberInput label="Ticket Cap" description="Max tickets that can be claimed (blank = unlimited)"
-          value={ticketCount} onChange={setTicketCount} min={0} />
-
-        <div className="pt-4 space-y-3">
-          <p className="text-tx text-sm font-fira font-semibold">Bulk Issue Tickets</p>
-          <p className="text-subtle-tx text-xs font-fira">Issue tickets to the first N paid participants (leave blank = all eligible).</p>
-          <div className="flex gap-2">
-            <input type="number" value={ticketBulkCount} onChange={e => setTicketBulkCount(e.target.value)}
-              placeholder="e.g. 50" min={1}
-              className="w-28 bg-bg border border-border-c rounded-xl px-3 py-2 text-sm font-fira text-tx outline-none focus:border-red-500/50" />
-            <button type="button" onClick={handleBulkIssue} disabled={bulkLoading === "issue"}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-violet-500 hover:bg-violet-600 text-white text-sm font-fira font-semibold disabled:opacity-50 transition-colors">
-              {bulkLoading === "issue" ? <RefreshCcw size={13} className="animate-spin" /> : <Ticket size={13} />}
-              Issue Tickets
-            </button>
-          </div>
         </div>
 
-        <Toggle label="Feedback Enabled" description="Show post-event feedback form to participants"
-          checked={feedbackEnabled} onChange={setFeedbackEnabled} />
-      </SectionCard>
+        {/* ── RIGHT COLUMN — Settings ── */}
+        <div className="flex-1 min-w-0 space-y-5">
 
-      {/* ── Payment Controls ── */}
-      <SectionCard title="Payment Controls" icon={<CreditCard size={16} />}>
-        <p className="text-subtle-tx text-xs font-fira mb-4">
-          Mark offline/cash payments as manually paid. Affects eligibility for ticket issuing.
-        </p>
-        <div className="space-y-3">
-          <p className="text-tx text-sm font-fira">Mark first N as paid</p>
-          <div className="flex gap-2">
-            <input type="number" value={bulkCount} onChange={e => setBulkCount(e.target.value)}
-              placeholder="e.g. 100" min={1}
-              className="w-28 bg-bg border border-border-c rounded-xl px-3 py-2 text-sm font-fira text-tx outline-none focus:border-red-500/50" />
-            <button type="button" onClick={handleBulkMarkPaid} disabled={bulkLoading === "paid"}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-fira font-semibold disabled:opacity-50 transition-colors">
-              {bulkLoading === "paid" ? <RefreshCcw size={13} className="animate-spin" /> : <CreditCard size={13} />}
-              Mark as Paid
-            </button>
-          </div>
-          <p className="text-subtle-tx text-[11px] font-fira">
-            Only PENDING payment records will be updated. Ordered by registration date (earliest first).
-          </p>
-        </div>
-      </SectionCard>
+          {/* Registration & Capacity */}
+          <SectionCard title="Registration & Capacity" icon={<Users size={16} />}>
+            <NumberInput label="Registration Cap" description="Max students who can register (blank = unlimited)"
+              value={ticketCount} onChange={setTicketCount} min={0} />
+            <NumberInput label="Entry Fee (₹)" description="0 = free event"
+              value={fee} onChange={(v) => setFee(v ?? 0)} min={0} />
+            <NumberInput label="Max team size" description="Set 1 for solo events"
+              value={maPpt} onChange={(v) => setMaPpt(v ?? 1)} min={1} />
+            <NumberInput label="Min team size" description="Minimum for submission"
+              value={minPpt} onChange={(v) => setMinPpt(v ?? 1)} min={1} />
+            <Toggle label="Somaiya Students Only" description="Restrict to @somaiya.edu"
+              checked={somaiyaOnly} onChange={setSomaiyaOnly} />
+            <Toggle label="More Details Form" description="Show custom fields during registration"
+              checked={moreDetailsEnabled} onChange={setMoreDetailsEnabled} />
+            <Toggle label="Submission Enabled" description="Allow teams to submit work"
+              checked={submissionEnabled} onChange={setSubmissionEnabled} />
+            <div className="py-3">
+              <p className="text-tx text-sm font-fira mb-2">Registration Type</p>
+              <div className="flex gap-2">
+                {(["ONPLATFORM", "EXTERNAL"] as const).map(t => (
+                  <button key={t} type="button" onClick={() => setRegType(t)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-fira border transition-colors ${regType === t ? "bg-red-500 border-red-500 text-white" : "bg-bg border-border-c text-muted-tx hover:border-red-500/30"}`}>
+                    {t === "ONPLATFORM" ? "On Platform" : "External Link"}
+                  </button>
+                ))}
+              </div>
+              {regType === "EXTERNAL" && (
+                <input type="url" value={extLink} onChange={e => setExtLink(e.target.value)}
+                  placeholder="https://forms.google.com/..."
+                  className="mt-2 w-full bg-bg border border-border-c rounded-xl px-3 py-2 text-sm font-fira text-tx outline-none focus:border-red-500/50" />
+              )}
+            </div>
+          </SectionCard>
 
-      {/* ── Save Settings ── */}
-      <button type="button" onClick={saveSettings} disabled={saving}
-        className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-red-500 hover:bg-red-600 text-white font-fira font-semibold text-sm disabled:opacity-50 transition-colors">
-        {saving ? <RefreshCcw size={15} className="animate-spin" /> : <Settings size={15} />}
-        {saving ? "Saving…" : "Save All Settings"}
-      </button>
+          {/* Ticket Controls */}
+          <SectionCard title="Ticket Controls" icon={<Ticket size={16} />}>
+            <Toggle label="Ticket Feature" description="Enable ticket claiming for this event"
+              checked={ticketEnabled} onChange={setTicketEnabled} />
+            <NumberInput label="Ticket Cap" description="Max tickets that can be claimed (blank = unlimited)"
+              value={ticketCount} onChange={setTicketCount} min={0} />
+            <div className="pt-4 pb-1 space-y-3">
+              <p className="text-tx text-sm font-fira font-semibold">Bulk Issue Tickets</p>
+              <p className="text-subtle-tx text-xs font-fira">Issue tickets to the first N paid participants (blank = all eligible).</p>
+              <div className="flex gap-2">
+                <input type="number" value={ticketBulkCount} onChange={e => setTicketBulkCount(e.target.value)}
+                  placeholder="e.g. 50" min={1}
+                  className="w-28 bg-bg border border-border-c rounded-xl px-3 py-2 text-sm font-fira text-tx outline-none focus:border-red-500/50" />
+                <button type="button" onClick={handleBulkIssue} disabled={bulkLoading === "issue"}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-violet-500 hover:bg-violet-600 text-white text-sm font-fira font-semibold disabled:opacity-50 transition-colors">
+                  {bulkLoading === "issue" ? <RefreshCcw size={13} className="animate-spin" /> : <Ticket size={13} />}
+                  Issue Tickets
+                </button>
+              </div>
+            </div>
+            <Toggle label="Feedback Enabled" description="Show post-event feedback form to participants"
+              checked={feedbackEnabled} onChange={setFeedbackEnabled} />
+          </SectionCard>
 
-      {/* ── Quick Actions ── */}
-      <SectionCard title="Quick Actions" icon={<Zap size={16} />}>
-        <div className="grid grid-cols-2 gap-2">
-          {[
-            { label: "View Participants", icon: <Users size={14} />,      href: `/participants?event=${id}` },
-            { label: "Attendance",        icon: <ClipboardList size={14}/>, href: `/attendance?event=${id}` },
-            { label: "Budget",            icon: <BarChart2 size={14} />,   href: `/budget?event=${id}` },
-            { label: "Announcements",     icon: <Send size={14} />,        href: `/announcements?event=${id}` },
-            { label: "Statistics",        icon: <BarChart2 size={14} />,   href: `/statistics?event=${id}` },
-            { label: "Edit Event",        icon: <Edit2 size={14} />,       href: `/new-event/${id}` },
-          ].map(({ label, icon, href }) => (
-            <Link key={label} href={href}
-              className="flex items-center gap-2 px-3 py-2.5 bg-bg border border-border-c hover:border-red-500/30 text-muted-tx hover:text-tx text-xs font-fira rounded-xl transition-colors">
-              {icon} {label}
-            </Link>
-          ))}
-        </div>
-
-        {/* Export */}
-        <div className="mt-3 pt-3 border-t border-border-c">
-          <button type="button" onClick={handleExport} disabled={bulkLoading === "export"}
-            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-surface2 hover:bg-border-c text-tx text-sm font-fira border border-border-c transition-colors disabled:opacity-50">
-            {bulkLoading === "export" ? <RefreshCcw size={13} className="animate-spin" /> : <Download size={13} />}
-            Export Participants CSV
+          {/* Save Settings */}
+          <button type="button" onClick={saveSettings} disabled={saving}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-red-500 hover:bg-red-600 text-white font-fira font-semibold text-sm disabled:opacity-50 transition-colors">
+            {saving ? <RefreshCcw size={15} className="animate-spin" /> : <Settings size={15} />}
+            {saving ? "Saving…" : "Save All Settings"}
           </button>
+
         </div>
-      </SectionCard>
+      </div>
 
     </div>
   );
