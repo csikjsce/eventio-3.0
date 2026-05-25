@@ -316,6 +316,14 @@ type Step = "PersonalDetails" | "EducationalDetails" | "Interest" | "AllDone";
 export default function OnboardingScreen() {
   const router = useRouter();
   const [step, setStep] = useState<Step>("PersonalDetails");
+
+  // Redirect unauthenticated visitors to login
+  useEffect(() => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
+    if (!token) {
+      router.replace("/login");
+    }
+  }, [router]);
   const [loading, setLoading] = useState(false);
 
   const [personal, setPersonal] = useState({ phone: "", gender: "" });

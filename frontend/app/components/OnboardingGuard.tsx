@@ -4,10 +4,11 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 /**
- * Placed at the top of the main layout root page.
+ * Placed on the home page (/).
  * - If returning from OAuth (accessToken in URL params), stores tokens and
  *   decides whether to show onboarding or go straight home.
- * - If first-time visitor with no onboarding flag, redirects to /onboarding.
+ * - If logged in but not yet onboarded, redirects to /onboarding.
+ * - Auth guard (no token → /login) is handled by MainLayoutShell.
  */
 export default function OnboardingGuard() {
   const router = useRouter();
@@ -18,6 +19,7 @@ export default function OnboardingGuard() {
     const refreshToken = params.get("refreshToken");
 
     if (accessToken && refreshToken) {
+      // Returning from Google OAuth — save tokens and clean URL
       localStorage.setItem("accessToken", accessToken);
       localStorage.setItem("refreshToken", refreshToken);
       window.history.replaceState(null, "", window.location.pathname);
@@ -29,8 +31,9 @@ export default function OnboardingGuard() {
       return;
     }
 
-    const onboarded = localStorage.getItem("eventio-onboarded");
-    if (!onboarded) {
+    // Logged-in user who hasn't completed onboarding yet
+    const token = localStorage.getItem("accessToken");
+    if (token && !localStorage.getItem("eventio-onboarded")) {
       router.replace("/onboarding");
     }
   }, [router]);
