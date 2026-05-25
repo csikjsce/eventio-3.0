@@ -115,6 +115,11 @@ export default function ProfileSettingsScreen() {
     try {
       const url = await uploadFile(file, "eventio-council-images");
       set("photo_url", url);
+      // Immediately reflect the new photo in the global context so it
+      // shows up on the Profile screen even before the full save.
+      if (setUserData && userData) {
+        setUserData({ ...userData, photo_url: url });
+      }
     } catch { /* keep existing */ }
     finally { setUploadingPhoto(false); e.target.value = ""; }
   };
@@ -124,19 +129,25 @@ export default function ProfileSettingsScreen() {
     setSaving(true);
     setError("");
     try {
-      await updateProfile({
-        name:         form.name         as string,
-        phone_number: String(form.phone_number ?? "").trim(),
-        gender:       form.gender       as string,
-        year:         Number(form.year),
-        branch:       form.branch       as string,
-        degree:       form.degree       as string,
-        college:      form.college      as string,
-        about:        form.about        as string,
-        interests:    form.interests    as string[],
-        photo_url:    form.photo_url    as string,
-      });
-      // Update local context immediately so UI reflects changes
+      // Only send fields that have actual non-empty values to avoid
+      // sending empty strings for enum fields (e.g. gender) which
+      // would cause Prisma validation errors and abort the whole save.
+      const payload: Parameters<typeof updateProfile>[0] = {};
+      if (form.name?.toString().trim())         payload.name         = form.name as string;
+      if (form.about?.toString().trim())        payload.about        = form.about as string;
+      if (form.branch?.toString().trim())       payload.branch       = form.branch as string;
+      if (form.degree?.toString().trim())       payload.degree       = form.degree as string;
+      if (form.college?.toString().trim())      payload.college      = form.college as string;
+      if (form.gender?.toString().trim())       payload.gender       = form.gender as string;
+      if (form.photo_url?.toString().trim())    payload.photo_url    = form.photo_url as string;
+      if ((form.interests as string[])?.length) payload.interests    = form.interests as string[];
+      const ph = String(form.phone_number ?? "").trim();
+      if (ph)  payload.phone_number = ph;
+      const yr = Number(form.year);
+      if (yr > 0) payload.year = yr;
+
+      await updateProfile(payload);
+      // Update local context so UI reflects all saved changes instantly
       setUserData({ ...userData, ...form } as User);
       setSaved(true);
       setTimeout(() => { setSaved(false); router.back(); }, 1500);

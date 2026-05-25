@@ -108,11 +108,19 @@ export default function ProfileScreen() {
 
       {/* Avatar + name */}
       <div className="flex flex-col items-center gap-3 mb-8">
-        <img
-          src={userData?.photo_url}
-          alt="profile"
-          className="w-24 h-24 rounded-full object-cover ring-4 ring-primary/30"
-        />
+        {userData?.photo_url ? (
+          <img
+            src={userData.photo_url}
+            alt="profile"
+            className="w-24 h-24 rounded-full object-cover ring-4 ring-primary/30"
+          />
+        ) : (
+          <div className="w-24 h-24 rounded-full ring-4 ring-primary/30 bg-primary/20 flex items-center justify-center">
+            <span className="text-3xl font-bold text-primary font-poppins">
+              {userData?.name?.charAt(0)?.toUpperCase() ?? "?"}
+            </span>
+          </div>
+        )}
         <div className="text-center">
           <p className="font-poppins font-bold text-xl text-foreground">
             {userData?.name}
