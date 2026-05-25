@@ -14,7 +14,11 @@ const INTEREST_SUGGESTIONS = [
   "Photography", "Entrepreneurship", "Finance", "Arts",
 ];
 
-const GENDER_OPTIONS = ["Male", "Female", "Non-binary", "Prefer not to say"];
+const GENDER_OPTIONS = [
+  { value: "MALE",   label: "Male" },
+  { value: "FEMALE", label: "Female" },
+  { value: "OTHER",  label: "Prefer not to say" },
+];
 const DEGREE_OPTIONS = ["B.Tech", "M.Tech", "MCA", "MBA", "B.Sc"];
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
@@ -65,6 +69,7 @@ export default function ProfileSettingsScreen() {
   const { userData, setUserData } = useContext(UserDataContext);
   const [saved, setSaved]               = useState(false);
   const [saving, setSaving]             = useState(false);
+  const [error, setError]               = useState("");
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [customInterest, setCustomInterest] = useState("");
   const customRef  = useRef<HTMLInputElement>(null);
@@ -117,24 +122,33 @@ export default function ProfileSettingsScreen() {
   const handleSave = async () => {
     if (!setUserData || !userData) return;
     setSaving(true);
+    setError("");
     try {
       await updateProfile({
-        name:         form.name,
+        name:         form.name         as string,
         phone_number: Number(form.phone_number),
-        gender:       form.gender,
+        gender:       form.gender       as string,
         year:         Number(form.year),
-        branch:       form.branch,
-        degree:       form.degree,
-        college:      form.college,
-        about:        form.about,
-        interests:    form.interests as string[],
-        photo_url:    form.photo_url,
+        branch:       form.branch       as string,
+        degree:       form.degree       as string,
+        college:      form.college      as string,
+        about:        form.about        as string,
+        interests:    form.interests    as string[],
+        photo_url:    form.photo_url    as string,
       });
+      // Update local context immediately so UI reflects changes
       setUserData({ ...userData, ...form } as User);
       setSaved(true);
-      setTimeout(() => { setSaved(false); router.back(); }, 1200);
-    } catch { /* toast handled globally */ }
-    finally { setSaving(false); }
+      setTimeout(() => { setSaved(false); router.back(); }, 1500);
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+        || "Failed to save. Please try again.";
+      setError(msg);
+      setTimeout(() => setError(""), 4000);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const interests = (form.interests as string[]) ?? [];
@@ -214,7 +228,7 @@ export default function ProfileSettingsScreen() {
               >
                 <option value="" disabled>Select gender</option>
                 {GENDER_OPTIONS.map((g) => (
-                  <option key={g} value={g}>{g}</option>
+                  <option key={g.value} value={g.value}>{g.label}</option>
                 ))}
               </select>
             </SelectWrapper>
@@ -341,6 +355,16 @@ export default function ProfileSettingsScreen() {
           <span className="font-poppins text-sm font-medium">
             Profile updated successfully!
           </span>
+        </div>
+      )}
+
+      {/* Error snackbar */}
+      {error && (
+        <div className="fixed bottom-8 left-4 right-4 bg-red-600 text-white p-4 rounded-2xl z-50 flex items-center gap-3 shadow-xl">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+          <span className="font-poppins text-sm font-medium">{error}</span>
         </div>
       )}
     </div>

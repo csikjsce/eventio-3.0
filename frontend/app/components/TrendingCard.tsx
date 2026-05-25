@@ -8,11 +8,13 @@ export default function TrendingCard({
   text,
   bookmarked = false,
   onBookmark,
+  registered = false,
 }: {
   event: EventData;
   text: string;
   bookmarked?: boolean;
   onBookmark?: (id: number) => void;
+  registered?: boolean;
 }) {
   return (
     <Link
@@ -77,9 +79,18 @@ export default function TrendingCard({
           </div>
         </div>
         {/* CTA */}
-        <div className="w-full bg-foreground text-background rounded-full py-2.5 text-xs font-semibold font-poppins text-center">
-          {text}
-        </div>
+        {registered ? (
+          <div className="w-full flex items-center justify-center gap-1.5 bg-green-500/15 border border-green-500/40 text-green-400 rounded-full py-2.5 text-xs font-semibold font-poppins text-center">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            Registered
+          </div>
+        ) : (
+          <div className="w-full bg-foreground text-background rounded-full py-2.5 text-xs font-semibold font-poppins text-center">
+            {text}
+          </div>
+        )}
       </div>
     </Link>
   );

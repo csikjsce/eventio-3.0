@@ -134,6 +134,7 @@ export default function HomeScreen() {
           <SectionHeader title="Trending Events" href="/calendar" />
           <div className="overflow-x-auto scrollbar-hide flex gap-4 -mx-4 px-4 pb-2 mt-3">
             {trendingEvents.map((event) => {
+              const isRegistered = event.Participant !== false;
               const text =
                 event.state === "TICKET_OPEN"
                   ? "RSVP Now"
@@ -149,6 +150,7 @@ export default function HomeScreen() {
                   text={text}
                   bookmarked={isBookmarked(event.id)}
                   onBookmark={toggle}
+                  registered={isRegistered}
                 />
               );
             })}

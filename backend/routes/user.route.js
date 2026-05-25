@@ -3,6 +3,7 @@ const router = express.Router();
 const authCheck = require("../middleware/auth.middleware");
 const prisma = require("../utils/prisma_client");
 const logger = require("../utils/logger");
+const { del, keys } = require("../utils/cache");
 
 let protected = "/p";
 router.post(protected + "/me", authCheck, (req, res) => {
@@ -19,6 +20,7 @@ router.post(protected + "/me", authCheck, (req, res) => {
 });
 router.post(protected + "/update", authCheck, (req, res) => {
     const {
+        name,
         degree,
         branch,
         gender,
@@ -28,36 +30,37 @@ router.post(protected + "/update", authCheck, (req, res) => {
         year,
         college,
         signature,
+        about,
+        photo_url,
     } = req.body;
-    if (
-        !degree ||
-        !branch ||
-        !gender ||
-        !phone_number ||
-        !year ||
-        !college ||
-        !signature
-    ) {
-        return res
-            .status(400)
-            .json({ error: true, message: "All fields are required" });
+
+    // Build a partial update — only include fields that were actually sent
+    const updateData = {};
+    if (name         !== undefined) updateData.name         = name;
+    if (degree       !== undefined) updateData.degree       = degree;
+    if (branch       !== undefined) updateData.branch       = branch;
+    if (gender       !== undefined) updateData.gender       = gender;
+    if (interests    !== undefined) updateData.interests    = interests;
+    if (phone_number !== undefined) updateData.phone_number = phone_number;
+    if (roll_number  !== undefined) updateData.roll_number  = roll_number;
+    if (year         !== undefined) updateData.year         = parseInt(year);
+    if (college      !== undefined) updateData.college      = college;
+    if (signature    !== undefined) updateData.signature    = signature;
+    if (about        !== undefined) updateData.about        = about;
+    if (photo_url    !== undefined) updateData.photo_url    = photo_url;
+
+    if (Object.keys(updateData).length === 0) {
+        return res.status(400).json({ error: true, message: "No fields provided to update" });
     }
+
     prisma.user
         .update({
             where: { id: req.user.id },
-            data: {
-                degree,
-                branch,
-                gender,
-                interests,
-                phone_number,
-                roll_number,
-                year: parseInt(year),
-                college,
-                signature,
-            },
+            data: updateData,
         })
-        .then((user) => {
+        .then(() => {
+            // Bust the auth cache so next request fetches fresh user data
+            del(keys.user(req.user.google_id));
             res.json({
                 error: false,
                 message: "User profile updated successfully",

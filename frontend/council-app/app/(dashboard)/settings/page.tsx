@@ -10,7 +10,7 @@ import { uploadFile } from "@/lib/upload";
 import { useData } from "@/contexts/DataContext";
 import {
   Settings, Users, Upload, Plus, X, Edit2, Trash2,
-  Mail, Link2, ChevronDown, CheckCircle2, Save, AtSign, Phone, Globe,
+  Mail, Link2, ChevronDown, CheckCircle2, Save, AtSign, Phone, Globe, Eye,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -436,6 +436,140 @@ function MemberCard({ member, onEdit, onDelete }: { member: Member; onEdit: () =
   );
 }
 
+// ─── Team public preview modal ────────────────────────────────────────────────
+
+function TeamPreviewModal({
+  members,
+  advisors,
+  settings,
+  onClose,
+}: {
+  members: Member[];
+  advisors: FacultyAdvisor[];
+  settings: CouncilSettings;
+  onClose: () => void;
+}) {
+  const heads  = members.filter(m => m.is_head);
+  const others = members.filter(m => !m.is_head);
+
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      {/* Sheet */}
+      <div
+        className="mt-auto bg-surface border-t border-border-c rounded-t-3xl w-full max-h-[90vh] flex flex-col"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Handle + header */}
+        <div className="flex items-center justify-between px-6 pt-4 pb-3 border-b border-border-c shrink-0">
+          <div>
+            <p className="text-[10px] font-fira uppercase tracking-widest text-subtle-tx mb-0.5">Student-facing view</p>
+            <h2 className="text-tx font-fira font-semibold text-sm">
+              {settings.name || "Your Council"} — Team
+            </h2>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-8 h-8 rounded-lg bg-surface2 border border-border-c hover:bg-red-500/10 hover:border-red-500/30 text-muted-tx hover:text-red-500 flex items-center justify-center transition-all"
+          >
+            <X size={15} />
+          </button>
+        </div>
+
+        {/* Scrollable body */}
+        <div className="overflow-y-auto px-6 py-5 space-y-6 flex-1">
+
+          {/* Heads */}
+          {heads.length > 0 && (
+            <section>
+              <p className="text-tx text-xs font-fira font-semibold uppercase tracking-widest mb-3">
+                Heads & Core Team
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {heads.map(m => (
+                  <div key={m.id} className="flex flex-col items-center gap-2 p-3 bg-surface2 border border-border-c rounded-2xl text-center">
+                    <div className="relative">
+                      <img
+                        src={m.photo_url}
+                        alt={m.name}
+                        className="w-14 h-14 rounded-full object-cover border-2 border-red-500/40"
+                      />
+                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-white text-[8px]">★</span>
+                    </div>
+                    <div>
+                      <p className="text-tx text-xs font-fira font-semibold leading-tight line-clamp-1">{m.name}</p>
+                      <p className="text-subtle-tx text-[10px] font-fira mt-0.5 line-clamp-1">{m.role}</p>
+                      <span className={`inline-block mt-1 text-[9px] font-fira px-2 py-0.5 rounded-full ${TEAM_COLOR[m.team] ?? "bg-surface2 text-subtle-tx"}`}>
+                        {m.team}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Other members grouped by team */}
+          {TEAMS.filter(t => others.some(m => m.team === t)).map(team => {
+            const group = others.filter(m => m.team === team);
+            return (
+              <section key={team}>
+                <p className="text-tx text-xs font-fira font-semibold uppercase tracking-widest mb-3 flex items-center gap-2">
+                  <span className={`w-2 h-2 rounded-full inline-block ${TEAM_COLOR[team]?.split(" ")[0] ?? "bg-surface2"}`} />
+                  {team} Team
+                  <span className="text-subtle-tx font-normal normal-case tracking-normal">({group.length})</span>
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                  {group.map(m => (
+                    <div key={m.id} className="flex flex-col items-center gap-2 p-3 bg-surface2 border border-border-c rounded-2xl text-center">
+                      <img
+                        src={m.photo_url}
+                        alt={m.name}
+                        className="w-12 h-12 rounded-full object-cover border border-border-c"
+                      />
+                      <div>
+                        <p className="text-tx text-xs font-fira font-semibold leading-tight line-clamp-1">{m.name}</p>
+                        <p className="text-subtle-tx text-[10px] font-fira mt-0.5 line-clamp-1">{m.role}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            );
+          })}
+
+          {/* Faculty Advisors */}
+          {advisors.length > 0 && (
+            <section>
+              <p className="text-tx text-xs font-fira font-semibold uppercase tracking-widest mb-3">Faculty Advisors</p>
+              <div className="flex flex-col gap-2">
+                {advisors.map(a => (
+                  <div key={a.id} className="flex items-center gap-3 p-3 bg-surface2 border border-border-c rounded-xl">
+                    <div className="w-9 h-9 rounded-full bg-surface border border-border-c flex items-center justify-center text-muted-tx text-xs font-fira font-bold shrink-0">
+                      {a.name.split(" ").filter(w => /^[A-Z]/.test(w)).slice(0, 2).map(w => w[0]).join("")}
+                    </div>
+                    <div>
+                      <p className="text-tx text-sm font-fira font-semibold">{a.name}</p>
+                      <p className="text-subtle-tx text-[11px] font-fira">{a.designation} · {a.dept}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {members.length === 0 && advisors.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-16 gap-3 text-subtle-tx">
+              <Users size={32} className="opacity-30" />
+              <p className="text-sm font-fira">No team members added yet</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 type Tab = "general" | "members";
@@ -454,6 +588,7 @@ export default function SettingsPage() {
   const [uploadingLogo, setUploadingLogo]     = useState(false);
   const [uploadingBanner, setUploadingBanner] = useState(false);
   const [profileLoading, setProfileLoading]   = useState(true);
+  const [showPreview, setShowPreview]         = useState(false);
   const logoRef   = useRef<HTMLInputElement>(null);
   const bannerRef = useRef<HTMLInputElement>(null);
 
@@ -623,6 +758,16 @@ export default function SettingsPage() {
         <div className="fixed top-4 right-4 z-50 bg-surface border border-border-c shadow-xl rounded-xl px-4 py-3 text-tx text-sm font-fira flex items-center gap-2">
           <CheckCircle2 size={15} className="text-emerald-500" /> {toast}
         </div>
+      )}
+
+      {/* Team public preview */}
+      {showPreview && (
+        <TeamPreviewModal
+          members={members}
+          advisors={advisors}
+          settings={settings}
+          onClose={() => setShowPreview(false)}
+        />
       )}
 
       {/* Faculty advisor modal */}
@@ -879,10 +1024,16 @@ export default function SettingsPage() {
                 <h2 className="text-tx font-fira font-semibold">All Members</h2>
                 <p className="text-subtle-tx text-xs font-fira mt-0.5">{members.length} total members</p>
               </div>
-              <button type="button" onClick={() => setModal({})}
-                className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-fira font-semibold rounded-xl transition-colors">
-                <Plus size={15} /> Add Member
-              </button>
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={() => setShowPreview(true)}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-surface border border-border-c hover:border-red-500/30 text-muted-tx hover:text-tx text-xs font-fira rounded-xl transition-all">
+                  <Eye size={13} /> View as public
+                </button>
+                <button type="button" onClick={() => setModal({})}
+                  className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-fira font-semibold rounded-xl transition-colors">
+                  <Plus size={15} /> Add Member
+                </button>
+              </div>
             </div>
 
             {/* Team filter */}
