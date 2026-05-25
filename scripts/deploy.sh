@@ -64,7 +64,7 @@ deploy_backend() {
   npx prisma generate
   npx prisma migrate deploy
 
-  start_detached backend "$REPO_DIR/backend" "$BACKEND_PORT" env PORT="$BACKEND_PORT" node main.js
+  start_detached backend "$REPO_DIR/backend" "$BACKEND_PORT" bash -lc "set -a && source .env && set +a && exec node main.js"
   wait_for_http "http://127.0.0.1:${BACKEND_PORT}/api/v1/health"
 }
 

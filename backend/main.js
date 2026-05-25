@@ -99,7 +99,7 @@ passport.deserializeUser(async (user, done) => {
 
 // ─── Middleware stack ─────────────────────────────────────────────────────────
 
-app.use(passport.initialize());
+app.set("trust proxy", 1);
 app.use(
     session({ secret: process.env.SESSION_SECRET, resave: false, saveUninitialized: true })
 );
