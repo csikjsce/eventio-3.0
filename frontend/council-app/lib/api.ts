@@ -74,6 +74,58 @@ api.interceptors.response.use(
   },
 );
 
+// ── Approval chain builder ─────────────────────────────────────────────────────
+
+interface RawApprovalStep {
+  stage: string;
+  label: string;
+  actor: string;
+}
+
+const CHAIN_MILESTONES: RawApprovalStep[] = [
+  { stage: "DRAFT",                       label: "Event Created",                actor: "You (Council)"            },
+  { stage: "APPLIED_FOR_APPROVAL",        label: "Proposal Submitted",           actor: "You (Council)"            },
+  { stage: "UNLISTED",                    label: "Faculty Advisor Approved",     actor: "Faculty Advisor"          },
+  { stage: "APPLIED_FOR_PRINCI_APPROVAL", label: "Forwarded to Director/VP",     actor: "You (Council)"            },
+  { stage: "UPCOMING",                    label: "Director/VP Approved",         actor: "Director / Vice Principal"},
+  { stage: "REGISTRATION_OPEN",           label: "Registration Opened",          actor: "You (Council)"            },
+  { stage: "REGISTRATION_CLOSED",         label: "Registration Closed",          actor: "You (Council)"            },
+  { stage: "ONGOING",                     label: "Event Started",                actor: "You (Council)"            },
+  { stage: "COMPLETED",                   label: "Event Completed",              actor: "System"                   },
+  { stage: "TICKET_OPEN",                 label: "Tickets Opened",               actor: "You (Council)"            },
+  { stage: "TICKET_CLOSED",               label: "Report Submitted",             actor: "You (Council)"            },
+  { stage: "REJECTED",                    label: "Proposal Rejected",            actor: "Faculty Advisor / Director"},
+];
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function buildApprovalChain(currentState: string, stateHistory: string[]): any[] {
+  const history: string[] = Array.isArray(stateHistory) && stateHistory.length
+    ? stateHistory
+    : [currentState];
+
+  const chain = [];
+  for (let i = 0; i < history.length; i++) {
+    const s = history[i];
+    const milestone = CHAIN_MILESTONES.find(m => m.stage === s);
+    if (!milestone) continue;
+
+    const isLast = i === history.length - 1;
+    const status =
+      s === "REJECTED"      ? "rejected" :
+      isLast                ? "active"   :
+                              "done";
+
+    chain.push({ stage: s, label: milestone.label, status, actor: milestone.actor });
+  }
+
+  // If current state is REJECTED but it wasn't the last item pushed, append it
+  if (currentState === "REJECTED" && !history.includes("REJECTED")) {
+    chain.push({ stage: "REJECTED", label: "Proposal Rejected", status: "rejected", actor: "Faculty Advisor / Director" });
+  }
+
+  return chain;
+}
+
 // ── State ↔ PipelineStage mapping ─────────────────────────────────────────────
 
 export function mapStateToPipeline(state: string): PipelineStage {
@@ -99,7 +151,9 @@ export function transformEvent(e: any): EventData {
   return {
     ...e,
     pipeline_stage:        mapStateToPipeline(e.state ?? "DRAFT"),
-    approval_chain:        e.approval_chain        ?? [],
+    approval_chain:        (e.approval_chain && e.approval_chain.length)
+                             ? e.approval_chain
+                             : buildApprovalChain(e.state ?? "DRAFT", e.state_history ?? []),
     documents:             e.documents             ?? [],
     children:              e.children              ?? [],
     tags:                  e.tags                  ?? [],
