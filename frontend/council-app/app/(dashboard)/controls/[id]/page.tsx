@@ -52,12 +52,14 @@ const STATE_ACTIONS: Record<string, StateAction[]> = {
     { label: "Start Event",       newState: "ONGOING",           variant: "danger",   icon: <Zap size={14}/>,    confirm: "Mark the event as live/ongoing?" },
   ],
   TICKET_OPEN: [
-    { label: "Stop Ticket Sales", newState: "TICKET_CLOSED",     variant: "warning",  icon: <Pause size={14}/> },
-    { label: "Start Event",       newState: "ONGOING",           variant: "danger",   icon: <Zap size={14}/>,    confirm: "Mark the event as live/ongoing?" },
+    { label: "Stop Ticket Sales",       newState: "TICKET_CLOSED",       variant: "warning",   icon: <Pause size={14}/>,  confirm: "This stops students from claiming new tickets." },
+    { label: "Restart Registration",    newState: "REGISTRATION_OPEN",   variant: "secondary", icon: <RefreshCcw size={14}/>, confirm: "This reopens registration and closes ticket claiming." },
+    { label: "Start Event",             newState: "ONGOING",             variant: "danger",    icon: <Zap size={14}/>,    confirm: "Mark the event as live/ongoing?" },
   ],
   TICKET_CLOSED: [
-    { label: "Reopen Tickets",    newState: "TICKET_OPEN",       variant: "purple",   icon: <Ticket size={14}/> },
-    { label: "Start Event",       newState: "ONGOING",           variant: "danger",   icon: <Zap size={14}/>,    confirm: "Mark the event as live/ongoing?" },
+    { label: "Reopen Tickets",          newState: "TICKET_OPEN",         variant: "purple",    icon: <Ticket size={14}/> },
+    { label: "Restart Registration",    newState: "REGISTRATION_OPEN",   variant: "secondary", icon: <RefreshCcw size={14}/>, confirm: "This reopens registration for new participants." },
+    { label: "Start Event",             newState: "ONGOING",             variant: "danger",    icon: <Zap size={14}/>,    confirm: "Mark the event as live/ongoing?" },
   ],
   ONGOING: [
     { label: "End Event",         newState: "COMPLETED",         variant: "danger",   icon: <Square size={14}/>, confirm: "End this event? This cannot easily be undone." },

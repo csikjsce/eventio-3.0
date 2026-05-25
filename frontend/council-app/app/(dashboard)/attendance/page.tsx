@@ -1,21 +1,28 @@
 "use client";
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
+import dynamic from "next/dynamic";
 import { useData } from "@/contexts/DataContext";
-import { fetchParticipants, type TeamRow } from "@/lib/api";
+import { fetchParticipants, checkinParticipant, uncheckinParticipant, type TeamRow } from "@/lib/api";
 import type { EventData } from "@/lib/dummy-data";
-import { QrCode, CheckCircle2, XCircle, Users, ChevronRight, ArrowLeft, Search, CalendarDays, MapPin, Download, Hash } from "lucide-react";
+import {
+  QrCode, CheckCircle2, XCircle, Users, ChevronRight, ArrowLeft,
+  Search, CalendarDays, MapPin, Download, Hash, Loader2,
+} from "lucide-react";
+
+// Dynamically import the scanner to avoid SSR issues
+const QrScanner = dynamic(() => import("@/components/QrScanner"), { ssr: false });
 
 const INPUT = "bg-surface2 border border-border-c focus:border-red-500/40 rounded-lg px-3 py-2 text-sm font-fira text-tx placeholder-subtle-tx outline-none transition-colors";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface FlatParticipant {
-  id:      number | string;
-  name:    string;
-  roll:    string;
-  email:   string;
-  branch:  string;
-  year:    string;
+  id:       number;
+  name:     string;
+  roll:     string;
+  email:    string;
+  branch:   string;
+  year:     string;
   teamName?: string;
   attended: boolean;
 }
@@ -25,7 +32,7 @@ interface FlatParticipant {
 function flattenParticipants(teams: TeamRow[]): FlatParticipant[] {
   return teams.flatMap(team =>
     (team.Participant ?? []).map((p) => ({
-      id:       p.id,
+      id:       p.id as number,
       name:     p.user?.name ?? "Unknown",
       roll:     p.user?.roll_number ? String(p.user.roll_number) : "—",
       email:    p.user?.email ?? "",
@@ -62,6 +69,10 @@ function exportCSV(participants: FlatParticipant[], attendance: Record<string, b
   document.body.appendChild(a); a.click(); a.remove();
 }
 
+// ─── Toast helper ─────────────────────────────────────────────────────────────
+
+interface Toast { id: number; msg: string; type: "success" | "error" }
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AttendancePage() {
@@ -77,13 +88,21 @@ export default function AttendancePage() {
   const [attendance, setAttendance]     = useState<Record<string, boolean>>({});
   const [participants, setParticipants] = useState<FlatParticipant[]>([]);
   const [loadingParts, setLoadingParts] = useState(false);
-  const [scanning, setScanning]         = useState(false);
-  const [scanResult, setScanResult]     = useState<string | null>(null);
+  const [showScanner, setShowScanner]   = useState(false);
+  const [toasts, setToasts]             = useState<Toast[]>([]);
+  const [pendingIds, setPendingIds]     = useState<Set<number>>(new Set());
   const [manualRoll, setManualRoll]     = useState("");
   const [manualErr, setManualErr]       = useState("");
   const manualRef = useRef<HTMLInputElement>(null);
+  const toastId = useRef(0);
 
   const selectedEvent = useMemo(() => events.find(e => e.id === eventId) ?? null, [events, eventId]);
+
+  const addToast = useCallback((msg: string, type: Toast["type"] = "success") => {
+    const id = ++toastId.current;
+    setToasts(prev => [...prev, { id, msg, type }]);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
+  }, []);
 
   const loadParticipants = useCallback(async (id: number) => {
     setLoadingParts(true);
@@ -123,31 +142,91 @@ export default function AttendancePage() {
     p.roll.toLowerCase().includes(search.toLowerCase())
   );
 
-  function toggleAttendance(id: string) {
-    setAttendance(prev => ({ ...prev, [id]: !effectiveAttendance[id] }));
-  }
+  // ── API-backed attendance toggle ──────────────────────────────────────────
 
-  function markAll(val: boolean) {
-    const update: Record<string, boolean> = {};
-    participants.forEach(p => { update[String(p.id)] = val; });
-    setAttendance(update);
-  }
+  const toggleAttendance = useCallback(async (participantId: number) => {
+    if (!eventId || pendingIds.has(participantId)) return;
+    const current = effectiveAttendance[String(participantId)] ?? false;
+    const next = !current;
 
-  function simulateScan() {
-    const absent = participants.filter(p => !effectiveAttendance[String(p.id)]);
-    if (!absent.length) { setScanResult("All participants already checked in!"); return; }
-    const pick = absent[Math.floor(Math.random() * absent.length)];
-    setScanning(true);
-    setTimeout(() => {
-      setAttendance(prev => ({ ...prev, [String(pick.id)]: true }));
-      setScanResult(`✓ ${pick.name} (${pick.roll}) checked in via QR`);
-      setScanning(false);
-      setTimeout(() => setScanResult(null), 3500);
-    }, 800);
-  }
+    // Optimistic update
+    setAttendance(prev => ({ ...prev, [String(participantId)]: next }));
+    setPendingIds(prev => new Set(prev).add(participantId));
 
-  function handleManualCheckIn(e: React.FormEvent) {
+    try {
+      if (next) {
+        await checkinParticipant(eventId, participantId);
+      } else {
+        await uncheckinParticipant(eventId, participantId);
+      }
+    } catch {
+      // Revert on failure
+      setAttendance(prev => ({ ...prev, [String(participantId)]: current }));
+      addToast("Failed to update attendance. Please try again.", "error");
+    } finally {
+      setPendingIds(prev => { const s = new Set(prev); s.delete(participantId); return s; });
+    }
+  }, [eventId, effectiveAttendance, pendingIds, addToast]);
+
+  // ── QR scan handler ────────────────────────────────────────────────────────
+
+  const handleQrScan = useCallback(async (raw: string) => {
+    setShowScanner(false);
+    if (!eventId) return;
+
+    let participantId: number | null = null;
+    let scannedEventId: number | null = null;
+
+    try {
+      const parsed = JSON.parse(raw) as { event_id?: number; participant_id?: number };
+      participantId = parsed.participant_id ?? null;
+      scannedEventId = parsed.event_id ?? null;
+    } catch {
+      // Legacy format: raw string is just the participant ID
+      const n = parseInt(raw);
+      if (!isNaN(n)) participantId = n;
+    }
+
+    if (!participantId) {
+      addToast("Invalid QR code — could not read participant ID.", "error");
+      return;
+    }
+
+    if (scannedEventId && scannedEventId !== eventId) {
+      addToast(`QR belongs to a different event (ID ${scannedEventId}).`, "error");
+      return;
+    }
+
+    const participant = participants.find(p => p.id === participantId);
+    if (!participant) {
+      addToast(`Participant #${participantId} is not registered for this event.`, "error");
+      return;
+    }
+
+    if (effectiveAttendance[String(participantId)]) {
+      addToast(`${participant.name} is already checked in.`, "error");
+      return;
+    }
+
+    setAttendance(prev => ({ ...prev, [String(participantId)]: true }));
+    setPendingIds(prev => new Set(prev).add(participantId!));
+
+    try {
+      await checkinParticipant(eventId, participantId);
+      addToast(`✓ ${participant.name} (${participant.roll}) checked in via QR`);
+    } catch {
+      setAttendance(prev => ({ ...prev, [String(participantId)]: false }));
+      addToast("Check-in failed. Please try again.", "error");
+    } finally {
+      setPendingIds(prev => { const s = new Set(prev); s.delete(participantId!); return s; });
+    }
+  }, [eventId, participants, effectiveAttendance, addToast]);
+
+  // ── Manual check-in ───────────────────────────────────────────────────────
+
+  const handleManualCheckIn = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!eventId) return;
     const roll = manualRoll.trim().toUpperCase();
     if (!roll) return;
     const participant = participants.find(p => p.roll.toUpperCase() === roll);
@@ -159,13 +238,23 @@ export default function AttendancePage() {
       setManualErr(`${participant.name} is already checked in.`);
       return;
     }
-    setAttendance(prev => ({ ...prev, [String(participant.id)]: true }));
-    setScanResult(`✓ ${participant.name} (${roll}) checked in manually`);
     setManualRoll("");
     setManualErr("");
-    setTimeout(() => setScanResult(null), 3500);
     manualRef.current?.focus();
-  }
+
+    setAttendance(prev => ({ ...prev, [String(participant.id)]: true }));
+    setPendingIds(prev => new Set(prev).add(participant.id));
+
+    try {
+      await checkinParticipant(eventId, participant.id);
+      addToast(`✓ ${participant.name} (${roll}) checked in manually`);
+    } catch {
+      setAttendance(prev => ({ ...prev, [String(participant.id)]: false }));
+      addToast("Check-in failed. Please try again.", "error");
+    } finally {
+      setPendingIds(prev => { const s = new Set(prev); s.delete(participant.id); return s; });
+    }
+  }, [eventId, manualRoll, participants, effectiveAttendance, addToast]);
 
   /* ── Event picker ── */
   if (eventId === null) return (
@@ -215,10 +304,30 @@ export default function AttendancePage() {
   /* ── Attendance manager ── */
   return (
     <div className="px-4 py-6 sm:px-8 sm:py-8">
+      {/* QR Scanner Modal */}
+      {showScanner && (
+        <QrScanner onScan={handleQrScan} onClose={() => setShowScanner(false)} />
+      )}
+
+      {/* Toasts */}
+      <div className="fixed top-4 right-4 z-40 flex flex-col gap-2 pointer-events-none">
+        {toasts.map(t => (
+          <div key={t.id} className={`px-4 py-3 rounded-xl text-sm font-fira flex items-center gap-2 shadow-lg pointer-events-auto
+            ${t.type === "success"
+              ? "bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-300 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400"
+              : "bg-red-50 dark:bg-red-500/10 border border-red-300 dark:border-red-500/30 text-red-700 dark:text-red-400"
+            }`}>
+            {t.type === "success" ? <CheckCircle2 size={15} /> : <XCircle size={15} />}
+            {t.msg}
+          </div>
+        ))}
+      </div>
+
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-3 mb-6">
         <div className="flex items-center gap-3">
-          <button type="button" onClick={() => { setEventId(null); setSearch(""); setAttendance({}); setScanResult(null); setManualRoll(""); setManualErr(""); }}
+          <button type="button"
+            onClick={() => { setEventId(null); setSearch(""); setAttendance({}); setManualRoll(""); setManualErr(""); }}
             className="w-8 h-8 rounded-lg bg-surface2 border border-border-c hover:border-red-500/30 flex items-center justify-center text-muted-tx hover:text-tx transition-all">
             <ArrowLeft size={15} />
           </button>
@@ -228,28 +337,30 @@ export default function AttendancePage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button type="button" onClick={() => exportCSV(participants, effectiveAttendance, selectedEvent?.name ?? "event")}
+          <button type="button"
+            onClick={() => exportCSV(participants, effectiveAttendance, selectedEvent?.name ?? "event")}
             className="flex items-center gap-1.5 px-3 py-2 bg-surface border border-border-c hover:border-red-500/30 text-muted-tx hover:text-tx text-xs font-fira rounded-lg transition-all">
             <Download size={13} /> <span className="hidden sm:inline">Export CSV</span>
           </button>
-          <button type="button" onClick={simulateScan} disabled={scanning || loadingParts}
-            className={`flex items-center gap-2 px-3 py-2 sm:px-4 text-sm font-fira font-semibold rounded-lg transition-all ${scanning || loadingParts ? "bg-surface2 text-muted-tx cursor-wait" : "bg-red-500 hover:bg-red-600 text-white"}`}>
-            <QrCode size={15} /> {scanning ? "Scanning…" : "Scan QR"}
+          <button type="button"
+            onClick={() => setShowScanner(true)}
+            disabled={loadingParts}
+            className={`flex items-center gap-2 px-3 py-2 sm:px-4 text-sm font-fira font-semibold rounded-lg transition-all ${
+              loadingParts ? "bg-surface2 text-muted-tx cursor-wait" : "bg-red-500 hover:bg-red-600 text-white"
+            }`}>
+            <QrCode size={15} /> Scan QR
           </button>
         </div>
       </div>
 
-      {/* Scan result / toast */}
-      {scanResult && (
-        <div className="mb-4 px-4 py-3 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-300 dark:border-emerald-500/30 rounded-xl text-emerald-700 dark:text-emerald-400 text-sm font-fira flex items-center gap-2">
-          <CheckCircle2 size={15} /> {scanResult}
-        </div>
-      )}
-
       {/* Loading state */}
       {loadingParts ? (
         <div className="animate-pulse space-y-4">
-          <div className="grid grid-cols-3 gap-3"><div className="h-20 bg-surface rounded-xl" /><div className="h-20 bg-surface rounded-xl" /><div className="h-20 bg-surface rounded-xl" /></div>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="h-20 bg-surface rounded-xl" />
+            <div className="h-20 bg-surface rounded-xl" />
+            <div className="h-20 bg-surface rounded-xl" />
+          </div>
           <div className="h-10 bg-surface rounded-xl" />
           {[...Array(5)].map((_, i) => <div key={i} className="h-14 bg-surface rounded-xl" />)}
         </div>
@@ -258,9 +369,9 @@ export default function AttendancePage() {
           {/* Stats */}
           <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-5">
             {[
-              { label: "Registered",  value: total,      color: "text-tx"          },
-              { label: "Checked In",  value: checkedIn,  color: "text-emerald-500" },
-              { label: "Rate",        value: `${pct}%`,  color: pct >= 70 ? "text-emerald-500" : pct >= 40 ? "text-amber-500" : "text-red-500" },
+              { label: "Registered", value: total,     color: "text-tx"          },
+              { label: "Checked In", value: checkedIn, color: "text-emerald-500" },
+              { label: "Rate",       value: `${pct}%`, color: pct >= 70 ? "text-emerald-500" : pct >= 40 ? "text-amber-500" : "text-red-500" },
             ].map(s => (
               <div key={s.label} className="bg-surface border border-border-c rounded-xl p-4">
                 <p className="text-subtle-tx text-[10px] sm:text-[11px] font-fira uppercase tracking-widest mb-1">{s.label}</p>
@@ -282,7 +393,9 @@ export default function AttendancePage() {
 
           {/* Manual check-in */}
           <div className="bg-surface border border-border-c rounded-xl p-4 mb-5">
-            <p className="text-tx text-sm font-fira font-semibold mb-3 flex items-center gap-2"><Hash size={14} /> Manual Roll-Number Check-in</p>
+            <p className="text-tx text-sm font-fira font-semibold mb-3 flex items-center gap-2">
+              <Hash size={14} /> Manual Roll-Number Check-in
+            </p>
             <form onSubmit={handleManualCheckIn} className="flex gap-2">
               <input
                 ref={manualRef}
@@ -300,23 +413,16 @@ export default function AttendancePage() {
             {manualErr && <p className="text-red-500 text-xs font-fira mt-1.5">{manualErr}</p>}
           </div>
 
-          {/* Controls */}
+          {/* Search + bulk controls */}
           <div className="flex flex-wrap items-center gap-2 mb-4">
             <div className="relative flex-1 min-w-[160px]">
               <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-subtle-tx pointer-events-none" />
-              <input type="text" placeholder="Search name or roll…" value={search} onChange={e => setSearch(e.target.value)} className={`${INPUT} pl-8 w-full`} />
+              <input type="text" placeholder="Search name or roll…" value={search}
+                onChange={e => setSearch(e.target.value)} className={`${INPUT} pl-8 w-full`} />
             </div>
-            <button type="button" onClick={() => markAll(true)}
-              className="px-3 py-2 text-xs font-fira bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-all whitespace-nowrap">
-              Mark All Present
-            </button>
-            <button type="button" onClick={() => markAll(false)}
-              className="px-3 py-2 text-xs font-fira bg-surface2 text-muted-tx border border-border-c rounded-lg hover:border-red-500/30 transition-all whitespace-nowrap">
-              Mark All Absent
-            </button>
           </div>
 
-          {/* List */}
+          {/* Participant list */}
           <div className="bg-surface border border-border-c rounded-xl overflow-hidden">
             {participants.length === 0 ? (
               <div className="py-12 text-center">
@@ -331,25 +437,40 @@ export default function AttendancePage() {
             ) : (
               filtered.map(p => {
                 const present = effectiveAttendance[String(p.id)] ?? false;
+                const pending = pendingIds.has(p.id);
                 return (
-                  <div key={String(p.id)} className="flex items-center gap-3 px-4 sm:px-5 py-3.5 border-b border-border-c last:border-0 hover:bg-surface2 transition-colors">
+                  <div key={String(p.id)}
+                    className="flex items-center gap-3 px-4 sm:px-5 py-3.5 border-b border-border-c last:border-0 hover:bg-surface2 transition-colors">
                     <div className="w-8 h-8 rounded-full bg-surface2 border border-border-c flex items-center justify-center text-muted-tx text-xs font-fira font-bold shrink-0">
                       {p.name[0]}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-tx text-sm font-fira font-semibold truncate">{p.name}</p>
-                      <p className="text-muted-tx text-xs font-fira">{p.roll} · {p.branch}{p.teamName ? ` · ${p.teamName}` : ""}</p>
+                      <p className="text-muted-tx text-xs font-fira">
+                        {p.roll} · {p.branch}{p.teamName ? ` · ${p.teamName}` : ""}
+                      </p>
                     </div>
-                    <span className={`hidden sm:inline text-[11px] font-fira font-medium px-2 py-0.5 rounded-full ${present ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400" : "bg-surface2 text-muted-tx"}`}>
+                    <span className={`hidden sm:inline text-[11px] font-fira font-medium px-2 py-0.5 rounded-full ${
+                      present
+                        ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400"
+                        : "bg-surface2 text-muted-tx"
+                    }`}>
                       {present ? "Present" : "Absent"}
                     </span>
-                    <button type="button" onClick={() => toggleAttendance(String(p.id))}
+                    <button type="button"
+                      onClick={() => toggleAttendance(p.id)}
+                      disabled={pending}
                       className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all border ${
-                        present
-                          ? "bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/30 text-emerald-500 hover:bg-red-50 dark:hover:bg-red-500/10 hover:border-red-300 dark:hover:border-red-500/30 hover:text-red-500"
-                          : "bg-surface2 border-border-c text-muted-tx hover:bg-emerald-50 dark:hover:bg-emerald-500/10 hover:border-emerald-300 dark:hover:border-emerald-500/30 hover:text-emerald-500"
+                        pending
+                          ? "bg-surface2 border-border-c text-muted-tx cursor-wait"
+                          : present
+                            ? "bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/30 text-emerald-500 hover:bg-red-50 dark:hover:bg-red-500/10 hover:border-red-300 dark:hover:border-red-500/30 hover:text-red-500"
+                            : "bg-surface2 border-border-c text-muted-tx hover:bg-emerald-50 dark:hover:bg-emerald-500/10 hover:border-emerald-300 dark:hover:border-emerald-500/30 hover:text-emerald-500"
                       }`}>
-                      {present ? <CheckCircle2 size={16} /> : <XCircle size={16} />}
+                      {pending
+                        ? <Loader2 size={14} className="animate-spin" />
+                        : present ? <CheckCircle2 size={16} /> : <XCircle size={16} />
+                      }
                     </button>
                   </div>
                 );

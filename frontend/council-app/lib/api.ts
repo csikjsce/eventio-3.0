@@ -596,3 +596,25 @@ export async function downloadParticipantsCsv(
   a.click();
   URL.revokeObjectURL(url);
 }
+
+/** Mark a participant as attended (check-in via QR or manual) */
+export async function checkinParticipant(
+  eventId: number,
+  participantId: number,
+): Promise<void> {
+  await api.post("/event/checkin", {
+    event_id: eventId,
+    participant_id: participantId,
+  });
+}
+
+/** Revert a check-in (mark participant as absent) */
+export async function uncheckinParticipant(
+  eventId: number,
+  participantId: number,
+): Promise<void> {
+  await api.post("/event/uncheckin", {
+    event_id: eventId,
+    participant_id: participantId,
+  });
+}

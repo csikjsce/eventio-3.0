@@ -22,8 +22,23 @@ const marcellus = Marcellus({
 });
 
 export const metadata: Metadata = {
-  title: "Eventio",
-  description: "KJSCE campus events — student portal",
+  title: {
+    default: "Eventio — KJSCE Campus Events",
+    template: "%s | Eventio",
+  },
+  description: "Discover and register for events happening at KJSCE, powered by CSI KJSCE.",
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL ?? "https://eventio.csi-kjsce.in"
+  ),
+  openGraph: {
+    siteName: "Eventio",
+    type: "website",
+    locale: "en_IN",
+  },
+  twitter: {
+    card: "summary_large_image",
+    site: "@csi_kjsce",
+  },
 };
 
 export default function RootLayout({

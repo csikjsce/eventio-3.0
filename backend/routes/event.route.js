@@ -39,6 +39,57 @@ async function assertCouncilEventAccess(user, eventId) {
     return null;
 }
 
+// ── Public event metadata (no auth — used by social crawlers / generateMetadata) ──
+router.get("/public/:id", async (req, res) => {
+    try {
+        const eventId = parseInt(req.params.id);
+        if (isNaN(eventId)) return res.status(400).json({ error: true, message: "Invalid id" });
+
+        const PUBLIC_META_STATES = new Set([
+            "UPCOMING", "REGISTRATION_OPEN", "REGISTRATION_CLOSED",
+            "TICKET_OPEN", "TICKET_CLOSED", "ONGOING", "COMPLETED",
+        ]);
+
+        const event = await prisma.events.findUnique({
+            where: { id: eventId },
+            select: {
+                id: true,
+                name: true,
+                tag_line: true,
+                description: true,
+                banner_url: true,
+                event_page_image_url: true,
+                logo_image__url: true,
+                state: true,
+                dates: true,
+                venue: true,
+                organizer: { select: { name: true } },
+            },
+        });
+
+        if (!event || !PUBLIC_META_STATES.has(event.state)) {
+            return res.status(404).json({ error: true, message: "Event not found" });
+        }
+
+        res.json({
+            error: false,
+            meta: {
+                id:          event.id,
+                name:        event.name,
+                tagline:     event.tag_line,
+                description: event.description,
+                image:       event.event_page_image_url || event.banner_url || null,
+                dates:       event.dates,
+                venue:       event.venue,
+                organizer:   event.organizer?.name ?? null,
+            },
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: true, message: "Error fetching event metadata" });
+    }
+});
+
 router.post(protected + "/get", authCheck, async (req, res) => {
     console.log(req.query);
     if (!req.user) {
@@ -1824,6 +1875,37 @@ router.post("/checkin", authCheck, async (req, res) => {
             error: true,
             message: "Error checking in",
         });
+    }
+});
+
+router.post("/uncheckin", authCheck, async (req, res) => {
+    try {
+        let { event_id, participant_id } = req.body;
+
+        event_id = parseInt(event_id);
+        participant_id = parseInt(participant_id);
+
+        if (isNaN(event_id) || isNaN(participant_id)) {
+            return res.status(400).json({
+                error: true,
+                message: "Invalid event_id or participant_id",
+            });
+        }
+
+        const denied = await assertCouncilEventAccess(req.user, event_id);
+        if (denied) {
+            return res.status(denied.status).json({ error: true, message: denied.message });
+        }
+
+        const participant = await prisma.participant.update({
+            where: { id: participant_id, event_id },
+            data: { attended: false },
+        });
+
+        return res.json({ error: false, participant });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ error: true, message: "Error reverting check-in" });
     }
 });
 
