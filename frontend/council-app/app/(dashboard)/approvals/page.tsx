@@ -218,9 +218,8 @@ function Section({ title, icon, events, onAction, loadingId, defaultOpen = true 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 const STATE_TRANSITIONS: Record<string, string> = {
-  "Submit Proposal":       "APPLIED_FOR_APPROVAL",
-  "Forward to Director/VP":"APPLIED_FOR_PRINCI_APPROVAL",
-  "Open Registration":     "REGISTRATION_OPEN",
+  "Submit Proposal":   "APPLIED_FOR_APPROVAL",
+  "Open Registration": "REGISTRATION_OPEN",
 };
 
 export default function ApprovalsPage() {
@@ -241,9 +240,8 @@ export default function ApprovalsPage() {
         await transitionEventState(event.id, newState);
         await refreshEvents();
         const successMsg: Record<string, string> = {
-          "Submit Proposal":        `Proposal for "${event.name}" submitted to faculty advisor!`,
-          "Forward to Director/VP": `"${event.name}" forwarded to Director / Vice Principal.`,
-          "Open Registration":      `Registration for "${event.name}" is now open!`,
+          "Submit Proposal":   `Proposal for "${event.name}" submitted to faculty advisor!`,
+          "Open Registration": `Registration for "${event.name}" is now open!`,
         };
         showToast(successMsg[cta]);
       } catch {

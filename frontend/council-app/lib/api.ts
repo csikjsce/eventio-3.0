@@ -83,26 +83,26 @@ interface RawApprovalStep {
 }
 
 const CHAIN_MILESTONES: RawApprovalStep[] = [
-  { stage: "DRAFT",                       label: "Event Created",                actor: "You (Council)"            },
-  { stage: "APPLIED_FOR_APPROVAL",        label: "Proposal Submitted",           actor: "You (Council)"            },
-  { stage: "UNLISTED",                    label: "Faculty Advisor Approved",     actor: "Faculty Advisor"          },
-  { stage: "APPLIED_FOR_PRINCI_APPROVAL", label: "Forwarded to Director/VP",     actor: "You (Council)"            },
-  { stage: "UPCOMING",                    label: "Director/VP Approved",         actor: "Director / Vice Principal"},
-  { stage: "REGISTRATION_OPEN",           label: "Registration Opened",          actor: "You (Council)"            },
-  { stage: "REGISTRATION_CLOSED",         label: "Registration Closed",          actor: "You (Council)"            },
-  { stage: "ONGOING",                     label: "Event Started",                actor: "You (Council)"            },
-  { stage: "COMPLETED",                   label: "Event Completed",              actor: "System"                   },
-  { stage: "TICKET_OPEN",                 label: "Tickets Opened",               actor: "You (Council)"            },
-  { stage: "TICKET_CLOSED",               label: "Report Submitted",             actor: "You (Council)"            },
-  { stage: "REJECTED",                    label: "Proposal Rejected",            actor: "Faculty Advisor / Director"},
+  { stage: "DRAFT",                       label: "Event Created",                   actor: "You (Council)"             },
+  { stage: "APPLIED_FOR_APPROVAL",        label: "Proposal Submitted",              actor: "You (Council)"             },
+  { stage: "APPLIED_FOR_PRINCI_APPROVAL", label: "Faculty Cleared — With Principal", actor: "Faculty Advisor"          },
+  { stage: "UNLISTED",                    label: "Principal Approved",              actor: "Principal"                 },
+  { stage: "UPCOMING",                    label: "Event Listed",                    actor: "System"                    },
+  { stage: "REGISTRATION_OPEN",           label: "Registration Opened",             actor: "You (Council)"             },
+  { stage: "REGISTRATION_CLOSED",         label: "Registration Closed",             actor: "You (Council)"             },
+  { stage: "ONGOING",                     label: "Event Started",                   actor: "You (Council)"             },
+  { stage: "COMPLETED",                   label: "Event Completed",                 actor: "System"                    },
+  { stage: "TICKET_OPEN",                 label: "Tickets Opened",                  actor: "You (Council)"             },
+  { stage: "TICKET_CLOSED",               label: "Report Submitted",                actor: "You (Council)"             },
+  { stage: "REJECTED",                    label: "Proposal Rejected",               actor: "Faculty / Principal"       },
 ];
 
-// Canonical happy-path order — used to reconstruct chain when history is missing/incomplete
+// Matches dean-portal approval flow (faculty → principal → council)
 const CANONICAL_ORDER = [
   "DRAFT",
   "APPLIED_FOR_APPROVAL",
-  "UNLISTED",
   "APPLIED_FOR_PRINCI_APPROVAL",
+  "UNLISTED",
   "UPCOMING",
   "REGISTRATION_OPEN",
   "REGISTRATION_CLOSED",
@@ -124,7 +124,8 @@ function buildApprovalChain(currentState: string, stateHistory: string[]): any[]
   let history: string[];
 
   if (raw.includes(currentState)) {
-    history = raw;
+    // Drop duplicate/backward jumps from manual re-clicks
+    history = raw.filter((s, i, arr) => i === 0 || s !== arr[i - 1]);
   } else if (currentState === "REJECTED") {
     // For rejected events reconstruct up to the point of rejection
     const lastKnown = raw.filter(s => CANONICAL_ORDER.includes(s));
@@ -163,7 +164,7 @@ export function mapStateToPipeline(state: string): PipelineStage {
     DRAFT:                        "DRAFT",
     APPLIED_FOR_APPROVAL:         "PROPOSAL_SUBMITTED",
     APPLIED_FOR_PRINCI_APPROVAL:  "DIRECTOR_VP_PENDING",
-    UNLISTED:                     "PROPOSAL_APPROVED",
+    UNLISTED:                     "FULLY_APPROVED",
     UPCOMING:                     "FULLY_APPROVED",
     REGISTRATION_OPEN:            "REGISTRATION_OPEN",
     REGISTRATION_CLOSED:          "REGISTRATION_CLOSED",
@@ -253,9 +254,9 @@ export async function updateEvent(id: number | string, data: Record<string, unkn
 /**
  * Transition an event to a new backend state.
  * Council-permitted transitions:
- *   DRAFT → APPLIED_FOR_APPROVAL      (Submit Proposal)
- *   UNLISTED → APPLIED_FOR_PRINCI_APPROVAL (Forward to Director/VP)
- *   UPCOMING → REGISTRATION_OPEN      (Open Registration)
+ *   DRAFT → APPLIED_FOR_APPROVAL   (Submit Proposal)
+ *   UNLISTED / UPCOMING → REGISTRATION_OPEN (Open Registration)
+ * Faculty → APPLIED_FOR_PRINCI_APPROVAL and Principal → UNLISTED happen in the dean portal.
  */
 export async function transitionEventState(
   id: number | string,

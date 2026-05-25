@@ -263,20 +263,30 @@ export function getPipelineIndex(stage: PipelineStage): number {
 }
 
 export function getNextAction(event: EventData): { label: string; cta: string; route?: string } | null {
-  switch (event.pipeline_stage) {
-    case "DRAFT":              return { label: "Submit proposal to faculty advisor",     cta: "Submit Proposal" };
-    case "PROPOSAL_SUBMITTED": return { label: "Waiting for faculty advisor approval",  cta: "Check Status" };
-    case "PROPOSAL_APPROVED":  return { label: "Faculty advisor approved! Forward to Director / Vice Principal for sign-off.", cta: "Forward to Director/VP" };
-    case "BOOKING_PENDING":    return { label: "Circulate to Director and Vice Principal for sign-off", cta: "Forward to Director/VP" };
-    case "DIRECTOR_VP_PENDING":return { label: "Waiting for Director / Vice Principal approval", cta: "Check Status" };
-    case "FULLY_APPROVED":     return { label: "All approvals done! Open registrations.",cta: "Open Registration" };
-    case "REGISTRATION_OPEN":  return { label: "Registration is live. Monitor sign-ups.", cta: "View Participants", route: `/participants` };
-    case "REGISTRATION_CLOSED":return { label: "Registration closed. Prepare for the event.", cta: "View Participants", route: `/participants` };
-    case "ONGOING":            return { label: "Event is live! Mark attendance.",         cta: "Mark Attendance", route: `/attendance` };
-    case "COMPLETED":          return { label: "Event complete. Submit report + geo-tagged photos.", cta: "Submit Report" };
-    case "REPORT_SUBMITTED":   return { label: "All done! View post-event statistics.",   cta: "View Statistics", route: `/statistics` };
-    case "REJECTED":           return { label: "Submission was rejected. Review feedback and resubmit.", cta: "Edit & Resubmit", route: `/new-event/${event.id}` };
-    default:                   return null;
+  switch (event.state) {
+    case "DRAFT":
+      return { label: "Submit proposal to faculty advisor for review.", cta: "Submit Proposal" };
+    case "APPLIED_FOR_APPROVAL":
+      return { label: "Waiting for faculty advisor to review your proposal.", cta: "Check Status" };
+    case "APPLIED_FOR_PRINCI_APPROVAL":
+      return { label: "Faculty has cleared this. Waiting for Principal approval.", cta: "Check Status" };
+    case "UNLISTED":
+    case "UPCOMING":
+      return { label: "All approvals complete! Open registrations when ready.", cta: "Open Registration" };
+    case "REGISTRATION_OPEN":
+      return { label: "Registration is live. Monitor sign-ups.", cta: "View Participants", route: `/participants?event=${event.id}` };
+    case "REGISTRATION_CLOSED":
+      return { label: "Registration closed. Prepare for the event.", cta: "View Participants", route: `/participants?event=${event.id}` };
+    case "ONGOING":
+      return { label: "Event is live! Mark attendance.", cta: "Mark Attendance", route: `/attendance` };
+    case "COMPLETED":
+      return { label: "Event complete. Submit report and geo-tagged photos.", cta: "Submit Report" };
+    case "TICKET_CLOSED":
+      return { label: "All done! View post-event statistics.", cta: "View Statistics", route: `/statistics` };
+    case "REJECTED":
+      return { label: "Submission was rejected. Review feedback and resubmit.", cta: "Edit & Resubmit", route: `/new-event/${event.id}` };
+    default:
+      return null;
   }
 }
 

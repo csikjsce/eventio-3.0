@@ -363,9 +363,8 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
   }
 
   const STATE_TRANSITIONS: Record<string, string> = {
-    "Submit Proposal":       "APPLIED_FOR_APPROVAL",
-    "Forward to Director/VP":"APPLIED_FOR_PRINCI_APPROVAL",
-    "Open Registration":     "REGISTRATION_OPEN",
+    "Submit Proposal":   "APPLIED_FOR_APPROVAL",
+    "Open Registration": "REGISTRATION_OPEN",
   };
 
   async function handleAction(cta: string) {
@@ -380,9 +379,9 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
         setEvent(updated);
         await refreshEvents();
         showToast(
-          cta === "Submit Proposal"        ? "Proposal submitted to faculty advisor!" :
-          cta === "Forward to Director/VP" ? "Forwarded to Director / Vice Principal!" :
-                                             "Registration opened!"
+          cta === "Submit Proposal" ? "Proposal submitted to faculty advisor!" :
+          cta === "Open Registration" ? "Registration is now open!" :
+          "Updated successfully."
         );
       } catch {
         showToast("Action failed — please try again.");
