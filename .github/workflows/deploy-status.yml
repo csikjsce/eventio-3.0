@@ -43,18 +43,27 @@ jobs:
 
             STATE="$(gh api "repos/${REPO}/deployments/${DEPLOY_ID}/statuses" --jq '.[0].state // empty' 2>/dev/null || true)"
             DESC="$(gh api "repos/${REPO}/deployments/${DEPLOY_ID}/statuses" --jq '.[0].description // empty' 2>/dev/null || true)"
-            echo "Attempt ${attempt}/90: server deployment ${DEPLOY_ID} -> ${STATE} (${DESC})"
+            echo "Attempt ${attempt}/90: server deployment ${DEPLOY_ID} -> ${STATE}"
 
             case "$STATE" in
               success)
                 echo "Production deploy succeeded"
+                echo "${DESC}"
                 exit 0
                 ;;
               failure|error)
-                echo "Production deploy failed"
+                echo "::error title=Production deploy failed::${DESC}"
+                echo ""
+                echo "=== Production deploy failed ==="
+                echo "${DESC}"
+                echo ""
+                echo "Deployment: https://github.com/${REPO}/deployments/activity_log?environment=production"
                 exit 1
                 ;;
               pending|in_progress|queued)
+                if [[ -n "$DESC" ]]; then
+                  echo "  status: ${DESC}"
+                fi
                 ;;
               *)
                 echo "Unknown state: ${STATE}"
@@ -64,5 +73,5 @@ jobs:
             sleep 10
           done
 
-          echo "Timed out waiting for production deploy"
+          echo "::error title=Production deploy timed out::Server did not report success within 15 minutes"
           exit 1
