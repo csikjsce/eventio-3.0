@@ -31,18 +31,42 @@ fi
 
 DEPLOY_SHA=""
 GITHUB_STATUS_REPORTED=0
+DEPLOY_FAILURE_MESSAGE=""
+DEPLOY_LOG_FILE="${LOG_DIR}/last-deploy.log"
+
+mkdir -p "$LOG_DIR"
+
+die() {
+  DEPLOY_FAILURE_MESSAGE="$*"
+  log "ERROR: $*"
+  exit 1
+}
+
+on_deploy_err() {
+  local exit_code=$?
+  local line="$1"
+  DEPLOY_FAILURE_MESSAGE="${DEPLOY_FAILURE_MESSAGE:-Command failed at line ${line}: ${BASH_COMMAND} (exit ${exit_code})}"
+}
 
 on_deploy_exit() {
   local exit_code=$?
+
+  if [[ -n "${DEPLOY_SHA:-}" ]]; then
+    cp -f "$DEPLOY_LOG_FILE" "${LOG_DIR}/deploy-${DEPLOY_SHA}.log" 2>/dev/null || true
+  fi
 
   if [[ "$GITHUB_STATUS_REPORTED" == "1" ]]; then
     return
   fi
 
   if [[ "$exit_code" -eq 0 ]]; then
-    github_deployment_report success "Deployed to production"
+    github_report_success "Deployed to production"
   else
-    github_deployment_report failure "Deploy failed on SWDC server"
+    local failure_msg
+    failure_msg="$(github_build_failure_message "$exit_code")"
+    echo "$failure_msg" > "${LOG_DIR}/last-deploy-failure.txt"
+    log "Deploy failure details written to ${LOG_DIR}/last-deploy-failure.txt"
+    github_report_failure "$failure_msg"
   fi
 }
 
@@ -107,7 +131,11 @@ deploy_council_app() {
 }
 
 main() {
+  trap on_deploy_err ERR
   trap on_deploy_exit EXIT
+
+  : > "$DEPLOY_LOG_FILE"
+  exec > >(tee -a "$DEPLOY_LOG_FILE") 2>&1
 
   log "Eventio deploy started"
   deploy_repo
@@ -120,7 +148,7 @@ main() {
   [[ "$DEPLOY_COUNCIL_APP" == "1" ]] && deploy_council_app
 
   GITHUB_STATUS_REPORTED=1
-  github_deployment_report success "Deployed to production"
+  github_report_success "Deployed to production"
   echo "$DEPLOY_SHA" > "${LAST_DEPLOYED_FILE:-/tmp/eventio/last-deployed.sha}"
   log "Eventio deploy finished successfully"
 }

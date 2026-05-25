@@ -88,7 +88,7 @@ Public verification:
 
 ### Show deploy status on GitHub
 
-1. Create a GitHub token with **Deployments: Read and write** for `csikjsce/eventio-3.0`
+1. Create a GitHub token with **Deployments: Read and write** and **Commit statuses: Read and write** for `csikjsce/eventio-3.0`
    - Fine-grained PAT recommended
    - Or classic PAT with `repo` scope
 2. Add it to the server config:
@@ -103,7 +103,13 @@ GITHUB_REPO=csikjsce/eventio-3.0
 
 You will see:
 - A **Production Deploy** check on the commit (pending → success/failure)
-- Deployment history under **Environments → production**
+- A commit check **`eventio/production-deploy`** with a short error summary on failure
+- Deployment history under **Environments → production** with the full error message (up to 1000 chars) and recent log tail
 - Link to https://eventio.somaiya.edu when deploy succeeds
+
+On failure, the server also writes details to:
+- `/tmp/eventio/last-deploy-failure.txt`
+- `/tmp/eventio/last-deploy.log`
+- `/tmp/eventio/deploy-<sha>.log`
 
 If `GITHUB_TOKEN` is not set, deploys still work locally but GitHub will not show status.
