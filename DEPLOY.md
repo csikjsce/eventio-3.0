@@ -75,4 +75,28 @@ Public verification:
 
 ## GitHub Actions
 
-`.github/workflows/deploy.yml` still builds and pushes Docker images to GHCR on push to `main`. It does **not** deploy to the server — the cron poll handles that.
+`.github/workflows/deploy.yml` builds and pushes Docker images to GHCR on push to `main`.
+
+`.github/workflows/deploy-status.yml` shows a **Production Deploy** check on each `main` commit. It waits for the server to report deployment success via the GitHub Deployments API.
+
+### Show deploy status on GitHub
+
+1. Create a GitHub token with **Deployments: Read and write** for `csikjsce/eventio-3.0`
+   - Fine-grained PAT recommended
+   - Or classic PAT with `repo` scope
+2. Add it to the server config:
+
+```bash
+# deploy/config.env
+GITHUB_TOKEN=ghp_...
+GITHUB_REPO=csikjsce/eventio-3.0
+```
+
+3. Push to `main`
+
+You will see:
+- A **Production Deploy** check on the commit (pending → success/failure)
+- Deployment history under **Environments → production**
+- Link to https://eventio.somaiya.edu when deploy succeeds
+
+If `GITHUB_TOKEN` is not set, deploys still work locally but GitHub will not show status.

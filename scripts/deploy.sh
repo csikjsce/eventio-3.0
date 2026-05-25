@@ -4,6 +4,8 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # shellcheck disable=SC1091
 source "$ROOT_DIR/scripts/lib/common.sh"
+# shellcheck disable=SC1091
+source "$ROOT_DIR/scripts/lib/github-status.sh"
 
 CONFIG_FILE="${EVENTIO_DEPLOY_CONFIG:-$ROOT_DIR/deploy/config.env}"
 if [[ -f "$CONFIG_FILE" ]]; then
@@ -23,6 +25,23 @@ fi
 : "${DEPLOY_BACKEND:=1}"
 : "${DEPLOY_APP:=1}"
 : "${STOP_STUDENT_PREVIEW:=1}"
+
+DEPLOY_SHA=""
+GITHUB_STATUS_REPORTED=0
+
+on_deploy_exit() {
+  local exit_code=$?
+
+  if [[ "$GITHUB_STATUS_REPORTED" == "1" ]]; then
+    return
+  fi
+
+  if [[ "$exit_code" -eq 0 ]]; then
+    github_deployment_report success "Deployed to production"
+  else
+    github_deployment_report failure "Deploy failed on SWDC server"
+  fi
+}
 
 deploy_repo() {
   if [[ "$SKIP_GIT_PULL" == "1" ]]; then
@@ -67,10 +86,19 @@ deploy_app() {
 }
 
 main() {
+  trap on_deploy_exit EXIT
+
   log "Eventio deploy started"
   deploy_repo
+
+  DEPLOY_SHA="$(git -C "$REPO_DIR" rev-parse HEAD)"
+  github_deployment_start "$DEPLOY_SHA"
+
   [[ "$DEPLOY_BACKEND" == "1" ]] && deploy_backend
   [[ "$DEPLOY_APP" == "1" ]] && deploy_app
+
+  GITHUB_STATUS_REPORTED=1
+  github_deployment_report success "Deployed to production"
   log "Eventio deploy finished successfully"
 }
 
