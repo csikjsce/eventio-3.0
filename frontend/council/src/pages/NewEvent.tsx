@@ -543,7 +543,7 @@ export default function NewEvent() {
                       <input type="checkbox" className="accent-red-600 w-4 h-4" {...register('is_only_somaiya')} />
                       <div>
                         <p className="text-zinc-300 text-sm font-fira">Somaiya Students Only</p>
-                        <p className="text-zinc-600 text-xs font-fira">Restrict registrations to KJ Somaiya College students exclusively</p>
+                        <p className="text-zinc-600 text-xs font-fira">Restrict registrations to Somaiya Vidyavihar University students exclusively</p>
                       </div>
                     </label>
                   </div>

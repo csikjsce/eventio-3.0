@@ -84,7 +84,7 @@ export default function HomeScreen() {
         <div className="flex items-center gap-2 bg-card rounded-full px-4 py-2.5 border border-border">
           <span className="text-foreground text-xs leading-none">▶</span>
           <span className="font-poppins text-sm font-medium text-foreground">
-            KJ Somaiya
+            Somaiya Vidyavihar University
           </span>
         </div>
         <Link href="/profile">

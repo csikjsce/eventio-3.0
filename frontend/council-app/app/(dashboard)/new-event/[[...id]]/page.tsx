@@ -484,7 +484,7 @@ export default function NewEventPage() {
                     <div className="flex items-center justify-between py-4 px-5 bg-surface2 border border-border-c rounded-xl">
                       <div>
                         <p className="text-tx text-sm font-fira font-semibold">Somaiya Students Only</p>
-                        <p className="text-muted-tx text-xs font-fira mt-0.5">Restrict event registration to KJ Somaiya students.</p>
+                        <p className="text-muted-tx text-xs font-fira mt-0.5">Restrict event registration to Somaiya Vidyavihar University students.</p>
                       </div>
                       <input type="checkbox" className="accent-red-600 w-4 h-4" {...register("is_only_somaiya")} />
                     </div>

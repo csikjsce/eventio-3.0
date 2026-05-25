@@ -282,9 +282,22 @@ function MemberModal({ member, onSave, onClose }: {
     is_head:   member?.is_head   ?? false,
     photo_url: member?.photo_url ?? "",
   });
+  const [uploading, setUploading] = useState(false);
+  const photoRef = useRef<HTMLInputElement>(null);
 
   function set(k: keyof typeof form, v: string | boolean) {
     setForm(prev => ({ ...prev, [k]: v }));
+  }
+
+  async function handlePhotoFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const url = await uploadFile(file, "eventio-council-images");
+      set("photo_url", url);
+    } catch { /* keep existing */ }
+    finally { setUploading(false); e.target.value = ""; }
   }
 
   function handleSave() {
@@ -292,6 +305,9 @@ function MemberModal({ member, onSave, onClose }: {
     const auto = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(form.name)}&backgroundColor=b61f2d&textColor=ffffff`;
     onSave({ id: member?.id ?? `m${Date.now()}`, ...form, photo_url: form.photo_url || auto });
   }
+
+  const previewPhoto = form.photo_url ||
+    `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(form.name || "M")}&backgroundColor=b61f2d&textColor=ffffff`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
@@ -305,6 +321,31 @@ function MemberModal({ member, onSave, onClose }: {
         </div>
 
         <div className="p-6 space-y-4">
+          {/* Photo upload */}
+          <div className="flex items-center gap-4">
+            <div className="relative shrink-0">
+              <img src={previewPhoto} alt="preview" className="w-14 h-14 rounded-full object-cover border-2 border-border-c" />
+              {uploading && (
+                <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                </div>
+              )}
+            </div>
+            <div className="flex-1">
+              <label className={LABEL}>Photo</label>
+              <div className="flex gap-2">
+                <input type="url" placeholder="https://… or upload →" value={form.photo_url}
+                  onChange={e => set("photo_url", e.target.value)} className={INPUT + " flex-1 min-w-0"} />
+                <input ref={photoRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoFile} />
+                <button type="button" onClick={() => photoRef.current?.click()} disabled={uploading}
+                  className="shrink-0 px-3 py-2 bg-surface2 border border-border-c hover:border-red-500/30 text-muted-tx hover:text-tx rounded-xl transition-all disabled:opacity-60 flex items-center gap-1 text-xs font-fira">
+                  <Upload size={13} />
+                </button>
+              </div>
+              <p className="text-subtle-tx text-[11px] font-fira mt-1">Leave blank to auto-generate from name</p>
+            </div>
+          </div>
+
           {/* Name + Email */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -335,12 +376,6 @@ function MemberModal({ member, onSave, onClose }: {
             </div>
           </div>
 
-          {/* Photo URL */}
-          <div>
-            <label className={LABEL}>Photo URL <span className="text-subtle-tx font-normal normal-case tracking-normal">(optional — auto-generated if empty)</span></label>
-            <input type="url" placeholder="https://…" value={form.photo_url} onChange={e => set("photo_url", e.target.value)} className={INPUT} />
-          </div>
-
           {/* Is head toggle */}
           <label className="flex items-center gap-3 cursor-pointer">
             <div onClick={() => set("is_head", !form.is_head)}
@@ -355,7 +390,7 @@ function MemberModal({ member, onSave, onClose }: {
             <button type="button" onClick={onClose} className="flex-1 py-2.5 border border-border-c rounded-xl text-sm font-fira text-muted-tx hover:text-tx hover:border-red-500/30 transition-all">
               Cancel
             </button>
-            <button type="button" onClick={handleSave} disabled={!form.name.trim() || !form.email.trim()}
+            <button type="button" onClick={handleSave} disabled={!form.name.trim() || !form.email.trim() || uploading}
               className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-red-500 hover:bg-red-600 disabled:opacity-40 text-white text-sm font-fira font-semibold rounded-xl transition-all">
               <Save size={14} /> {member?.id ? "Save Changes" : "Add Member"}
             </button>
@@ -427,7 +462,8 @@ export default function SettingsPage() {
   const [advModal, setAdvModal]   = useState<Partial<FacultyAdvisor> | null | "new">(null);
   const [toast, setToast]         = useState("");
   const [teamFilter, setTeamFilter] = useState("All");
-  const [saving, setSaving]         = useState(false);
+  const [saving, setSaving]                   = useState(false);
+  const [savingTeam, setSavingTeam]           = useState(false);
   const [uploadingLogo, setUploadingLogo]     = useState(false);
   const [uploadingBanner, setUploadingBanner] = useState(false);
   const logoRef   = useRef<HTMLInputElement>(null);
@@ -511,16 +547,54 @@ export default function SettingsPage() {
     [events]
   );
 
+  async function handleSaveTeam(updatedMembers: Member[], updatedAdvisors: FacultyAdvisor[]) {
+    setSavingTeam(true);
+    try {
+      await updateCouncilProfile({ members: updatedMembers, faculty_advisors: updatedAdvisors });
+      showToast("Team saved!");
+    } catch {
+      showToast("Failed to save. Please try again.");
+    } finally {
+      setSavingTeam(false);
+    }
+  }
+
   function saveAdvisor(a: FacultyAdvisor) {
-    setAdvisors(prev => prev.find(x => x.id === a.id) ? prev.map(x => x.id === a.id ? a : x) : [...prev, a]);
+    const isEdit = advisors.some(x => x.id === a.id);
+    const updated = isEdit ? advisors.map(x => x.id === a.id ? a : x) : [...advisors, a];
+    setAdvisors(updated);
     setAdvModal(null);
-    showToast(advisors.find(x => x.id === a.id) ? "Advisor updated!" : "Advisor added!");
+    // auto-persist faculty advisor changes
+    updateCouncilProfile({ faculty_advisors: updated })
+      .then(() => showToast(isEdit ? "Advisor updated!" : "Advisor added!"))
+      .catch(() => showToast("Saved locally — sync failed, try Save Settings."));
+  }
+
+  function deleteAdvisor(id: string) {
+    const updated = advisors.filter(x => x.id !== id);
+    setAdvisors(updated);
+    updateCouncilProfile({ faculty_advisors: updated })
+      .then(() => showToast("Advisor removed."))
+      .catch(() => showToast("Removed locally — sync failed."));
   }
 
   function saveMember(m: Member) {
-    setMembers(prev => prev.find(x => x.id === m.id) ? prev.map(x => x.id === m.id ? m : x) : [...prev, m]);
+    const isEdit = members.some(x => x.id === m.id);
+    const updated = isEdit ? members.map(x => x.id === m.id ? m : x) : [...members, m];
+    setMembers(updated);
     setModal(null);
-    showToast(m.id.startsWith("m") && members.find(x => x.id === m.id) ? "Member updated!" : "Member added!");
+    // auto-persist member changes
+    updateCouncilProfile({ members: updated })
+      .then(() => showToast(isEdit ? "Member updated!" : "Member added!"))
+      .catch(() => showToast("Saved locally — sync failed, use Save Team."));
+  }
+
+  function deleteMember(id: string) {
+    const updated = members.filter(x => x.id !== id);
+    setMembers(updated);
+    updateCouncilProfile({ members: updated })
+      .then(() => showToast("Member removed."))
+      .catch(() => showToast("Removed locally — sync failed."));
   }
 
   const allTeams = ["All", ...TEAMS.filter(t => members.some(m => m.team === t))];
@@ -714,7 +788,7 @@ export default function SettingsPage() {
                       className="w-7 h-7 rounded-lg bg-surface border border-border-c hover:border-red-500/30 text-muted-tx hover:text-tx flex items-center justify-center transition-all">
                       <Edit2 size={12} />
                     </button>
-                    <button type="button" onClick={() => { setAdvisors(p => p.filter(x => x.id !== a.id)); showToast("Advisor removed."); }}
+                    <button type="button" onClick={() => deleteAdvisor(a.id)}
                       className="w-7 h-7 rounded-lg bg-surface border border-border-c hover:bg-red-50 dark:hover:bg-red-500/10 hover:border-red-500/30 text-muted-tx hover:text-red-500 flex items-center justify-center transition-all">
                       <Trash2 size={12} />
                     </button>
@@ -777,7 +851,7 @@ export default function SettingsPage() {
               {heads.map(m => (
                 <MemberCard key={m.id} member={m}
                   onEdit={() => setModal(m)}
-                  onDelete={() => { setMembers(prev => prev.filter(x => x.id !== m.id)); showToast("Member removed."); }}
+                  onDelete={() => deleteMember(m.id)}
                 />
               ))}
             </div>
@@ -811,7 +885,7 @@ export default function SettingsPage() {
               {filtered.map(m => (
                 <MemberCard key={m.id} member={m}
                   onEdit={() => setModal(m)}
-                  onDelete={() => { setMembers(prev => prev.filter(x => x.id !== m.id)); showToast("Member removed."); }}
+                  onDelete={() => deleteMember(m.id)}
                 />
               ))}
 
@@ -824,6 +898,15 @@ export default function SettingsPage() {
                 <span className="text-xs font-fira">Add Member</span>
               </button>
             </div>
+          </div>
+
+          {/* Save Team button — fallback if auto-save fails */}
+          <div className="flex items-center justify-between pt-2 border-t border-border-c">
+            <p className="text-subtle-tx text-xs font-fira">Changes auto-save after each action. Click here to force sync.</p>
+            <button type="button" onClick={() => handleSaveTeam(members, advisors)} disabled={savingTeam}
+              className="flex items-center gap-2 px-5 py-2.5 bg-red-500 hover:bg-red-600 disabled:opacity-60 text-white text-sm font-fira font-semibold rounded-xl transition-colors">
+              <Save size={14} /> {savingTeam ? "Saving…" : "Save Team"}
+            </button>
           </div>
         </div>
       )}
