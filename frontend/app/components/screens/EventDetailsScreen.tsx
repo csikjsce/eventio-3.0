@@ -229,7 +229,13 @@ export default function EventDetailsScreen() {
             <IconText
               Icon={Calendar2}
               line1={event.dates[0] ? new Date(event.dates[0]).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "TBA"}
-              line2={event.dates[0] ? new Date(event.dates[0]).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }) : "—"}
+              line2={
+                event.dates[0]
+                  ? event.dates.length > 1
+                    ? `${new Date(event.dates[0]).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })} – ${new Date(event.dates[event.dates.length - 1]).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}`
+                    : new Date(event.dates[0]).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
+                  : "—"
+              }
             />
             <div className="w-px bg-border" />
             <IconText

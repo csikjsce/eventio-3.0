@@ -5,6 +5,7 @@ import { newEventSchema, type NewEventSchema } from "@/lib/validation";
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Spinner from "@/components/Spinner";
+import NumberInput from "@/components/NumberInput";
 import { useData } from "@/contexts/DataContext";
 import { createEvent, updateEvent } from "@/lib/api";
 import { uploadFile } from "@/lib/upload";
@@ -130,6 +131,7 @@ export default function NewEventPage() {
   const [step, setStep]               = useState(1);
   const [startDate, setStartDate]     = useState(dateToString(new Date()));
   const [endDate, setEndDate]         = useState(dateToString(new Date()));
+  const [endTime, setEndTime]         = useState("18:00");   // single-day end time (HH:mm)
   const [multiDay, setMultiDay]       = useState(false);
   const [teamEvent, setTeamEvent]     = useState(false);
   const [femaleQuota, setFemaleQuota] = useState(false);
@@ -160,20 +162,39 @@ export default function NewEventPage() {
       methods.reset(existing as any);
       if (existing.dates[0]) setStartDate(dateToString(new Date(existing.dates[0])));
       if (existing.dates.length > 1) {
-        setEndDate(dateToString(new Date(existing.dates[existing.dates.length - 1])));
-        setMultiDay(true);
+        const last = new Date(existing.dates[existing.dates.length - 1]);
+        setEndDate(dateToString(last));
+        // Detect multi-day: end date is a different calendar day from start
+        const start = new Date(existing.dates[0]);
+        const isDifferentDay = last.toDateString() !== start.toDateString();
+        if (isDifferentDay) {
+          setMultiDay(true);
+        } else {
+          // Same day — store end time for the single-day time picker
+          setEndTime(`${String(last.getHours()).padStart(2,"0")}:${String(last.getMinutes()).padStart(2,"0")}`);
+        }
       }
       if (existing.ma_ppt > 1) setTeamEvent(true);
     }
   }, []);
 
   useEffect(() => {
-    if (!multiDay) { setValue("dates", [new Date(startDate)]); return; }
-    const arr: Date[] = [];
-    const cur = new Date(startDate), end = new Date(endDate);
-    while (cur <= end) { arr.push(new Date(cur)); cur.setDate(cur.getDate() + 1); }
-    setValue("dates", arr);
-  }, [startDate, endDate, multiDay]);
+    const start = new Date(startDate);
+    if (!multiDay) {
+      // Build end datetime: same date as start, but with the chosen end time
+      const [hh, mm] = endTime.split(":").map(Number);
+      const end = new Date(start);
+      end.setHours(hh ?? 23, mm ?? 59, 0, 0);
+      // If end time is before or equal start time, push to next day
+      if (end <= start) end.setDate(end.getDate() + 1);
+      setValue("dates", [start, end]);
+      return;
+    }
+    // Multi-day: store [startDatetime, endDatetime] — no per-day expansion needed
+    const end = new Date(endDate);
+    if (end < start) setValue("dates", [start]);
+    else setValue("dates", [start, end]);
+  }, [startDate, endDate, endTime, multiDay]);
 
   useEffect(() => { if (!teamEvent) { setValue("ma_ppt", 1); setValue("min_ppt", 1); } }, [teamEvent]);
   useEffect(() => { if (!femaleQuota) setValue("female_requirement", null); }, [femaleQuota]);
@@ -427,11 +448,13 @@ export default function NewEventPage() {
                       <FieldWrap label={multiDay ? "Start Date & Time *" : "Event Date & Time *"}>
                         <input type="datetime-local" className={INPUT} value={startDate} onChange={e => setStartDate(e.target.value)} />
                       </FieldWrap>
-                      {multiDay && (
-                        <FieldWrap label="End Date & Time *">
+                      <FieldWrap label={multiDay ? "End Date & Time *" : "End Time *"}>
+                        {multiDay ? (
                           <input type="datetime-local" className={INPUT} value={endDate} onChange={e => setEndDate(e.target.value)} />
-                        </FieldWrap>
-                      )}
+                        ) : (
+                          <input type="time" className={INPUT} value={endTime} onChange={e => setEndTime(e.target.value)} />
+                        )}
+                      </FieldWrap>
                     </div>
 
                     <Toggle on={multiDay} onToggle={() => setMultiDay(!multiDay)} label="Multi-day Event" sub="Event spans across more than one calendar day." />
@@ -467,10 +490,10 @@ export default function NewEventPage() {
                     ) : (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <FieldWrap label="Total Seats *" error={errors.ticket_count?.message}>
-                          <input type="number" min={1} className={INPUT} {...register("ticket_count")} placeholder="e.g. 300" />
+                          <NumberInput min={1} className="w-full" {...register("ticket_count")} placeholder="e.g. 300" />
                         </FieldWrap>
                         <FieldWrap label="Entry Fee (₹) *" error={errors.fee?.message}>
-                          <input type="number" min={0} className={INPUT} {...register("fee")} placeholder="0 for free" />
+                          <NumberInput min={0} className="w-full" {...register("fee")} placeholder="0 for free" />
                         </FieldWrap>
                       </div>
                     )}
@@ -478,15 +501,15 @@ export default function NewEventPage() {
                     <Toggle on={teamEvent} onToggle={() => setTeamEvent(!teamEvent)} label="Team Participation" sub="Allow students to register as a group." />
                     {teamEvent && (
                       <div className="grid grid-cols-2 gap-4 pl-4 border-l-2 border-red-600/30">
-                        <FieldWrap label="Min Members" error={errors.min_ppt?.message}><input type="number" min={1} className={INPUT} {...register("min_ppt")} /></FieldWrap>
-                        <FieldWrap label="Max Members" error={errors.ma_ppt?.message}><input type="number" min={1} className={INPUT} {...register("ma_ppt")} /></FieldWrap>
+                        <FieldWrap label="Min Members" error={errors.min_ppt?.message}><NumberInput min={1} className="w-full" {...register("min_ppt")} /></FieldWrap>
+                        <FieldWrap label="Max Members" error={errors.ma_ppt?.message}><NumberInput min={1} className="w-full" {...register("ma_ppt")} /></FieldWrap>
                       </div>
                     )}
 
                     <Toggle on={femaleQuota} onToggle={() => setFemaleQuota(!femaleQuota)} label="Female Seat Reservation" sub="Reserve a number of seats exclusively for female participants." />
                     {femaleQuota && (
                       <FieldWrap label="Reserved Female Seats" error={undefined}>
-                        <input type="number" min={0} className={INPUT} {...register("female_requirement")} placeholder="e.g. 50" />
+                        <NumberInput min={0} className="w-full" {...register("female_requirement")} placeholder="e.g. 50" />
                       </FieldWrap>
                     )}
 

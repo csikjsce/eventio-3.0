@@ -6,6 +6,7 @@ import { ArrowLeft, Camera, TickCircle } from "iconsax-react";
 import { UserDataContext } from "@/contexts/userContext";
 import { updateProfile } from "@/lib/api";
 import { uploadFile } from "@/lib/upload";
+import NumberInput from "@/components/NumberInput";
 import type { User } from "@/types/eventio";
 
 const INTEREST_SUGGESTIONS = [
@@ -280,12 +281,13 @@ export default function ProfileSettingsScreen() {
             </div>
             <div className="flex-1">
               <Field label="Grad Year">
-                <input
-                  className={inputCls}
-                  type="number"
+                <NumberInput
                   value={(form.year as number) || ""}
-                  onChange={(e) => set("year", Number(e.target.value))}
+                  onChange={(val) => set("year", val)}
+                  min={2020}
+                  max={2035}
                   placeholder="e.g. 2027"
+                  className="w-full"
                 />
               </Field>
             </div>
