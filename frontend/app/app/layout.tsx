@@ -28,7 +28,7 @@ export const metadata: Metadata = {
   },
   description: "Discover and register for events happening at KJSCE, powered by CSI KJSCE.",
   metadataBase: new URL(
-    process.env.NEXT_PUBLIC_APP_URL ?? "https://eventio.somaiya.edu"
+    process.env.NEXT_PUBLIC_APP_URL || "https://eventio.somaiya.edu"
   ),
   openGraph: {
     siteName: "Eventio",

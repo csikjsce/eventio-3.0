@@ -45,10 +45,13 @@ services:
             context: ./frontend/app
             dockerfile: Dockerfile
             args:
-                - NEXT_PUBLIC_SERVER_ADDRESS=${NEXT_PUBLIC_SERVER_ADDRESS:-http://localhost:8000}
+                - NEXT_PUBLIC_SERVER_ADDRESS=${NEXT_PUBLIC_SERVER_ADDRESS:-https://eventioapi.swdc.somaiya.edu}
         container_name: eventio-app
         ports:
             - "4173:3000"
+        environment:
+            - SERVER_ADDRESS=${SERVER_ADDRESS:-https://eventioapi.swdc.somaiya.edu}
+            - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-https://eventio.somaiya.edu}
         depends_on:
             backend:
                 condition: service_healthy

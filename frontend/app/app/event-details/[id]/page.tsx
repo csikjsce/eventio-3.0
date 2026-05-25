@@ -12,29 +12,14 @@ interface EventMeta {
   organizer:   string | null;
 }
 
-/**
- * Resolve the backend base URL for server-side metadata fetching.
- *
- * Priority:
- *   1. SERVER_ADDRESS      — server-only env var, never sent to the browser.
- *                            Set this in production so the Next.js server can
- *                            reach the backend even on an internal network.
- *   2. NEXT_PUBLIC_SERVER_ADDRESS — the same URL the browser uses; works fine
- *                            when Next.js and the backend are on the same host.
- */
-function resolveServerAddress(): string | null {
-  const addr =
-    process.env.SERVER_ADDRESS ||           // server-only (preferred)
-    process.env.NEXT_PUBLIC_SERVER_ADDRESS; // public fallback
-  return addr && addr.trim() ? addr.trim() : null;
-}
+const BACKEND_URL =
+  process.env.SERVER_ADDRESS ||
+  process.env.NEXT_PUBLIC_SERVER_ADDRESS ||
+  "https://eventioapi.swdc.somaiya.edu";
 
 async function fetchEventMeta(id: string): Promise<EventMeta | null> {
-  const server = resolveServerAddress();
-  if (!server) return null;
-
   try {
-    const res = await fetch(`${server}/api/v1/event/public/${id}`, {
+    const res = await fetch(`${BACKEND_URL}/api/v1/event/public/${id}`, {
       // no caching — metadata should always reflect latest event state
       cache: "no-store",
     });
