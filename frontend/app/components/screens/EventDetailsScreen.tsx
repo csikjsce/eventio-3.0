@@ -108,7 +108,7 @@ export default function EventDetailsScreen() {
           if (eventData.Participant) {
             if (eventData.Participant.ticket_collected) {
               setButtonState({ text: "View Ticket", loading: false, disabled: false, onClick: () => router.push("/ticket/" + eventData.id) });
-            } else if ((eventData.tickets_sold ?? 0) >= (eventData.ticket_count ?? 500)) {
+            } else if ((eventData.tickets_sold ?? 0) >= (eventData.ticket_count ?? Infinity)) {
               setButtonState({ text: "Tickets Sold Out", loading: false, disabled: true, onClick: () => {} });
             } else {
               setButtonState({ text: "RSVP for this event", loading: false, disabled: false, onClick: claimTicket });
@@ -241,7 +241,7 @@ export default function EventDetailsScreen() {
             {event.ma_ppt > 1 ? (
               <IconText Icon={Profile2User} line1="TEAM" line2={event.ma_ppt === event.min_ppt ? `${event.ma_ppt}` : `${event.min_ppt}–${event.ma_ppt}`} />
             ) : (
-              <IconText Icon={User} line1="500" line2="Seats" />
+              <IconText Icon={User} line1={event.ticket_count ? String(event.ticket_count) : "—"} line2="Seats" />
             )}
           </div>
 
