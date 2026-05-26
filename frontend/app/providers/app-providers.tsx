@@ -24,6 +24,14 @@ export default function AppProviders({
       .then(([user, evs]) => {
         setUserData(user);
         setEvents(evs);
+
+        // If the backend already has a complete profile for this user,
+        // mark onboarding as done locally so they aren't sent back to /onboarding
+        // on a new device or after clearing storage.
+        const profileComplete = !!(user?.degree && user?.college);
+        if (profileComplete && !localStorage.getItem("eventio-onboarded")) {
+          localStorage.setItem("eventio-onboarded", "true");
+        }
       })
       .catch(() => {
         // Auth errors are handled by the axios interceptor (redirects to /login).
