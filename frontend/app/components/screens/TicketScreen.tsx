@@ -52,13 +52,20 @@ export default function TicketScreen() {
       })
     : "—";
 
-  const endTimeLabel =
-    eventData?.dates && eventData.dates.length > 1
-      ? new Date(eventData.dates[eventData.dates.length - 1]).toLocaleTimeString("en-US", {
-          hour: "2-digit",
-          minute: "2-digit",
-        })
-      : timeLabel;
+  const hasEndTime = !!(eventData?.dates && eventData.dates.length > 1);
+  const endTimeLabel = hasEndTime
+    ? new Date(eventData!.dates[eventData!.dates.length - 1]).toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "—";
+  const endDateLabel = hasEndTime
+    ? new Date(eventData!.dates[eventData!.dates.length - 1]).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+    : dateLabel;
 
   /* ── Loading ── */
   if (loading) {
@@ -135,17 +142,21 @@ export default function TicketScreen() {
           {/* Time info */}
           <div className="mt-4 bg-surface rounded-2xl p-4 border border-border">
             <p className="text-mute text-xs font-poppins mb-3 text-center">
-              Ticket will be active from
+              {hasEndTime ? "Event timing" : "Ticket will be active from"}
             </p>
             <div className="flex items-center justify-between">
               <div>
+                <p className="text-[10px] text-mute font-poppins uppercase tracking-wider mb-0.5">Start</p>
                 <p className="text-foreground font-bold text-xl font-poppins">{timeLabel}</p>
                 <p className="text-mute text-xs font-poppins mt-0.5">{dateLabel}</p>
               </div>
               <div className="h-px flex-1 border-t-2 border-dashed border-border mx-4" />
               <div className="text-right">
-                <p className="text-foreground font-bold text-xl font-poppins">{endTimeLabel}</p>
-                <p className="text-mute text-xs font-poppins mt-0.5">{dateLabel}</p>
+                <p className="text-[10px] text-mute font-poppins uppercase tracking-wider mb-0.5">End</p>
+                <p className={`font-bold text-xl font-poppins ${hasEndTime ? "text-foreground" : "text-mute"}`}>
+                  {endTimeLabel}
+                </p>
+                <p className="text-mute text-xs font-poppins mt-0.5">{endDateLabel}</p>
               </div>
             </div>
           </div>

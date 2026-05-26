@@ -63,12 +63,15 @@ api.interceptors.response.use(
             localStorage.removeItem("accessToken");
             localStorage.removeItem("refreshToken");
             localStorage.removeItem("eventio-onboarded");
-            window.location.replace("/login");
+            const next = window.location.pathname + window.location.search;
+            window.location.replace("/login?next=" + encodeURIComponent(next));
           }
         }
       } else {
+        // No refresh token at all — redirect to login, preserving current URL
         if (typeof window !== "undefined") {
-          window.location.replace("/login");
+          const next = window.location.pathname + window.location.search;
+          window.location.replace("/login?next=" + encodeURIComponent(next));
         }
       }
     }
