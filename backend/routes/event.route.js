@@ -632,6 +632,7 @@ router.post(protected + "/get/:id", authCheck, async (req, res) => {
             is_submission_enabled: event.is_submission_enabled,
             urls: event.urls,
             report_url: event.report_url,
+            state_history: event.state_history ?? [],
         };
         res.json({ error: false, event: eventResponse });
     } catch (err) {

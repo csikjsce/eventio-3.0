@@ -74,99 +74,77 @@ api.interceptors.response.use(
   },
 );
 
-// ── Approval chain builder ─────────────────────────────────────────────────────
+// ── Approval chain builder (from state_history) ───────────────────────────────
 
-interface RawApprovalStep {
-  stage: string;
-  doneLabel: string;
-  waitingLabel: string;
-  actor: string;
+interface StateMeta {
+  label:       string;
+  reopenLabel?: string;
+  actor:       string;
 }
 
-const APPROVAL_FLOW: RawApprovalStep[] = [
-  { stage: "DRAFT",                       doneLabel: "Event Created",              waitingLabel: "Finish setup and submit",     actor: "You (Council)"    },
-  { stage: "APPLIED_FOR_APPROVAL",        doneLabel: "Proposal Submitted",         waitingLabel: "Awaiting Faculty Review",     actor: "Faculty Advisor"  },
-  { stage: "APPLIED_FOR_PRINCI_APPROVAL", doneLabel: "Faculty Cleared",            waitingLabel: "Awaiting Principal Approval", actor: "Principal"        },
-  { stage: "UNLISTED",                    doneLabel: "Principal Approved",         waitingLabel: "Ready to Open Registration",  actor: "You (Council)"    },
-  { stage: "UPCOMING",                    doneLabel: "Event Listed",               waitingLabel: "Open Registration",           actor: "You (Council)"    },
-  { stage: "REGISTRATION_OPEN",           doneLabel: "Registration Opened",        waitingLabel: "Registration in progress",    actor: "You (Council)"    },
-  { stage: "REGISTRATION_CLOSED",         doneLabel: "Registration Closed",        waitingLabel: "Prepare for event day",       actor: "You (Council)"    },
-  { stage: "ONGOING",                     doneLabel: "Event Started",              waitingLabel: "Event in progress",           actor: "You (Council)"    },
-  { stage: "COMPLETED",                   doneLabel: "Event Completed",            waitingLabel: "Submit post-event report",    actor: "You (Council)"    },
-  { stage: "TICKET_CLOSED",               doneLabel: "Report Submitted",           waitingLabel: "Complete",                    actor: "You (Council)"    },
-];
+/** Human-readable labels + actors for each backend STATE enum value. */
+const STATE_META: Record<string, StateMeta> = {
+  DRAFT:                       { label: "Event Created",         actor: "You (Council)"   },
+  APPLIED_FOR_APPROVAL:        { label: "Proposal Submitted",    actor: "Faculty Advisor" },
+  APPLIED_FOR_PRINCI_APPROVAL: { label: "Faculty Cleared",       actor: "Principal"       },
+  UNLISTED:                    { label: "Principal Approved",    actor: "You (Council)"   },
+  UPCOMING:                    { label: "Event Listed",          reopenLabel: "Event Re-listed",           actor: "You (Council)" },
+  REGISTRATION_OPEN:           { label: "Registration Opened",   reopenLabel: "Registration Reopened",   actor: "You (Council)" },
+  REGISTRATION_CLOSED:         { label: "Registration Closed",   reopenLabel: "Registration Paused",       actor: "You (Council)" },
+  TICKET_OPEN:                 { label: "Tickets Live",          reopenLabel: "Tickets Reopened",          actor: "You (Council)" },
+  TICKET_CLOSED:               { label: "Ticket Sales Closed",   reopenLabel: "Ticket Sales Stopped",      actor: "You (Council)" },
+  ONGOING:                     { label: "Event Started",         actor: "You (Council)"   },
+  COMPLETED:                   { label: "Event Completed",       actor: "You (Council)"   },
+  PRIVATE:                     { label: "Set to Private",        reopenLabel: "Set to Private Again",      actor: "You (Council)" },
+};
 
-// Legacy lookup for any code still referencing milestone labels
-const CHAIN_MILESTONES = APPROVAL_FLOW.map(({ stage, doneLabel, actor }) => ({
-  stage,
-  label: doneLabel,
-  actor,
-}));
+function getStateMeta(stage: string): StateMeta {
+  if (STATE_META[stage]) return STATE_META[stage];
+  return {
+    label: stage.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()),
+    actor: "System",
+  };
+}
 
-const CANONICAL_ORDER = APPROVAL_FLOW.map(s => s.stage);
+/** Ensure history ends with the current state (handles legacy / out-of-sync rows). */
+function normalizeStateHistory(currentState: string, stateHistory?: string[]): string[] {
+  const history = (stateHistory ?? []).filter(Boolean).map(String);
+  const state   = currentState || "DRAFT";
 
-const EXTERNAL_WAIT_STATES = new Set(["APPLIED_FOR_APPROVAL", "APPLIED_FOR_PRINCI_APPROVAL"]);
+  if (history.length === 0) return [state];
+  if (history[history.length - 1] !== state) return [...history, state];
+  return history;
+}
 
+/**
+ * Build the approval timeline from the event's state_history array.
+ * Each state transition becomes one node — repeats (e.g. reopening registration)
+ * appear as separate steps so the full journey is preserved.
+ */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function buildApprovalChain(currentState: string, _stateHistory: string[]): any[] {
-  if (currentState === "REJECTED") {
-    const base = buildApprovalChain("APPLIED_FOR_APPROVAL", _stateHistory).filter(s => s.status === "done");
-    return [...base, { stage: "REJECTED", label: "Proposal Rejected", status: "rejected", actor: "Faculty / Principal" }];
-  }
+function buildApprovalChain(currentState: string, stateHistory: string[]): any[] {
+  const history    = normalizeStateHistory(currentState, stateHistory);
+  const visitCount: Record<string, number> = {};
 
-  const currentIdx = APPROVAL_FLOW.findIndex(s => s.stage === currentState);
-  if (currentIdx < 0) {
-    return [{ stage: currentState, label: currentState.replace(/_/g, " "), status: "active", actor: "System" }];
-  }
+  return history.map((stage, index) => {
+    visitCount[stage] = (visitCount[stage] ?? 0) + 1;
+    const meta     = getStateMeta(stage);
+    const isLast   = index === history.length - 1;
+    const isRepeat = visitCount[stage] > 1;
 
-  const lastIdx = Math.min(
-    EXTERNAL_WAIT_STATES.has(currentState) ? currentIdx + 1 : currentIdx,
-    APPROVAL_FLOW.length - 1,
-  );
+    const label = isRepeat && meta.reopenLabel
+      ? meta.reopenLabel
+      : isRepeat
+        ? `${meta.label} (again)`
+        : meta.label;
 
-  return APPROVAL_FLOW.slice(0, lastIdx + 1).map((step, i) => {
-    let status: "done" | "active" | "pending" | "rejected";
-    let label: string;
-
-    if (EXTERNAL_WAIT_STATES.has(currentState)) {
-      if (i < currentIdx) {
-        status = "done";
-        label = step.doneLabel;
-      } else if (i === currentIdx) {
-        status = "done";
-        label = step.doneLabel;
-      } else if (i === currentIdx + 1) {
-        status = "active";
-        label = APPROVAL_FLOW[currentIdx].waitingLabel;
-      } else {
-        status = "pending";
-        label = step.doneLabel;
-      }
-    } else if (i < currentIdx) {
-      status = "done";
-      label = step.doneLabel;
-    } else if (i === currentIdx) {
-      status = "active";
-      label = step.waitingLabel;
-    } else {
-      status = "pending";
-      label = step.doneLabel;
-    }
-
-    return { stage: step.stage, label, status, actor: resolveActor(step, i, currentState, currentIdx) };
+    return {
+      stage,
+      label,
+      status: isLast ? "active" : "done",
+      actor:  meta.actor,
+    };
   });
-}
-
-function resolveActor(
-  step: RawApprovalStep,
-  i: number,
-  currentState: string,
-  currentIdx: number,
-): string {
-  if (EXTERNAL_WAIT_STATES.has(currentState) && i === currentIdx + 1) {
-    return APPROVAL_FLOW[currentIdx].actor;
-  }
-  return step.actor;
 }
 
 // ── State ↔ PipelineStage mapping ─────────────────────────────────────────────
@@ -191,12 +169,15 @@ export function mapStateToPipeline(state: string): PipelineStage {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function transformEvent(e: any): EventData {
+  const state         = e.state ?? "DRAFT";
+  const state_history = normalizeStateHistory(state, e.state_history ?? []);
+
   return {
     ...e,
-    pipeline_stage:        mapStateToPipeline(e.state ?? "DRAFT"),
-    approval_chain:        (e.approval_chain && e.approval_chain.length)
-                             ? e.approval_chain
-                             : buildApprovalChain(e.state ?? "DRAFT", e.state_history ?? []),
+    state,
+    state_history,
+    pipeline_stage:        mapStateToPipeline(state),
+    approval_chain:        buildApprovalChain(state, state_history),
     documents:             e.documents             ?? [],
     children:              e.children              ?? [],
     tags:                  e.tags                  ?? [],

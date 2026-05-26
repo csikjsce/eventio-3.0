@@ -42,9 +42,12 @@ const STAGE_ICON: Record<string, React.ReactNode> = {
   FULLY_APPROVED:      <CheckCircle2   size={14} />,
   REGISTRATION_OPEN:   <Ticket         size={14} />,
   REGISTRATION_CLOSED: <Clock          size={14} />,
+  TICKET_OPEN:         <Ticket         size={14} />,
+  TICKET_CLOSED:       <Clock          size={14} />,
   ONGOING:             <ArrowLeft      size={14} className="rotate-180" />,
   COMPLETED:           <CheckCircle2   size={14} />,
   REPORT_SUBMITTED:    <FileText       size={14} />,
+  PRIVATE:             <Settings       size={14} />,
 };
 
 function fmtShort(iso: string) {
@@ -69,13 +72,20 @@ function ApprovalTimeline({ chain }: { chain: ApprovalStep[] }) {
           : "bg-surface2 border-border-c text-subtle-tx";
 
         return (
-          <div key={i} className="flex gap-4">
-            {/* Icon + vertical connector */}
+          <div key={`${step.stage}-${i}`} className="flex gap-4">
+            {/* Step number + icon + vertical connector */}
             <div className="flex flex-col items-center shrink-0">
+              <span className="text-[10px] font-fira text-subtle-tx mb-1">{i + 1}</span>
               <div className={`w-10 h-10 rounded-full border-2 flex items-center justify-center shrink-0 ${iconBg}`}>
                 {step.status === "rejected" ? <XCircle size={15} /> : (STAGE_ICON[step.stage] ?? STAGE_ICON[mapStateToPipeline(step.stage)] ?? <Clock size={15} />)}
               </div>
-              {!isLast && <div className="w-px flex-1 bg-border-c my-1 min-h-[2rem]" />}
+              {!isLast && (
+                <div className="flex flex-col items-center my-1 min-h-[2rem]">
+                  <div className="w-px flex-1 bg-border-c" />
+                  <ChevronRight size={12} className="text-subtle-tx rotate-90 shrink-0 my-0.5" />
+                  <div className="w-px flex-1 bg-border-c" />
+                </div>
+              )}
             </div>
 
             {/* Content + date */}
