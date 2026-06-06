@@ -1,6 +1,6 @@
 export type DocumentKind = "permission_letter" | "report";
 
-export const SOMAIYA_KJSCE_LOGO = "/K J Somaiya College of Engineering@2x.png";
+export const SOMAIYA_KJSCE_LOGO = "/somaiya-kjsce-logo.png";
 
 export interface PermissionLetterFields {
   refNo: string;
