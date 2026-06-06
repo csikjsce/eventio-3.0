@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { EventData, PipelineStage } from "@/lib/dummy-data";
+import type { ApprovalStep, EventData, PipelineStage } from "@/lib/dummy-data";
 
 const SERVER = process.env.NEXT_PUBLIC_SERVER_ADDRESS ?? "";
 
@@ -121,16 +121,15 @@ function normalizeStateHistory(currentState: string, stateHistory?: string[]): s
  * Each state transition becomes one node — repeats (e.g. reopening registration)
  * appear as separate steps so the full journey is preserved.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function buildApprovalChain(
   currentState: string,
   stateHistory: string[],
   comment?: string | null,
-): any[] {
+): ApprovalStep[] {
   const history    = normalizeStateHistory(currentState, stateHistory);
   const visitCount: Record<string, number> = {};
 
-  const chain = history.map((stage, index) => {
+  const chain: ApprovalStep[] = history.map((stage, index) => {
     visitCount[stage] = (visitCount[stage] ?? 0) + 1;
     const meta     = getStateMeta(stage);
     const isLast   = index === history.length - 1;
@@ -145,7 +144,7 @@ function buildApprovalChain(
     return {
       stage,
       label,
-      status: isLast ? "active" : "done",
+      status: (isLast ? "active" : "done") as ApprovalStep["status"],
       actor:  meta.actor,
     };
   });

@@ -23,6 +23,7 @@ import {
   ChevronRight, Edit2,
 } from "lucide-react";
 import type { EventData } from "@/lib/dummy-data";
+import { useData } from "@/contexts/DataContext";
 
 // ─── State machine ────────────────────────────────────────────────────────────
 

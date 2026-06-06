@@ -51,7 +51,7 @@ export default function Sidebar({ onClose }: Props) {
     exact ? pathname === href : pathname.startsWith(href);
 
   return (
-    <div className="flex flex-col h-full w-64 bg-surface border-r border-border-c overflow-y-auto transition-colors duration-200">
+    <div className="flex flex-col h-full w-64 bg-surface border-r border-border-c overflow-y-auto scrollbar-hide transition-colors duration-200">
       {/* Logo */}
       <div className="flex items-center gap-3 px-6 py-5 border-b border-border-c shrink-0">
         <Image src="/EventioLogo.svg" alt="Eventio" width={32} height={32} />

@@ -9,7 +9,7 @@ export interface RegistrationField {
   id: string;
   label: string;
   type: RegistrationFieldType;
-  required?: boolean;
+  required: boolean;
   placeholder?: string;
   options?: string[];
 }
@@ -41,7 +41,7 @@ export function createEmptyField(): RegistrationField {
 }
 
 export function normalizeRegistrationFields(
-  fields: RegistrationField[] | undefined | null,
+  fields: (Partial<RegistrationField> & Pick<RegistrationField, "label" | "type">)[] | undefined | null,
 ): RegistrationField[] {
   if (!Array.isArray(fields)) return [];
 
