@@ -135,6 +135,7 @@ model CouncilProfile {
   tagline          String?
   about            String?
   banner_url       String?
+  letterhead_logo  String?
   instagram        String?
   linkedin         String?
   website          String?

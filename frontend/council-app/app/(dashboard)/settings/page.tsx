@@ -43,6 +43,7 @@ interface CouncilSettings {
   phone: string;
   logo_url: string;
   banner_url: string;
+  letterhead_logo: string;
   instagram: string;
   linkedin: string;
   website: string;
@@ -52,7 +53,7 @@ interface CouncilSettings {
 
 const INITIAL_SETTINGS: CouncilSettings = {
   name: "", tagline: "", description: "", email: "",
-  phone: "", logo_url: "", banner_url: "",
+  phone: "", logo_url: "", banner_url: "", letterhead_logo: "",
   instagram: "", linkedin: "", website: "",
 };
 
@@ -587,10 +588,12 @@ export default function SettingsPage() {
   const [saving, setSaving]                   = useState(false);
   const [uploadingLogo, setUploadingLogo]     = useState(false);
   const [uploadingBanner, setUploadingBanner] = useState(false);
+  const [uploadingLetterhead, setUploadingLetterhead] = useState(false);
   const [profileLoading, setProfileLoading]   = useState(true);
   const [showPreview, setShowPreview]         = useState(false);
   const logoRef   = useRef<HTMLInputElement>(null);
   const bannerRef = useRef<HTMLInputElement>(null);
+  const letterheadRef = useRef<HTMLInputElement>(null);
 
   // Load real council profile on mount
   useEffect(() => {
@@ -605,6 +608,7 @@ export default function SettingsPage() {
         tagline:     p.tagline         ?? prev.tagline,
         description: p.about          ?? prev.description,
         banner_url:  p.banner_url      ?? prev.banner_url,
+        letterhead_logo: p.letterhead_logo ?? prev.letterhead_logo,
         instagram:   p.instagram       ?? prev.instagram,
         linkedin:    p.linkedin        ?? prev.linkedin,
         website:     p.website         ?? prev.website,
@@ -644,6 +648,7 @@ export default function SettingsPage() {
         tagline:          settings.tagline,
         about:            settings.description,
         banner_url:       settings.banner_url,
+        letterhead_logo:  settings.letterhead_logo,
         instagram:        settings.instagram,
         linkedin:         settings.linkedin,
         website:          settings.website,
@@ -881,6 +886,47 @@ export default function SettingsPage() {
                 </button>
               )}
               <p className="text-subtle-tx text-[11px] font-fira ml-auto">Recommended: 1200×400px</p>
+            </div>
+          </div>
+
+          {/* Letterhead logo (Doc Builder) */}
+          <div className="bg-surface border border-border-c rounded-2xl p-5 sm:p-6">
+            <h2 className="text-tx font-fira font-semibold text-sm mb-1">Letterhead Logo</h2>
+            <p className="text-subtle-tx text-[11px] font-fira mb-4">
+              Used in Document Builder permission letters and reports (right side of letterhead).
+            </p>
+            <div className="flex items-center gap-5">
+              <div className="w-32 h-16 rounded-xl border border-border-c bg-surface2 flex items-center justify-center overflow-hidden shrink-0">
+                {settings.letterhead_logo
+                  ? <img src={settings.letterhead_logo} alt="letterhead logo" className="w-full h-full object-contain p-2" />
+                  : <span className="text-subtle-tx text-xs font-fira">No logo</span>
+                }
+              </div>
+              <div>
+                <input ref={letterheadRef} type="file" accept="image/*" className="hidden"
+                  onChange={async e => {
+                    const f = e.target.files?.[0];
+                    if (!f) return;
+                    setUploadingLetterhead(true);
+                    try {
+                      const url = await uploadFile(f, "eventio-council-images");
+                      set("letterhead_logo", url);
+                      showToast("Letterhead logo uploaded!");
+                    } catch { showToast("Letterhead upload failed. Please try again."); }
+                    finally { setUploadingLetterhead(false); e.target.value = ""; }
+                  }} />
+                <button type="button" onClick={() => letterheadRef.current?.click()} disabled={uploadingLetterhead}
+                  className="flex items-center gap-2 px-4 py-2 bg-surface2 border border-border-c hover:border-red-500/30 text-muted-tx hover:text-tx text-sm font-fira rounded-xl transition-all mb-2 disabled:opacity-60">
+                  <Upload size={14} /> {uploadingLetterhead ? "Uploading…" : "Upload Letterhead Logo"}
+                </button>
+                {settings.letterhead_logo && (
+                  <button type="button" onClick={() => set("letterhead_logo", "")}
+                    className="flex items-center gap-1.5 px-3 py-2 text-muted-tx hover:text-red-500 text-xs font-fira transition-colors">
+                    <X size={13} /> Remove
+                  </button>
+                )}
+                <p className="text-subtle-tx text-[11px] font-fira">PNG or JPG. Wide horizontal logo works best.</p>
+              </div>
             </div>
           </div>
 

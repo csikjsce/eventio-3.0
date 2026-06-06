@@ -19,9 +19,9 @@ export default function Letterhead({
 }: Props) {
   return (
     <header className="border-b border-zinc-300 pb-4 mb-6">
-      <div className="flex items-center gap-4 min-h-[72px]">
+      <div className="grid grid-cols-3 items-center gap-4 min-h-[72px]">
         {/* Eventio mark — left */}
-        <div className="shrink-0 flex items-center justify-center w-12 h-12">
+        <div className="flex items-center justify-start">
           <Image
             src="/EventioLogo.svg"
             alt="Eventio"
@@ -32,29 +32,29 @@ export default function Letterhead({
           />
         </div>
 
-        {/* Somaiya KJSCE — institutional */}
-        <div className="shrink-0 flex items-center max-w-[220px]">
+        {/* Somaiya KJSCE — center aligned */}
+        <div className="flex items-center justify-center min-w-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={SOMAIYA_KJSCE_LOGO}
             alt="Somaiya Vidyavihar University — K J Somaiya School of Engineering"
-            className="h-14 w-auto max-w-[220px] object-contain object-left"
+            className="h-14 w-auto max-w-[240px] object-contain"
           />
         </div>
 
-        {/* Council letterhead — centre / flex */}
-        <div className="flex-1 flex items-center justify-center min-w-0 px-2">
+        {/* Council letterhead logo — right */}
+        <div className="flex items-center justify-end min-w-0">
           {councilLetterheadUrl ? (
-            <div className="relative w-full max-h-16 flex items-center justify-center">
+            <div className="relative max-h-16 flex items-center justify-end">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={councilLetterheadUrl}
                 alt="Council letterhead"
-                className="max-h-16 max-w-full object-contain"
+                className="max-h-16 max-w-[180px] object-contain"
               />
             </div>
           ) : editable ? (
-            <label className="w-full max-w-md cursor-pointer group">
+            <label className="cursor-pointer group">
               <input
                 type="file"
                 accept="image/*"
@@ -66,15 +66,15 @@ export default function Letterhead({
                   e.target.value = "";
                 }}
               />
-              <div className="flex flex-col items-center justify-center gap-1.5 py-3 px-4 rounded-lg border border-dashed border-zinc-300 bg-zinc-50 text-zinc-500 group-hover:border-red-400 group-hover:text-red-600 transition-colors">
-                <Upload size={18} />
-                <span className="text-[11px] font-fira text-center leading-snug">
-                  {uploading ? "Uploading…" : "Upload council letterhead"}
+              <div className="flex flex-col items-center justify-center gap-1.5 py-2 px-3 rounded-lg border border-dashed border-zinc-300 bg-zinc-50 text-zinc-500 group-hover:border-red-400 group-hover:text-red-600 transition-colors">
+                <Upload size={16} />
+                <span className="text-[10px] font-fira text-center leading-snug">
+                  {uploading ? "Uploading…" : "Upload letterhead logo"}
                 </span>
               </div>
             </label>
           ) : (
-            <div className="h-14 w-full max-w-xs rounded border border-dashed border-zinc-200 bg-zinc-50" />
+            <div className="h-14 w-24 rounded border border-dashed border-zinc-200 bg-zinc-50" />
           )}
         </div>
       </div>

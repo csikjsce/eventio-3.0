@@ -167,22 +167,23 @@ router.get(p + "/me", authCheck, councilOnly, async (req, res) => {
 // ─── UPDATE own profile (council-facing) ────────────────────────────
 // PUT /api/v1/council/p/me
 router.put(p + "/me", authCheck, councilOnly, async (req, res) => {
-    const { tagline, about, banner_url, instagram, linkedin, website } = req.body;
+    const { tagline, about, banner_url, letterhead_logo, instagram, linkedin, website } = req.body;
 
     try {
         const profile = await prisma.councilProfile.upsert({
             where: { user_id: req.user.id },
             create: {
                 user_id: req.user.id,
-                tagline, about, banner_url, instagram, linkedin, website,
+                tagline, about, banner_url, letterhead_logo, instagram, linkedin, website,
             },
             update: {
-                ...(tagline     !== undefined && { tagline }),
-                ...(about       !== undefined && { about }),
-                ...(banner_url  !== undefined && { banner_url }),
-                ...(instagram   !== undefined && { instagram }),
-                ...(linkedin    !== undefined && { linkedin }),
-                ...(website     !== undefined && { website }),
+                ...(tagline          !== undefined && { tagline }),
+                ...(about            !== undefined && { about }),
+                ...(banner_url       !== undefined && { banner_url }),
+                ...(letterhead_logo  !== undefined && { letterhead_logo }),
+                ...(instagram        !== undefined && { instagram }),
+                ...(linkedin         !== undefined && { linkedin }),
+                ...(website          !== undefined && { website }),
             },
         });
 

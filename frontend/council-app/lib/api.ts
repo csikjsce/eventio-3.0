@@ -468,6 +468,7 @@ export interface CouncilProfile {
     tagline?: string;
     about?: string;
     banner_url?: string;
+    letterhead_logo?: string;
     instagram?: string;
     linkedin?: string;
     website?: string;

@@ -76,7 +76,7 @@ export default function DocumentBuilderPage() {
     fetchCouncilProfile()
       .then((profile) => {
         const councilName = profile.name ?? "";
-        const letterhead = profile.profile?.banner_url ?? "";
+        const letterhead = profile.profile?.letterhead_logo ?? "";
         setState((prev) => ({
           ...prev,
           letterheadUrl: prev.letterheadUrl || letterhead,
@@ -147,7 +147,7 @@ export default function DocumentBuilderPage() {
     if (!state.letterheadUrl) return;
     setSavingHead(true);
     try {
-      await updateCouncilProfile({ banner_url: state.letterheadUrl });
+      await updateCouncilProfile({ letterhead_logo: state.letterheadUrl });
       showToast("Letterhead saved to council profile.");
     } catch {
       showToast("Could not save letterhead to profile.");
@@ -251,7 +251,7 @@ export default function DocumentBuilderPage() {
           <div className="bg-surface border border-border-c rounded-2xl p-5 space-y-3">
             <p className="text-tx text-sm font-fira font-semibold">Letterhead</p>
             <p className="text-muted-tx text-xs font-fira leading-relaxed">
-              Eventio and Somaiya logos are fixed. Upload your council banner in the centre.
+              Eventio (left) and Somaiya (centre) logos are fixed. Upload your council letterhead logo on the right.
             </p>
             <Letterhead
               councilLetterheadUrl={state.letterheadUrl}
