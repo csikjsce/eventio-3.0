@@ -51,7 +51,7 @@ export function normalizeRegistrationFields(
       const label = field.label?.trim() ?? "";
       if (!label) return null;
 
-      let id = field.id?.trim() || slugifyFieldId(label);
+      const id = field.id?.trim() || slugifyFieldId(label);
       let uniqueId = id;
       let n = 2;
       while (seen.has(uniqueId)) {
