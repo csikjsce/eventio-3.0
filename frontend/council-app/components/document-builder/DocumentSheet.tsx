@@ -6,11 +6,13 @@ import {
   type DocumentKind,
   type DocumentSignatory,
   type PermissionLetterFields,
+  type PermissionTemplateId,
   type ReportFields,
 } from "@/lib/document-builder";
 
 interface Props {
   kind: DocumentKind;
+  permissionTemplate?: PermissionTemplateId;
   letterheadUrl?: string;
   signatories: DocumentSignatory[];
   permission: PermissionLetterFields;
@@ -64,12 +66,59 @@ function SignatoryBlock({
   );
 }
 
+function PermissionDetails({
+  p,
+  template,
+}: {
+  p: PermissionLetterFields;
+  template: PermissionTemplateId;
+}) {
+  const hasContent =
+    p.eventName ||
+    p.eventDate ||
+    p.venue ||
+    p.bannerLocation ||
+    p.publicityChannels ||
+    p.councilName;
+
+  if (!hasContent) return null;
+
+  const sectionTitle = {
+    event: "Event details",
+    venue: "Venue details",
+    banner: "Banner details",
+    pr: "Publicity details",
+  }[template];
+
+  return (
+    <div>
+      <p className="font-semibold mb-2">{sectionTitle}</p>
+      <ul className="list-disc pl-5 space-y-1">
+        {p.eventName && <li>Event: {p.eventName}</li>}
+        {p.eventDate && <li>Date: {formatDisplayDate(p.eventDate)}</li>}
+        {p.venue && (template === "event" || template === "venue") && (
+          <li>Venue: {p.venue}</li>
+        )}
+        {template === "banner" && p.bannerLocation && (
+          <li>Display location(s): {p.bannerLocation}</li>
+        )}
+        {template === "pr" && p.publicityChannels && (
+          <li>Channels: {p.publicityChannels}</li>
+        )}
+        {p.councilName && <li>Organized by: {p.councilName}</li>}
+      </ul>
+    </div>
+  );
+}
+
 function PermissionBody({
   p,
   signatories,
+  template,
 }: {
   p: PermissionLetterFields;
   signatories: DocumentSignatory[];
+  template: PermissionTemplateId;
 }) {
   const subject =
     p.subject.trim() ||
@@ -94,17 +143,7 @@ function PermissionBody({
 
       <p className="whitespace-pre-wrap">{p.body}</p>
 
-      {(p.eventName || p.eventDate || p.venue) && (
-        <div>
-          <p className="font-semibold mb-2">Event details</p>
-          <ul className="list-disc pl-5 space-y-1">
-            {p.eventName && <li>Name: {p.eventName}</li>}
-            {p.eventDate && <li>Date: {formatDisplayDate(p.eventDate)}</li>}
-            {p.venue && <li>Venue: {p.venue}</li>}
-            {p.councilName && <li>Organized by: {p.councilName}</li>}
-          </ul>
-        </div>
-      )}
+      <PermissionDetails p={p} template={template} />
 
       <SignatoryBlock
         signatories={signatories}
@@ -169,6 +208,7 @@ function ReportBody({
 
 export default function DocumentSheet({
   kind,
+  permissionTemplate = "event",
   letterheadUrl,
   signatories,
   permission,
@@ -183,7 +223,7 @@ export default function DocumentSheet({
     >
       <Letterhead councilLetterheadUrl={letterheadUrl} editable={false} />
       {kind === "permission_letter" ? (
-        <PermissionBody p={permission} signatories={signatories} />
+        <PermissionBody p={permission} signatories={signatories} template={permissionTemplate} />
       ) : (
         <ReportBody r={report} signatories={signatories} />
       )}

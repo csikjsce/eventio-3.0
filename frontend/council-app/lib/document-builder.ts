@@ -1,6 +1,37 @@
 export type DocumentKind = "permission_letter" | "report";
 
+export type PermissionTemplateId = "event" | "venue" | "banner" | "pr";
+
 export const SOMAIYA_KJSCE_LOGO = "/somaiya-kjsce-logo.png";
+
+export interface PermissionTemplateMeta {
+  id: PermissionTemplateId;
+  label: string;
+  description: string;
+}
+
+export const PERMISSION_TEMPLATES: PermissionTemplateMeta[] = [
+  {
+    id: "event",
+    label: "Event Permission",
+    description: "General permission to conduct an event on campus",
+  },
+  {
+    id: "venue",
+    label: "Venue Permission",
+    description: "Permission to book and use a specific venue or room",
+  },
+  {
+    id: "banner",
+    label: "Banner Permission",
+    description: "Permission to display banners, posters, or standees",
+  },
+  {
+    id: "pr",
+    label: "PR Permission",
+    description: "Permission for publicity, announcements, and social media",
+  },
+];
 
 export interface DocumentSignatory {
   memberId?: number;
@@ -18,6 +49,10 @@ export interface PermissionLetterFields {
   eventDate: string;
   venue: string;
   councilName: string;
+  /** Banner / standee placement locations (banner template). */
+  bannerLocation: string;
+  /** Publicity channels e.g. Instagram, notice boards (PR template). */
+  publicityChannels: string;
 }
 
 export interface ReportFields {
@@ -35,11 +70,107 @@ export interface ReportFields {
 
 export interface DocumentBuilderState {
   kind: DocumentKind;
+  permissionTemplate: PermissionTemplateId;
   eventId: string;
   letterheadUrl: string;
   signatories: DocumentSignatory[];
   permission: PermissionLetterFields;
   report: ReportFields;
+}
+
+interface TemplateContext {
+  councilName: string;
+  eventName?: string;
+  eventDate?: string;
+  venue?: string;
+  bannerLocation?: string;
+  publicityChannels?: string;
+}
+
+const DEFAULT_RECIPIENT =
+  "The Director,\nK J Somaiya School of Engineering,\nSomaiya Vidyavihar University";
+
+function templateSubject(id: PermissionTemplateId, ctx: TemplateContext): string {
+  const name = ctx.eventName?.trim() || "[Event Name]";
+  const venue = ctx.venue?.trim() || "[Venue]";
+
+  switch (id) {
+    case "event":
+      return `Permission for conducting ${name}`;
+    case "venue":
+      return `Permission for use of ${venue} — ${name}`;
+    case "banner":
+      return `Permission for display of promotional banners — ${name}`;
+    case "pr":
+      return `Permission for publicity and communications — ${name}`;
+  }
+}
+
+function templateBody(id: PermissionTemplateId, ctx: TemplateContext): string {
+  const council = ctx.councilName.trim() || "our council";
+  const name = ctx.eventName?.trim() || "[Event Name]";
+  const venue = ctx.venue?.trim() || "[Venue]";
+  const location = ctx.bannerLocation?.trim() || "[Banner location(s)]";
+  const channels = ctx.publicityChannels?.trim() || "[Publicity channels]";
+
+  switch (id) {
+    case "event":
+      return (
+        `We, on behalf of ${council}, hereby request your kind permission to conduct the event "${name}" under the aegis of our council.\n\n` +
+        "All necessary arrangements regarding faculty supervision, student safety, crowd management, and compliance with institute guidelines shall be ensured. We shall submit the event report and attendance details upon completion."
+      );
+    case "venue":
+      return (
+        `We, on behalf of ${council}, hereby request your kind permission to use ${venue} for conducting "${name}".\n\n` +
+        "The venue shall be used solely for the stated purpose. We undertake to maintain cleanliness, adhere to the institute's time schedule, and restore the venue to its original condition after use."
+      );
+    case "banner":
+      return (
+        `We, on behalf of ${council}, hereby request your kind permission to display promotional banners, posters, and standees for "${name}" at ${location}.\n\n` +
+        "All displayed material shall be decent, non-political, and in line with institute branding guidelines. Banners shall be removed promptly after the publicity period ends."
+      );
+    case "pr":
+      return (
+        `We, on behalf of ${council}, hereby request your kind permission to carry out publicity and communications for "${name}" through ${channels}.\n\n` +
+        "All content shall be factual, respectful, and approved by the faculty advisor before publication. We shall comply with the institute's social media and communication policies."
+      );
+  }
+}
+
+function templateRecipient(id: PermissionTemplateId): string {
+  switch (id) {
+    case "venue":
+      return "The Estate Officer,\nK J Somaiya School of Engineering,\nSomaiya Vidyavihar University";
+    case "banner":
+    case "pr":
+      return DEFAULT_RECIPIENT;
+    case "event":
+    default:
+      return DEFAULT_RECIPIENT;
+  }
+}
+
+/** Apply a permission template, preserving user-entered event details where possible. */
+export function applyPermissionTemplate(
+  templateId: PermissionTemplateId,
+  existing: PermissionLetterFields,
+): PermissionLetterFields {
+  const ctx: TemplateContext = {
+    councilName: existing.councilName,
+    eventName: existing.eventName,
+    eventDate: existing.eventDate,
+    venue: existing.venue,
+    bannerLocation: existing.bannerLocation,
+    publicityChannels: existing.publicityChannels,
+  };
+
+  return {
+    ...existing,
+    date: existing.date || todayISO(),
+    recipient: templateRecipient(templateId),
+    subject: templateSubject(templateId, ctx),
+    body: templateBody(templateId, ctx),
+  };
 }
 
 export function todayISO(): string {
@@ -65,6 +196,8 @@ export function defaultPermissionFields(councilName = ""): PermissionLetterField
     eventDate: "",
     venue: "",
     councilName,
+    bannerLocation: "",
+    publicityChannels: "Instagram, LinkedIn, and institute notice boards",
   };
 }
 
@@ -112,16 +245,22 @@ export function normalizeDraft(raw: Partial<DocumentBuilderState>): DocumentBuil
   return {
     ...base,
     ...raw,
-    permission,
+    permission: {
+      ...permission,
+      bannerLocation: permission.bannerLocation ?? "",
+      publicityChannels: permission.publicityChannels ?? "Instagram, LinkedIn, and institute notice boards",
+    },
     report,
     signatories,
     letterheadUrl,
+    permissionTemplate: raw.permissionTemplate ?? "event",
   };
 }
 
 export function buildDefaultState(councilName = ""): DocumentBuilderState {
   return {
     kind: "permission_letter",
+    permissionTemplate: "event",
     eventId: "",
     letterheadUrl: "",
     signatories: [],

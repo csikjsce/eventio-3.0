@@ -8,13 +8,16 @@ import Letterhead from "@/components/document-builder/Letterhead";
 import { useData } from "@/contexts/DataContext";
 import { fetchCouncilProfile, updateCouncilProfile, type CouncilMemberRow } from "@/lib/api";
 import {
+  applyPermissionTemplate,
   buildDefaultState,
   loadDraft,
+  PERMISSION_TEMPLATES,
   resolveLetterheadUrl,
   saveDraft,
   type DocumentBuilderState,
   type DocumentKind,
   type DocumentSignatory,
+  type PermissionTemplateId,
 } from "@/lib/document-builder";
 import { uploadFile } from "@/lib/upload";
 
@@ -111,6 +114,17 @@ export default function DocumentBuilderPage() {
 
   const setKind = (kind: DocumentKind) => setState((s) => ({ ...s, kind }));
 
+  function selectPermissionTemplate(templateId: PermissionTemplateId) {
+    setState((s) => ({
+      ...s,
+      kind: "permission_letter",
+      permissionTemplate: templateId,
+      permission: applyPermissionTemplate(templateId, s.permission),
+    }));
+    const label = PERMISSION_TEMPLATES.find((t) => t.id === templateId)?.label ?? "Template";
+    showToast(`${label} template applied.`);
+  }
+
   const applyEvent = useCallback(
     (eventId: string) => {
       setState((s) => ({ ...s, eventId }));
@@ -118,26 +132,28 @@ export default function DocumentBuilderPage() {
       if (!event) return;
 
       const eventDate = event.dates?.[0]?.slice(0, 10) ?? "";
-      setState((s) => ({
-        ...s,
-        eventId,
-        permission: {
+      setState((s) => {
+        const permission = {
           ...s.permission,
           eventName: event.name,
           eventDate,
           venue: event.venue ?? "",
-          subject: s.permission.subject || `Permission for conducting ${event.name}`,
-        },
-        report: {
-          ...s.report,
-          eventName: event.name,
-          eventDate,
-          venue: event.venue ?? "",
-          attendance: event.tickets_sold
-            ? `${event.tickets_sold} participants registered`
-            : s.report.attendance,
-        },
-      }));
+        };
+        return {
+          ...s,
+          eventId,
+          permission: applyPermissionTemplate(s.permissionTemplate, permission),
+          report: {
+            ...s.report,
+            eventName: event.name,
+            eventDate,
+            venue: event.venue ?? "",
+            attendance: event.tickets_sold
+              ? `${event.tickets_sold} participants registered`
+              : s.report.attendance,
+          },
+        };
+      });
     },
     [events],
   );
@@ -280,6 +296,31 @@ export default function DocumentBuilderPage() {
               </div>
             </div>
 
+            {state.kind === "permission_letter" && (
+              <div>
+                <p className={LABEL}>Permission template</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {PERMISSION_TEMPLATES.map((tpl) => (
+                    <button
+                      key={tpl.id}
+                      type="button"
+                      onClick={() => selectPermissionTemplate(tpl.id)}
+                      className={`text-left py-2.5 px-3 rounded-lg border transition-all ${
+                        state.permissionTemplate === tpl.id
+                          ? "bg-red-500/10 border-red-500/30 text-red-500"
+                          : "border-border-c text-muted-tx hover:text-tx hover:border-red-500/20"
+                      }`}
+                    >
+                      <span className="block text-xs font-fira font-semibold">{tpl.label}</span>
+                      <span className="block text-[10px] font-fira mt-0.5 opacity-80 leading-snug">
+                        {tpl.description}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div>
               <label className={LABEL}>Prefill from event</label>
               <select
@@ -408,8 +449,40 @@ export default function DocumentBuilderPage() {
                 <Field label="Body" value={p.body} onChange={(v) => setState((s) => ({ ...s, permission: { ...s.permission, body: v } }))} multiline rows={6} />
                 <Field label="Event name" value={p.eventName} onChange={(v) => setState((s) => ({ ...s, permission: { ...s.permission, eventName: v } }))} />
                 <Field label="Event date" value={p.eventDate} onChange={(v) => setState((s) => ({ ...s, permission: { ...s.permission, eventDate: v } }))} />
-                <Field label="Venue" value={p.venue} onChange={(v) => setState((s) => ({ ...s, permission: { ...s.permission, venue: v } }))} />
+                {(state.permissionTemplate === "event" || state.permissionTemplate === "venue") && (
+                  <Field label="Venue" value={p.venue} onChange={(v) => setState((s) => ({ ...s, permission: { ...s.permission, venue: v } }))} />
+                )}
+                {state.permissionTemplate === "banner" && (
+                  <Field
+                    label="Banner location(s)"
+                    value={p.bannerLocation}
+                    onChange={(v) => setState((s) => ({ ...s, permission: { ...s.permission, bannerLocation: v } }))}
+                    multiline
+                    rows={3}
+                  />
+                )}
+                {state.permissionTemplate === "pr" && (
+                  <Field
+                    label="Publicity channels"
+                    value={p.publicityChannels}
+                    onChange={(v) => setState((s) => ({ ...s, permission: { ...s.permission, publicityChannels: v } }))}
+                    multiline
+                    rows={3}
+                  />
+                )}
                 <Field label="Council name" value={p.councilName} onChange={(v) => setState((s) => ({ ...s, permission: { ...s.permission, councilName: v } }))} />
+                <button
+                  type="button"
+                  onClick={() =>
+                    setState((s) => ({
+                      ...s,
+                      permission: applyPermissionTemplate(s.permissionTemplate, s.permission),
+                    }))
+                  }
+                  className="text-xs font-fira text-red-500 hover:underline"
+                >
+                  Reset subject &amp; body from template
+                </button>
               </>
             ) : (
               <>
@@ -449,6 +522,7 @@ export default function DocumentBuilderPage() {
           <DocumentSheet
             sheetRef={sheetRef}
             kind={state.kind}
+            permissionTemplate={state.permissionTemplate}
             letterheadUrl={state.letterheadUrl}
             signatories={state.signatories}
             permission={p}
