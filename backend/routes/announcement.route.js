@@ -1,41 +1,11 @@
 const express = require("express");
 const authCheck = require("../middleware/auth.middleware");
 const prisma = require("../utils/prisma_client");
-const nodemailer = require("nodemailer");
+const { sendAnnouncementEmail } = require("../utils/mailer");
 const { get, set, del, keys, TTL } = require("../utils/cache");
 const router = express.Router();
 
 const p = "/p";
-
-// ─── Mailer helper ───────────────────────────────────────────────────
-
-function buildTransporter() {
-    return nodemailer.createTransport({
-        host: "smtp.gmail.com",
-        port: 587,
-        secure: false,
-        auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
-    });
-}
-
-async function sendAnnouncementEmail(recipients, title, body) {
-    if (!recipients.length) return;
-    const transporter = buildTransporter();
-    const html = `
-        <div style="font-family:sans-serif;max-width:600px;margin:auto;padding:24px;">
-            <h2 style="color:#c0392b;">${title}</h2>
-            <p style="color:#333;line-height:1.6;">${body.replace(/\n/g, "<br/>")}</p>
-            <hr style="margin-top:32px;border:none;border-top:1px solid #eee;"/>
-            <p style="color:#888;font-size:12px;">You received this because you are registered for the event. — Eventio</p>
-        </div>`;
-
-    await transporter.sendMail({
-        from: `"Eventio" <${process.env.EMAIL_USER}>`,
-        bcc: recipients,
-        subject: title,
-        html,
-    });
-}
 
 // ─── Access check ────────────────────────────────────────────────────
 
@@ -119,9 +89,19 @@ router.post(p, authCheck, requireCouncilEventAccess, async (req, res) => {
             },
         });
 
+        const eventRecord = await prisma.events.findUnique({
+            where: { id: req.eventId },
+            select: { name: true },
+        });
+
         // Fire-and-forget email sending
         if (recipientEmails.length > 0) {
-            sendAnnouncementEmail(recipientEmails, title, msgBody).catch(console.error);
+            sendAnnouncementEmail(
+                recipientEmails,
+                title,
+                msgBody,
+                eventRecord?.name,
+            ).catch(console.error);
         }
 
         del(keys.announcements(req.eventId));

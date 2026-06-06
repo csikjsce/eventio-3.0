@@ -6,6 +6,7 @@ import {
   fetchAnnouncements, sendAnnouncement, deleteAnnouncement, type AnnouncementRow,
 } from "@/lib/api";
 import { Megaphone, Plus, X, Send, Mail, Bell, BellRing, ChevronDown, Users, Trash2, CheckCircle2, Lightbulb } from "lucide-react";
+import EmailPreview from "@/components/EmailPreview";
 
 const CHANNEL_OPTIONS = [
   { value: "EMAIL", label: "Email only",   icon: <Mail     size={14} /> },
@@ -240,6 +241,17 @@ export default function AnnouncementsPage() {
                   className="bg-surface2 border border-border-c focus:border-red-500/40 rounded-lg px-3 py-2 text-sm font-fira text-tx placeholder-subtle-tx outline-none transition-colors w-full resize-none" />
                 <p className="text-subtle-tx text-[11px] font-fira text-right mt-0.5">{form.body.length} chars</p>
               </div>
+
+              {(form.channel === "EMAIL" || form.channel === "BOTH") && (
+                <div>
+                  <label className="block text-muted-tx text-xs font-fira uppercase tracking-wider mb-1.5">Email preview</label>
+                  <EmailPreview
+                    title={form.title}
+                    body={form.body}
+                    eventName={selectedEvent?.name}
+                  />
+                </div>
+              )}
             </div>
             <div className="flex items-center justify-end gap-3 px-5 py-4 border-t border-border-c shrink-0">
               <button type="button" onClick={() => setShowCompose(false)} className="px-4 py-2 text-sm font-fira text-muted-tx border border-border-c hover:border-red-500/20 rounded-lg transition-all">Cancel</button>

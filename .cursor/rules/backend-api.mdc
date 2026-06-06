@@ -21,7 +21,7 @@ Express 4 + Prisma + PostgreSQL (Neon). Logger: Bunyan.
 | `routes/document.route.js` | Event documents |
 | `routes/budget.route.js` | Event budget items |
 | `routes/announcement.route.js` | Announcements |
-| `routes/mailer.route.js` | Email |
+| `routes/mailer.route.js` | Email (via `utils/mailer.js` + `utils/email-template.js`) |
 
 Protected event routes use prefix `/event/p/` + `authCheck` middleware.
 
@@ -51,3 +51,10 @@ On state change in `event.route.js`:
 - Use existing `logger.error` for failures
 - Invalidate event cache via `invalidateEvent()` after mutations
 - Role checks at route level before Prisma calls
+
+## Email
+
+- **Single entry point:** `utils/mailer.js` — do not call nodemailer from routes
+- **Layout:** `utils/email-template.js` (`buildEventioEmail`, `buildAnnouncementEmail`, `buildTeamInviteEmail`)
+- Helpers: `sendAnnouncementEmail`, `sendTeamInviteEmail`, `sendGenericEmail`
+- Legacy `/mailer/send-email` auto-wraps plain `body`/`html` unless already an Eventio template

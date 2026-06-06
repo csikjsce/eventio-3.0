@@ -6,7 +6,7 @@ const { Prisma } = require("@prisma/client");
 const logger = require("../utils/logger");
 const validateUpdateFields = require("../middleware/field-validator.middlware");
 const router = express.Router();
-const sendMail = require("../utils/nmail");
+const { sendTeamInviteEmail } = require("../utils/mailer");
 const fetch = require("node-fetch");
 const { get: cGet, set: cSet, del: cDel, keys: cKeys, TTL, invalidateEvent } = require("../utils/cache");
 const { validateMoreDetails, normalizeRegistrationFields } = require("../utils/registration-fields");
@@ -1364,11 +1364,12 @@ router.post(protected + "/create-team", authCheck, async (req, res) => {
         team,
     });
     try {
-        await sendMail(
+        await sendTeamInviteEmail(
             req.user.email,
             "Team Creation Details",
             team.name,
             team.invite_code,
+            event.name,
         );
         console.log("Email sent successfully");
     } catch (err) {
