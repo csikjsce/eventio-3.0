@@ -6,14 +6,16 @@ import { ExternalLink, FileText, Printer, Upload } from "lucide-react";
 import DocumentSheet from "@/components/document-builder/DocumentSheet";
 import Letterhead from "@/components/document-builder/Letterhead";
 import { useData } from "@/contexts/DataContext";
+import { fetchCouncilProfile, updateCouncilProfile, type CouncilMemberRow } from "@/lib/api";
 import {
   buildDefaultState,
   loadDraft,
+  resolveLetterheadUrl,
   saveDraft,
   type DocumentBuilderState,
   type DocumentKind,
+  type DocumentSignatory,
 } from "@/lib/document-builder";
-import { fetchCouncilProfile, updateCouncilProfile } from "@/lib/api";
 import { uploadFile } from "@/lib/upload";
 
 const INPUT =
@@ -62,6 +64,7 @@ export default function DocumentBuilderPage() {
   const [uploadingHead, setUploadingHead] = useState(false);
   const [savingHead, setSavingHead] = useState(false);
   const [attachEventId, setAttachEventId] = useState("");
+  const [members, setMembers] = useState<CouncilMemberRow[]>([]);
   const [toast, setToast] = useState("");
 
   const showToast = (msg: string) => {
@@ -76,10 +79,15 @@ export default function DocumentBuilderPage() {
     fetchCouncilProfile()
       .then((profile) => {
         const councilName = profile.name ?? "";
-        const letterhead = profile.profile?.letterhead_logo ?? "";
+        const p = profile.profile ?? {};
         setState((prev) => ({
           ...prev,
-          letterheadUrl: prev.letterheadUrl || letterhead,
+          letterheadUrl: resolveLetterheadUrl(
+            p.letterhead_logo,
+            profile.photo_url,
+            p.banner_url,
+            prev.letterheadUrl,
+          ),
           permission: {
             ...prev.permission,
             councilName: prev.permission.councilName || councilName,
@@ -89,6 +97,10 @@ export default function DocumentBuilderPage() {
             councilName: prev.report.councilName || councilName,
           },
         }));
+
+        if (Array.isArray(profile.profile?.members)) {
+          setMembers(profile.profile.members);
+        }
       })
       .catch(() => {});
   }, []);
@@ -158,6 +170,44 @@ export default function DocumentBuilderPage() {
 
   function handlePrint() {
     window.print();
+  }
+
+  function isSignatorySelected(memberId: number) {
+    return state.signatories.some((s) => s.memberId === memberId);
+  }
+
+  function toggleMemberSignatory(member: CouncilMemberRow) {
+    setState((s) => {
+      const selected = s.signatories.some((sig) => sig.memberId === member.id);
+      const signatories = selected
+        ? s.signatories.filter((sig) => sig.memberId !== member.id)
+        : [
+            ...s.signatories,
+            { memberId: member.id, name: member.name, role: member.role },
+          ];
+      return { ...s, signatories };
+    });
+  }
+
+  function addCustomSignatory() {
+    setState((s) => ({
+      ...s,
+      signatories: [...s.signatories, { name: "", role: "" }],
+    }));
+  }
+
+  function updateCustomSignatory(index: number, patch: Partial<DocumentSignatory>) {
+    setState((s) => ({
+      ...s,
+      signatories: s.signatories.map((sig, i) => (i === index ? { ...sig, ...patch } : sig)),
+    }));
+  }
+
+  function removeSignatory(index: number) {
+    setState((s) => ({
+      ...s,
+      signatories: s.signatories.filter((_, i) => i !== index),
+    }));
   }
 
   const p = state.permission;
@@ -272,6 +322,81 @@ export default function DocumentBuilderPage() {
             )}
           </div>
 
+          {/* Signatories */}
+          <div className="bg-surface border border-border-c rounded-2xl p-5 space-y-3">
+            <p className="text-tx text-sm font-fira font-semibold">Signatories</p>
+            <p className="text-muted-tx text-xs font-fira leading-relaxed">
+              Select one or more council members. Names appear in a single row on the printed document.
+            </p>
+
+            {members.length > 0 ? (
+              <div className="space-y-1.5 max-h-40 overflow-y-auto scrollbar-hide">
+                {members.map((member) => (
+                  <label
+                    key={member.id}
+                    className="flex items-center gap-2.5 py-1.5 px-2 rounded-lg hover:bg-surface2 cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isSignatorySelected(member.id)}
+                      onChange={() => toggleMemberSignatory(member)}
+                      className="rounded border-border-c text-red-500 focus:ring-red-500/30"
+                    />
+                    <span className="text-sm font-fira text-tx truncate">{member.name}</span>
+                    <span className="text-[11px] font-fira text-muted-tx truncate ml-auto">{member.role}</span>
+                  </label>
+                ))}
+              </div>
+            ) : (
+              <p className="text-muted-tx text-xs font-fira">
+                No team members found. Add members in{" "}
+                <Link href="/settings" className="text-red-500 hover:underline">Settings</Link>.
+              </p>
+            )}
+
+            {state.signatories.some((s) => s.memberId === undefined) && (
+              <div className="space-y-2 pt-2 border-t border-border-c">
+                {state.signatories.map((sig, index) =>
+                  sig.memberId !== undefined ? null : (
+                    <div key={`custom-${index}`} className="flex gap-2 items-start">
+                      <div className="flex-1 space-y-2">
+                        <input
+                          type="text"
+                          value={sig.name}
+                          onChange={(e) => updateCustomSignatory(index, { name: e.target.value })}
+                          placeholder="Name"
+                          className={INPUT}
+                        />
+                        <input
+                          type="text"
+                          value={sig.role}
+                          onChange={(e) => updateCustomSignatory(index, { role: e.target.value })}
+                          placeholder="Role"
+                          className={INPUT}
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeSignatory(index)}
+                        className="text-muted-tx hover:text-red-500 text-xs font-fira px-1 pt-2"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ),
+                )}
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={addCustomSignatory}
+              className="text-xs font-fira text-red-500 hover:underline"
+            >
+              + Add custom signatory
+            </button>
+          </div>
+
           {/* Fields */}
           <div className="bg-surface border border-border-c rounded-2xl p-5 space-y-4 max-h-[55vh] overflow-y-auto scrollbar-hide">
             {state.kind === "permission_letter" ? (
@@ -284,8 +409,6 @@ export default function DocumentBuilderPage() {
                 <Field label="Event name" value={p.eventName} onChange={(v) => setState((s) => ({ ...s, permission: { ...s.permission, eventName: v } }))} />
                 <Field label="Event date" value={p.eventDate} onChange={(v) => setState((s) => ({ ...s, permission: { ...s.permission, eventDate: v } }))} />
                 <Field label="Venue" value={p.venue} onChange={(v) => setState((s) => ({ ...s, permission: { ...s.permission, venue: v } }))} />
-                <Field label="Signatory name" value={p.signatoryName} onChange={(v) => setState((s) => ({ ...s, permission: { ...s.permission, signatoryName: v } }))} />
-                <Field label="Signatory role" value={p.signatoryRole} onChange={(v) => setState((s) => ({ ...s, permission: { ...s.permission, signatoryRole: v } }))} />
                 <Field label="Council name" value={p.councilName} onChange={(v) => setState((s) => ({ ...s, permission: { ...s.permission, councilName: v } }))} />
               </>
             ) : (
@@ -299,7 +422,6 @@ export default function DocumentBuilderPage() {
                 <Field label="Highlights" value={r.highlights} onChange={(v) => setState((s) => ({ ...s, report: { ...s.report, highlights: v } }))} multiline rows={4} />
                 <Field label="Outcomes & feedback" value={r.outcomes} onChange={(v) => setState((s) => ({ ...s, report: { ...s.report, outcomes: v } }))} multiline rows={4} />
                 <Field label="Conclusion" value={r.conclusion} onChange={(v) => setState((s) => ({ ...s, report: { ...s.report, conclusion: v } }))} multiline rows={3} />
-                <Field label="Submitted by" value={r.submittedBy} onChange={(v) => setState((s) => ({ ...s, report: { ...s.report, submittedBy: v } }))} />
                 <Field label="Council name" value={r.councilName} onChange={(v) => setState((s) => ({ ...s, report: { ...s.report, councilName: v } }))} />
               </>
             )}
@@ -328,6 +450,7 @@ export default function DocumentBuilderPage() {
             sheetRef={sheetRef}
             kind={state.kind}
             letterheadUrl={state.letterheadUrl}
+            signatories={state.signatories}
             permission={p}
             report={r}
           />

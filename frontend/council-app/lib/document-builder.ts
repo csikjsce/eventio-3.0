@@ -2,6 +2,12 @@ export type DocumentKind = "permission_letter" | "report";
 
 export const SOMAIYA_KJSCE_LOGO = "/somaiya-kjsce-logo.png";
 
+export interface DocumentSignatory {
+  memberId?: number;
+  name: string;
+  role: string;
+}
+
 export interface PermissionLetterFields {
   refNo: string;
   date: string;
@@ -12,8 +18,6 @@ export interface PermissionLetterFields {
   eventDate: string;
   venue: string;
   councilName: string;
-  signatoryName: string;
-  signatoryRole: string;
 }
 
 export interface ReportFields {
@@ -27,13 +31,13 @@ export interface ReportFields {
   outcomes: string;
   conclusion: string;
   councilName: string;
-  submittedBy: string;
 }
 
 export interface DocumentBuilderState {
   kind: DocumentKind;
   eventId: string;
   letterheadUrl: string;
+  signatories: DocumentSignatory[];
   permission: PermissionLetterFields;
   report: ReportFields;
 }
@@ -61,8 +65,6 @@ export function defaultPermissionFields(councilName = ""): PermissionLetterField
     eventDate: "",
     venue: "",
     councilName,
-    signatoryName: "",
-    signatoryRole: "General Secretary",
   };
 }
 
@@ -78,7 +80,42 @@ export function defaultReportFields(councilName = ""): ReportFields {
     outcomes: "",
     conclusion: "",
     councilName,
-    submittedBy: "",
+  };
+}
+
+/** Migrate older drafts that stored a single signatory on permission/report fields. */
+export function normalizeDraft(raw: Partial<DocumentBuilderState>): DocumentBuilderState {
+  const base = buildDefaultState();
+  const permission = { ...base.permission, ...raw.permission };
+  const report = { ...base.report, ...raw.report };
+
+  let signatories = Array.isArray(raw.signatories) ? raw.signatories : [];
+
+  if (signatories.length === 0) {
+    const legacy = raw.permission as PermissionLetterFields & {
+      signatoryName?: string;
+      signatoryRole?: string;
+    };
+    const legacyReport = raw.report as ReportFields & { submittedBy?: string };
+
+    if (legacy?.signatoryName?.trim()) {
+      signatories = [{ name: legacy.signatoryName.trim(), role: legacy.signatoryRole?.trim() ?? "" }];
+    } else if (legacyReport?.submittedBy?.trim()) {
+      signatories = [{ name: legacyReport.submittedBy.trim(), role: "" }];
+    }
+  }
+
+  // Drop stale letterhead URLs saved when banner_url was reused for letterhead.
+  const letterheadUrl =
+    raw.letterheadUrl && typeof raw.letterheadUrl === "string" ? raw.letterheadUrl : "";
+
+  return {
+    ...base,
+    ...raw,
+    permission,
+    report,
+    signatories,
+    letterheadUrl,
   };
 }
 
@@ -87,9 +124,24 @@ export function buildDefaultState(councilName = ""): DocumentBuilderState {
     kind: "permission_letter",
     eventId: "",
     letterheadUrl: "",
+    signatories: [],
     permission: defaultPermissionFields(councilName),
     report: defaultReportFields(councilName),
   };
+}
+
+/** Council letterhead slot: dedicated logo first, then council logo — never the banner. */
+export function resolveLetterheadUrl(
+  letterheadLogo?: string | null,
+  councilLogo?: string | null,
+  bannerUrl?: string | null,
+  draftUrl?: string,
+): string {
+  if (letterheadLogo?.trim()) return letterheadLogo.trim();
+  if (councilLogo?.trim()) return councilLogo.trim();
+  const draft = draftUrl?.trim();
+  if (draft && draft !== bannerUrl?.trim()) return draft;
+  return "";
 }
 
 const DRAFT_KEY = "council_document_builder_draft";
@@ -98,7 +150,7 @@ export function loadDraft(): DocumentBuilderState | null {
   if (typeof window === "undefined") return null;
   try {
     const raw = localStorage.getItem(DRAFT_KEY);
-    return raw ? (JSON.parse(raw) as DocumentBuilderState) : null;
+    return raw ? normalizeDraft(JSON.parse(raw) as Partial<DocumentBuilderState>) : null;
   } catch {
     return null;
   }

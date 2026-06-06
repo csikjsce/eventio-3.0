@@ -4,6 +4,7 @@ import Letterhead from "@/components/document-builder/Letterhead";
 import {
   formatDisplayDate,
   type DocumentKind,
+  type DocumentSignatory,
   type PermissionLetterFields,
   type ReportFields,
 } from "@/lib/document-builder";
@@ -11,6 +12,7 @@ import {
 interface Props {
   kind: DocumentKind;
   letterheadUrl?: string;
+  signatories: DocumentSignatory[];
   permission: PermissionLetterFields;
   report: ReportFields;
   sheetRef?: React.RefObject<HTMLElement | null>;
@@ -26,7 +28,49 @@ function MetaRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function PermissionBody({ p }: { p: PermissionLetterFields }) {
+function SignatoryBlock({
+  signatories,
+  councilName,
+  closing,
+}: {
+  signatories: DocumentSignatory[];
+  councilName: string;
+  closing?: string;
+}) {
+  const valid = signatories.filter((s) => s.name.trim());
+  if (valid.length === 0) {
+    return (
+      <div className="pt-6">
+        {closing && <p>{closing}</p>}
+        <p className="mt-8 font-semibold">—</p>
+        {councilName && <p className="mt-2">{councilName}</p>}
+      </div>
+    );
+  }
+
+  return (
+    <div className="pt-6">
+      {closing && <p>{closing}</p>}
+      <div className="mt-8 flex flex-wrap items-end gap-x-10 gap-y-3">
+        {valid.map((s, i) => (
+          <div key={`${s.memberId ?? "custom"}-${i}`} className="shrink-0 text-left">
+            <p className="font-semibold whitespace-nowrap">{s.name}</p>
+            {s.role.trim() && <p className="whitespace-nowrap">{s.role}</p>}
+          </div>
+        ))}
+      </div>
+      {councilName && <p className="mt-4">{councilName}</p>}
+    </div>
+  );
+}
+
+function PermissionBody({
+  p,
+  signatories,
+}: {
+  p: PermissionLetterFields;
+  signatories: DocumentSignatory[];
+}) {
   const subject =
     p.subject.trim() ||
     (p.eventName ? `Permission for conducting ${p.eventName}` : "Permission for conducting the event");
@@ -62,17 +106,22 @@ function PermissionBody({ p }: { p: PermissionLetterFields }) {
         </div>
       )}
 
-      <div className="pt-6">
-        <p>Thanking you,</p>
-        <p className="mt-8 font-semibold">{p.signatoryName || "—"}</p>
-        <p>{p.signatoryRole}</p>
-        {p.councilName && <p>{p.councilName}</p>}
-      </div>
+      <SignatoryBlock
+        signatories={signatories}
+        councilName={p.councilName}
+        closing="Thanking you,"
+      />
     </div>
   );
 }
 
-function ReportBody({ r }: { r: ReportFields }) {
+function ReportBody({
+  r,
+  signatories,
+}: {
+  r: ReportFields;
+  signatories: DocumentSignatory[];
+}) {
   return (
     <div className="space-y-5 text-[13px] font-fira text-zinc-800 leading-relaxed">
       <div className="text-center space-y-1 pb-2 border-b border-zinc-200">
@@ -113,10 +162,7 @@ function ReportBody({ r }: { r: ReportFields }) {
         </section>
       )}
 
-      <div className="pt-4 border-t border-zinc-200">
-        <p className="font-semibold">{r.submittedBy || "—"}</p>
-        {r.councilName && <p>{r.councilName}</p>}
-      </div>
+      <SignatoryBlock signatories={signatories} councilName={r.councilName} />
     </div>
   );
 }
@@ -124,6 +170,7 @@ function ReportBody({ r }: { r: ReportFields }) {
 export default function DocumentSheet({
   kind,
   letterheadUrl,
+  signatories,
   permission,
   report,
   sheetRef,
@@ -136,9 +183,9 @@ export default function DocumentSheet({
     >
       <Letterhead councilLetterheadUrl={letterheadUrl} editable={false} />
       {kind === "permission_letter" ? (
-        <PermissionBody p={permission} />
+        <PermissionBody p={permission} signatories={signatories} />
       ) : (
-        <ReportBody r={report} />
+        <ReportBody r={report} signatories={signatories} />
       )}
     </article>
   );
