@@ -47,6 +47,37 @@ html.dark {
   &::-webkit-scrollbar { display: none; }
 }
 
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .document-sheet,
+  .document-sheet * {
+    visibility: visible;
+  }
+
+  .document-sheet {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 210mm !important;
+    min-height: auto !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .document-builder-chrome {
+    display: none !important;
+  }
+
+  .document-builder-preview {
+    background: transparent !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+}
+
 @layer base {
   * { box-sizing: border-box; }
   body {

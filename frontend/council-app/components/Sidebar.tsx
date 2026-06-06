@@ -4,8 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, BarChart2, PlusSquare, Users,
-  CheckSquare, ClipboardList, Megaphone, Wallet, LogOut,
-  Sun, Moon, X, Settings,
+  CheckSquare, ClipboardList,   Megaphone, Wallet, LogOut,
+  Sun, Moon, X, Settings, FileText,
 } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 
@@ -31,6 +31,7 @@ const NAV_GROUPS = [
     routes: [
       { name: "Announcements", href: "/announcements", Icon: Megaphone, exact: false },
       { name: "Budget",        href: "/budget",         Icon: Wallet,    exact: false },
+      { name: "Doc Builder",   href: "/document-builder", Icon: FileText, exact: false },
     ],
   },
   {
