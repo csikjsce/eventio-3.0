@@ -122,11 +122,15 @@ function normalizeStateHistory(currentState: string, stateHistory?: string[]): s
  * appear as separate steps so the full journey is preserved.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function buildApprovalChain(currentState: string, stateHistory: string[]): any[] {
+function buildApprovalChain(
+  currentState: string,
+  stateHistory: string[],
+  comment?: string | null,
+): any[] {
   const history    = normalizeStateHistory(currentState, stateHistory);
   const visitCount: Record<string, number> = {};
 
-  return history.map((stage, index) => {
+  const chain = history.map((stage, index) => {
     visitCount[stage] = (visitCount[stage] ?? 0) + 1;
     const meta     = getStateMeta(stage);
     const isLast   = index === history.length - 1;
@@ -145,6 +149,22 @@ function buildApprovalChain(currentState: string, stateHistory: string[]): any[]
       actor:  meta.actor,
     };
   });
+
+  // Show return-for-changes when faculty/principal sent the event back to draft
+  if (currentState === "DRAFT" && comment?.trim() && chain.length > 1) {
+    const lastIdx = chain.length - 1;
+    if (chain[lastIdx]?.stage === "DRAFT" && chain[lastIdx]?.status === "active") {
+      chain.splice(lastIdx, 0, {
+        stage: "RETURNED",
+        label: "Returned for Changes",
+        status: "rejected",
+        actor: "Faculty / Principal",
+        note: comment.trim(),
+      });
+    }
+  }
+
+  return chain;
 }
 
 // ── State ↔ PipelineStage mapping ─────────────────────────────────────────────
@@ -177,7 +197,8 @@ export function transformEvent(e: any): EventData {
     state,
     state_history,
     pipeline_stage:        mapStateToPipeline(state),
-    approval_chain:        buildApprovalChain(state, state_history),
+    approval_chain:        buildApprovalChain(state, state_history, e.comment),
+    comment:               e.comment ?? null,
     documents:             e.documents             ?? [],
     children:              e.children              ?? [],
     tags:                  e.tags                  ?? [],
@@ -200,6 +221,7 @@ export function transformEvent(e: any): EventData {
     is_feedback_enabled:   e.is_feedback_enabled   ?? false,
     is_ticket_feature_enabled: e.is_ticket_feature_enabled ?? false,
     registration_type:     e.registration_type     ?? "ONPLATFORM",
+    registration_fields:   e.registration_fields   ?? [],
   } as EventData;
 }
 
@@ -247,9 +269,11 @@ export async function updateEvent(id: number | string, data: Record<string, unkn
 /**
  * Transition an event to a new backend state.
  * Council-permitted transitions:
- *   DRAFT → APPLIED_FOR_APPROVAL   (Submit Proposal)
+ *   DRAFT → APPLIED_FOR_APPROVAL   (Submit / Resubmit Proposal)
  *   UNLISTED / UPCOMING → REGISTRATION_OPEN (Open Registration)
- * Faculty → APPLIED_FOR_PRINCI_APPROVAL and Principal → UNLISTED happen in the dean portal.
+ * Faculty → APPLIED_FOR_PRINCI_APPROVAL or UNLISTED (direct approve, no principal).
+ * Principal → UNLISTED.
+ * Faculty/Principal → DRAFT + comment (return to council for changes).
  */
 export async function transitionEventState(
   id: number | string,
@@ -552,6 +576,7 @@ export async function updateEventSettings(
     is_ticket_feature_enabled?: boolean;
     is_feedback_enabled?: boolean;
     more_details_enabled?: boolean;
+    registration_fields?: import("./registration-fields").RegistrationField[];
     is_submission_enabled?: boolean;
     registration_type?: string;
     external_registration_link?: string;

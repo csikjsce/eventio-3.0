@@ -373,6 +373,7 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
 
   const STATE_TRANSITIONS: Record<string, string> = {
     "Submit Proposal":   "APPLIED_FOR_APPROVAL",
+    "Resubmit Proposal": "APPLIED_FOR_APPROVAL",
     "Open Registration": "REGISTRATION_OPEN",
   };
 
@@ -389,6 +390,7 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
         await refreshEvents();
         showToast(
           cta === "Submit Proposal" ? "Proposal submitted to faculty advisor!" :
+          cta === "Resubmit Proposal" ? "Revised proposal resubmitted to faculty!" :
           cta === "Open Registration" ? "Registration is now open!" :
           "Updated successfully."
         );
@@ -458,6 +460,27 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
       </div>
 
       <div className="px-4 py-6 sm:px-8 sm:py-8 max-w-7xl mx-auto">
+        {/* Faculty / principal feedback when sent back for changes */}
+        {event.comment && (
+          <div className="mb-6 p-4 sm:p-5 bg-amber-50 dark:bg-amber-500/10 border border-amber-300 dark:border-amber-500/30 rounded-2xl flex gap-3">
+            <AlertCircle size={18} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="text-amber-800 dark:text-amber-300 text-sm font-fira font-semibold mb-1">
+                Changes requested by {event.state === "DRAFT" ? "faculty / principal" : "reviewer"}
+              </p>
+              <p className="text-muted-tx text-sm font-fira leading-relaxed italic">
+                &ldquo;{event.comment}&rdquo;
+              </p>
+              {event.state === "DRAFT" && (
+                <Link href={`/new-event/${event.id}`}
+                  className="inline-flex items-center gap-1.5 mt-3 text-xs font-fira font-semibold text-amber-700 dark:text-amber-400 hover:underline">
+                  <Edit2 size={12} /> Edit event &amp; resubmit →
+                </Link>
+              )}
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
 
           {/* ── Left: main content ── */}

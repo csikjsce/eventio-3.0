@@ -1,0 +1,44 @@
+---
+description: Event state machine, approval flow, and rejection loop
+alwaysApply: true
+---
+
+# Event Lifecycle
+
+Backend `STATE` enum (Prisma) is the source of truth. UI "pipeline stages" in council-app are display mappings only.
+
+## States
+
+`DRAFT` → `APPLIED_FOR_APPROVAL` → (`APPLIED_FOR_PRINCI_APPROVAL` optional) → `UNLISTED` → `UPCOMING` → `REGISTRATION_OPEN` / `REGISTRATION_CLOSED` → `TICKET_OPEN` / `TICKET_CLOSED` (optional) → `ONGOING` → `COMPLETED`
+
+Also: `PRIVATE` (hidden from students).
+
+## Approval flow
+
+1. **Council** creates event in `DRAFT`, submits → `APPLIED_FOR_APPROVAL`
+2. **Faculty** reviews:
+   - **Direct approve** (default) → `UNLISTED` — no principal needed
+   - **Requires Principal** checkbox → `APPLIED_FOR_PRINCI_APPROVAL`
+3. **Principal** (if escalated) → `UNLISTED`
+4. **Council** publishes (`UPCOMING`), opens registration, runs event day controls
+
+Faculty UI: `frontend/faculty/app/(dashboard)/event/[id]/page.tsx`  
+Council actions: `frontend/council-app/app/(dashboard)/approvals/` + `controls/[id]/`
+
+## Rejection / resubmit loop
+
+- Reviewer **returns to council**: `DRAFT` + required `comment` (backend validates)
+- Council sees feedback on event-details / approvals pages
+- Council edits (optional), then **Resubmit Proposal** → `APPLIED_FOR_APPROVAL` (comment cleared)
+- Approval timeline shows a "Returned for Changes" rejected step when `DRAFT` + `comment`
+
+## Registration & attendance
+
+- Students register only when `state === REGISTRATION_OPEN`
+- Ticket claiming when `TICKET_OPEN` (if enabled)
+- Attendance via `/checkin` on participants (`attended: true`)
+
+## State updates
+
+- `POST /api/v1/event/p/update/:id` — roles: COUNCIL (own events), FACULTY, PRINCIPAL
+- Transition validation & comment clearing: `backend/routes/event.route.js`

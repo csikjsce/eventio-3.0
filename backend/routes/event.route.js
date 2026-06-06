@@ -9,6 +9,7 @@ const router = express.Router();
 const sendMail = require("../utils/nmail");
 const fetch = require("node-fetch");
 const { get: cGet, set: cSet, del: cDel, keys: cKeys, TTL, invalidateEvent } = require("../utils/cache");
+const { validateMoreDetails, normalizeRegistrationFields } = require("../utils/registration-fields");
 
 let protected = "/p";
 
@@ -629,6 +630,7 @@ router.post(protected + "/get/:id", authCheck, async (req, res) => {
             ticket_count: event.ticket_count,
             tickets_sold: event._count.Participant,
             more_details_enabled: event.more_details_enabled,
+            registration_fields: event.registration_fields ?? [],
             is_submission_enabled: event.is_submission_enabled,
             urls: event.urls,
             report_url: event.report_url,
@@ -674,10 +676,17 @@ router.post(protected + "/create", authCheck, (req, res) => {
         ticket_count,
         report_url,
         urls,
+        more_details_enabled,
+        is_submission_enabled,
+        registration_fields,
+        female_requirement,
+        in_event_activity,
+        start_in_event_activity,
     } = req.body;
     if (dates && dates.length) {
         dates = dates.map((d) => new Date(d));
     }
+    const normalizedFields = normalizeRegistrationFields(registration_fields);
     prisma.events
         .create({
             data: {
@@ -708,6 +717,12 @@ router.post(protected + "/create", authCheck, (req, res) => {
                 ticket_count,
                 report_url,
                 urls,
+                more_details_enabled: more_details_enabled ?? false,
+                is_submission_enabled: is_submission_enabled ?? false,
+                registration_fields: normalizedFields.length ? normalizedFields : undefined,
+                female_requirement,
+                in_event_activity,
+                start_in_event_activity,
             },
         })
         .then((event) => {
@@ -780,10 +795,79 @@ router.post(
         if (field.dates && field.dates.length) {
             field.dates = field.dates.map((d) => new Date(d));
         }
+        if (field.registration_fields !== undefined) {
+            field.registration_fields = normalizeRegistrationFields(
+                field.registration_fields,
+            );
+        }
 
         try {
-            if (field.state != state) {
-                state_history.push(field.state);
+            if (field.state != null && field.state !== state) {
+                const role = req.user.role;
+                const newState = field.state;
+
+                // Returning to council requires written feedback
+                if (
+                    (role === "FACULTY" || role === "PRINCIPAL") &&
+                    newState === "DRAFT"
+                ) {
+                    const feedback =
+                        field.comment != null ? String(field.comment).trim() : "";
+                    if (!feedback) {
+                        return res.status(400).json({
+                            error: true,
+                            message:
+                                "Feedback is required when returning an event to council.",
+                        });
+                    }
+                }
+
+                // Faculty: direct approve (UNLISTED) or escalate to Principal
+                if (role === "FACULTY" && state === "APPLIED_FOR_APPROVAL") {
+                    if (
+                        !["APPLIED_FOR_PRINCI_APPROVAL", "UNLISTED", "DRAFT"].includes(
+                            newState,
+                        )
+                    ) {
+                        return res.status(400).json({
+                            error: true,
+                            message: "Invalid faculty approval transition.",
+                        });
+                    }
+                }
+
+                // Principal: final approve or return to council
+                if (
+                    role === "PRINCIPAL" &&
+                    state === "APPLIED_FOR_PRINCI_APPROVAL"
+                ) {
+                    if (!["UNLISTED", "DRAFT"].includes(newState)) {
+                        return res.status(400).json({
+                            error: true,
+                            message: "Invalid principal approval transition.",
+                        });
+                    }
+                }
+
+                // Council: submit or resubmit proposal from draft
+                if (
+                    role === "COUNCIL" &&
+                    state === "DRAFT" &&
+                    newState === "APPLIED_FOR_APPROVAL"
+                ) {
+                    field.comment = null;
+                }
+
+                // Clear reviewer feedback on forward/approve (not on return-to-draft)
+                if (
+                    (role === "FACULTY" || role === "PRINCIPAL") &&
+                    (newState === "UNLISTED" ||
+                        newState === "APPLIED_FOR_PRINCI_APPROVAL")
+                ) {
+                    field.comment = null;
+                }
+
+                state_history.push(newState);
                 field.state_history = state_history;
             }
             await prisma.events.update({
@@ -1116,6 +1200,13 @@ router.post(protected + "/register-for-event", authCheck, async (req, res) => {
                 message: "Registrations are not open.",
             });
         }
+        const detailsCheck = validateMoreDetails(event, more_details);
+        if (!detailsCheck.ok) {
+            return res.status(400).json({
+                error: true,
+                message: detailsCheck.message,
+            });
+        }
         try {
             await prisma.participant.create({
                 data: {
@@ -1190,6 +1281,13 @@ router.post(protected + "/create-team", authCheck, async (req, res) => {
         return res.status(403).json({
             error: true,
             message: "Registrations are not open.",
+        });
+    }
+    const createTeamDetailsCheck = validateMoreDetails(event, more_details);
+    if (!createTeamDetailsCheck.ok) {
+        return res.status(400).json({
+            error: true,
+            message: createTeamDetailsCheck.message,
         });
     }
     const maxRetries = 5;
@@ -1329,6 +1427,14 @@ router.post(protected + "/join-team", authCheck, async (req, res) => {
         return res.status(403).json({
             error: true,
             message: "Registrations are not open.",
+        });
+    }
+
+    const joinTeamDetailsCheck = validateMoreDetails(event, more_details);
+    if (!joinTeamDetailsCheck.ok) {
+        return res.status(400).json({
+            error: true,
+            message: joinTeamDetailsCheck.message,
         });
     }
 

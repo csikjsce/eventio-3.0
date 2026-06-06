@@ -20,7 +20,7 @@ const restrictedFieldsByRole = {
         restrictedRole: ["all"],
     },
     comment: {
-        unrestrictedRoles: ["ADMIN", "FACULTY"],
+        unrestrictedRoles: ["ADMIN", "FACULTY", "PRINCIPAL"],
         restrictedRole: ["all"],
     },
     state: {

@@ -1,18 +1,20 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { TeamPageSkeleton } from "@/components/Skeletons";
 import Spinner from "@/components/Spinner";
-import { fetchEvent, createTeam as apiCreateTeam, joinTeam as apiJoinTeam } from "@/lib/api";
+import MoreDetailsForm from "@/components/MoreDetailsForm";
+import {
+  fetchEvent,
+  createTeam as apiCreateTeam,
+  joinTeam as apiJoinTeam,
+} from "@/lib/api";
 import type { EventData } from "@/types/eventio";
-
-interface FormData {
-  linkedin: string;
-  github: string;
-  techStack: string;
-  whyHackathon: string;
-}
+import {
+  buildInitialAnswers,
+  validateClientAnswers,
+} from "@/lib/registration-fields";
 
 export default function TeamRegisterScreen() {
   const params = useParams();
@@ -23,27 +25,17 @@ export default function TeamRegisterScreen() {
   const [loading, setLoading] = useState(false);
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [formError, setFormError] = useState<string | null>(null);
 
-  const [formData, setFormData] = useState<FormData>({
-    linkedin: "",
-    github: "",
-    techStack: "",
-    whyHackathon: "",
-  });
+  const registrationFields = useMemo(
+    () =>
+      event?.more_details_enabled && event.registration_fields?.length
+        ? event.registration_fields
+        : [],
+    [event],
+  );
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-  };
+  const [formData, setFormData] = useState<Record<string, string>>({});
 
   useEffect(() => {
     async function load() {
@@ -51,28 +43,50 @@ export default function TeamRegisterScreen() {
         const eventData = await fetchEvent(Number(id));
         if (eventData) {
           setEvent(eventData);
-          if (eventData.Participant && (eventData.Participant as { team?: unknown }).team) {
+          if (
+            eventData.Participant &&
+            (eventData.Participant as { team?: unknown }).team
+          ) {
             router.push(`/team-details/${id}`);
           }
         }
-      } catch { /* handled by interceptor */ }
+      } catch {
+        /* handled by interceptor */
+      }
     }
     load();
   }, [id, router]);
 
+  useEffect(() => {
+    if (registrationFields.length) {
+      setFormData(buildInitialAnswers(registrationFields));
+    }
+  }, [registrationFields]);
+
   const createTeam = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (registrationFields.length) {
+      const validationError = validateClientAnswers(registrationFields, formData);
+      if (validationError) {
+        setFormError(validationError);
+        return;
+      }
+    }
+    setFormError(null);
     setLoading(true);
     const teamName = (e.target as HTMLFormElement).team_name.value;
     try {
       const server = process.env.NEXT_PUBLIC_SERVER_ADDRESS;
       if (server && localStorage.getItem("accessToken")) {
-        const moreDetails = event?.more_details_enabled ? formData : undefined;
+        const moreDetails =
+          registrationFields.length > 0 ? formData : undefined;
         await apiCreateTeam(Number(id), teamName, moreDetails);
       }
       router.push(`/team-details/${id}`);
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to create team";
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message ?? "Failed to create team";
       setSnackbarMessage(msg);
       setSnackbarVisible(true);
       setTimeout(() => setSnackbarVisible(false), 3000);
@@ -83,17 +97,28 @@ export default function TeamRegisterScreen() {
 
   const joinTeam = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (registrationFields.length) {
+      const validationError = validateClientAnswers(registrationFields, formData);
+      if (validationError) {
+        setFormError(validationError);
+        return;
+      }
+    }
+    setFormError(null);
     setLoading(true);
     const inviteCode = (e.target as HTMLFormElement).invite_code.value;
     try {
       const server = process.env.NEXT_PUBLIC_SERVER_ADDRESS;
       if (server && localStorage.getItem("accessToken")) {
-        const moreDetails = event?.more_details_enabled ? formData : undefined;
+        const moreDetails =
+          registrationFields.length > 0 ? formData : undefined;
         await apiJoinTeam(Number(id), inviteCode, moreDetails);
       }
       router.push(`/team-details/${id}`);
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Invalid invite code";
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message ?? "Invalid invite code";
       setSnackbarMessage(msg);
       setSnackbarVisible(true);
       setTimeout(() => setSnackbarVisible(false), 3000);
@@ -123,49 +148,18 @@ export default function TeamRegisterScreen() {
         />
       </div>
 
-      {event.more_details_enabled && (
-        <form onSubmit={handleSubmit} className="space-y-4 mt-5 mb-6">
-          <div>
-            <input
-              type="url"
-              name="linkedin"
-              value={formData.linkedin}
-              onChange={handleChange}
-              placeholder="LinkedIn Profile URL"
-              className="w-full px-4 py-3 rounded-lg bg-[#2a2a2a] text-white placeholder-gray-400 border border-gray-600 focus:border-red-500 focus:ring-1 focus:ring-red-500 focus:outline-none"
-            />
-          </div>
-          <div>
-            <input
-              type="url"
-              name="github"
-              value={formData.github}
-              onChange={handleChange}
-              placeholder="GitHub Profile URL"
-              className="w-full px-4 py-3 rounded-lg bg-[#2a2a2a] text-white placeholder-gray-400 border border-gray-600 focus:border-red-500 focus:ring-1 focus:ring-red-500 focus:outline-none"
-            />
-          </div>
-          <div>
-            <input
-              type="text"
-              name="techStack"
-              value={formData.techStack}
-              onChange={handleChange}
-              placeholder="Tech Stack (e.g., React, Node.js, Python)"
-              className="w-full px-4 py-3 rounded-lg bg-[#2a2a2a] text-white placeholder-gray-400 border border-gray-600 focus:border-red-500 focus:ring-1 focus:ring-red-500 focus:outline-none"
-            />
-          </div>
-          <div>
-            <textarea
-              name="whyHackathon"
-              value={formData.whyHackathon}
-              onChange={handleChange}
-              placeholder="Why do you want to participate in this hackathon?"
-              rows={3}
-              className="w-full px-4 py-3 rounded-lg bg-[#2a2a2a] text-white placeholder-gray-400 border border-gray-600 focus:border-red-500 focus:ring-1 focus:ring-red-500 focus:outline-none resize-none"
-            />
-          </div>
-        </form>
+      {registrationFields.length > 0 && (
+        <div className="mt-5 mb-6">
+          <p className="text-sm text-mute mb-3">Additional registration info</p>
+          <MoreDetailsForm
+            fields={registrationFields}
+            values={formData}
+            onChange={setFormData}
+          />
+          {formError && (
+            <p className="text-red-400 text-sm mt-2">{formError}</p>
+          )}
+        </div>
       )}
 
       <div

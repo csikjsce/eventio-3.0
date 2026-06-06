@@ -1,0 +1,53 @@
+---
+description: Backend API, Prisma, and middleware conventions
+globs: backend/**
+alwaysApply: false
+---
+
+# Backend Conventions
+
+## Stack
+
+Express 4 + Prisma + PostgreSQL (Neon). Logger: Bunyan.
+
+## Routes (under `/api/v1`)
+
+| File | Domain |
+|------|--------|
+| `routes/auth.route.js` | Google OAuth, refresh tokens |
+| `routes/event.route.js` | Event CRUD, registration, teams, tickets, checkin, stats, PDF reports |
+| `routes/user.route.js` | Profile |
+| `routes/council.route.js` | Council members |
+| `routes/document.route.js` | Event documents |
+| `routes/budget.route.js` | Event budget items |
+| `routes/announcement.route.js` | Announcements |
+| `routes/mailer.route.js` | Email |
+
+Protected event routes use prefix `/event/p/` + `authCheck` middleware.
+
+## Event update rules
+
+`validateUpdateFields` strips forbidden fields by role. Notable:
+
+- `state`, `comment` — FACULTY, PRINCIPAL, COUNCIL (state); comment writers: FACULTY, PRINCIPAL
+- `state_history` — auto-appended on state change in update handler, not client-writable
+
+On state change in `event.route.js`:
+
+- Return to `DRAFT` requires non-empty `comment`
+- Approve/forward clears `comment`
+- Council resubmit (`DRAFT` → `APPLIED_FOR_APPROVAL`) clears `comment`
+- Faculty: `APPLIED_FOR_APPROVAL` → `UNLISTED` | `APPLIED_FOR_PRINCI_APPROVAL` | `DRAFT`
+- Principal: `APPLIED_FOR_PRINCI_APPROVAL` → `UNLISTED` | `DRAFT`
+
+## Prisma
+
+- Schema: `backend/prisma/schema.prisma`
+- Client singleton: `backend/utils/prisma_client.js`
+- Run migrations from `backend/` directory
+
+## Patterns
+
+- Use existing `logger.error` for failures
+- Invalidate event cache via `invalidateEvent()` after mutations
+- Role checks at route level before Prisma calls

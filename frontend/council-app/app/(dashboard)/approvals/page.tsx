@@ -67,7 +67,7 @@ function ApprovalCard({ event, onAction, loadingId }: {
   const latestChain = event.approval_chain[event.approval_chain.length - 1];
   const isWaiting   = WAITING_STAGES.includes(event.pipeline_stage);
   const isUrgent    = URGENT_STAGES.includes(event.pipeline_stage) && event.pipeline_stage !== "REJECTED";
-  const isRejected  = event.pipeline_stage === "REJECTED";
+  const isRejected  = event.pipeline_stage === "REJECTED" || (event.state === "DRAFT" && !!event.comment);
 
   return (
     <div className={`bg-surface border rounded-2xl overflow-hidden transition-all ${isRejected ? "border-red-500/40" : isUrgent ? "border-amber-400/40" : "border-border-c"}`}>
@@ -116,6 +116,18 @@ function ApprovalCard({ event, onAction, loadingId }: {
       {/* Expanded: approval chain */}
       {expanded && (
         <div className="px-4 sm:px-5 pb-5 border-t border-border-c pt-4">
+          {/* Feedback from previous return */}
+          {event.comment && event.state === "DRAFT" && (
+            <div className="mb-4 p-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20">
+              <p className="text-xs font-fira font-semibold text-red-600 dark:text-red-400 mb-1">Reviewer feedback</p>
+              <p className="text-xs font-fira text-muted-tx italic">&ldquo;{event.comment}&rdquo;</p>
+              <Link href={`/new-event/${event.id}`}
+                className="inline-flex items-center gap-1 mt-2 text-xs font-fira text-red-600 dark:text-red-400 hover:underline">
+                <Edit2 size={11} /> Edit event before resubmitting
+              </Link>
+            </div>
+          )}
+
           {/* Next action */}
           {nextAction && (
             <div className={`flex items-center justify-between gap-3 p-3 rounded-xl mb-4 ${isWaiting ? "bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20" : isRejected ? "bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20" : "bg-surface2 border border-border-c"}`}>
@@ -219,6 +231,7 @@ function Section({ title, icon, events, onAction, loadingId, defaultOpen = true 
 
 const STATE_TRANSITIONS: Record<string, string> = {
   "Submit Proposal":   "APPLIED_FOR_APPROVAL",
+  "Resubmit Proposal": "APPLIED_FOR_APPROVAL",
   "Open Registration": "REGISTRATION_OPEN",
 };
 
@@ -241,6 +254,7 @@ export default function ApprovalsPage() {
         await refreshEvents();
         const successMsg: Record<string, string> = {
           "Submit Proposal":   `Proposal for "${event.name}" submitted to faculty advisor!`,
+          "Resubmit Proposal": `Revised proposal for "${event.name}" resubmitted to faculty!`,
           "Open Registration": `Registration for "${event.name}" is now open!`,
         };
         showToast(successMsg[cta]);

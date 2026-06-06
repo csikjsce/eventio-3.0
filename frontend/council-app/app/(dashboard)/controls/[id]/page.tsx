@@ -3,7 +3,9 @@
 import { use, useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useData } from "@/contexts/DataContext";
+import RegistrationFieldsEditor from "@/components/RegistrationFieldsEditor";
+import type { RegistrationField } from "@/lib/registration-fields";
+import { normalizeRegistrationFields } from "@/lib/registration-fields";
 import {
   transitionEventState,
   updateEventSettings,
@@ -181,6 +183,7 @@ export default function EventControlsPage({ params }: { params: Promise<{ id: st
   const [ticketEnabled, setTicketEnabled] = useState(true);
   const [feedbackEnabled, setFeedbackEnabled] = useState(false);
   const [moreDetailsEnabled, setMoreDetailsEnabled] = useState(false);
+  const [registrationFields, setRegistrationFields] = useState<RegistrationField[]>([]);
   const [submissionEnabled, setSubmissionEnabled]   = useState(false);
   const [regType, setRegType]             = useState<"ONPLATFORM" | "EXTERNAL">("ONPLATFORM");
   const [extLink, setExtLink]             = useState("");
@@ -227,6 +230,7 @@ export default function EventControlsPage({ params }: { params: Promise<{ id: st
     setFeedbackEnabled(ev.is_feedback_enabled ?? false);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     setMoreDetailsEnabled((ev as any).more_details_enabled ?? false);
+    setRegistrationFields((ev as any).registration_fields ?? []);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     setSubmissionEnabled((ev as any).is_submission_enabled ?? false);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -271,6 +275,7 @@ export default function EventControlsPage({ params }: { params: Promise<{ id: st
         is_ticket_feature_enabled: ticketEnabled,
         is_feedback_enabled: feedbackEnabled,
         more_details_enabled: moreDetailsEnabled,
+        registration_fields: normalizeRegistrationFields(registrationFields),
         is_submission_enabled: submissionEnabled,
         registration_type: regType,
         external_registration_link: extLink,
@@ -496,7 +501,18 @@ export default function EventControlsPage({ params }: { params: Promise<{ id: st
             <Toggle label="Somaiya Students Only" description="Restrict to @somaiya.edu"
               checked={somaiyaOnly} onChange={setSomaiyaOnly} />
             <Toggle label="More Details Form" description="Show custom fields during registration"
-              checked={moreDetailsEnabled} onChange={setMoreDetailsEnabled} />
+              checked={moreDetailsEnabled} onChange={(v) => {
+                setMoreDetailsEnabled(v);
+                if (v && registrationFields.length === 0) {
+                  setRegistrationFields([{ id: "", label: "", type: "text", required: true }]);
+                }
+              }} />
+            {moreDetailsEnabled && (
+              <RegistrationFieldsEditor
+                fields={registrationFields}
+                onChange={setRegistrationFields}
+              />
+            )}
             <Toggle label="Submission Enabled" description="Allow teams to submit work"
               checked={submissionEnabled} onChange={setSubmissionEnabled} />
             <div className="py-3">

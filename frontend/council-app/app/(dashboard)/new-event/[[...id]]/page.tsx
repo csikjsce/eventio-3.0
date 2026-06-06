@@ -6,6 +6,9 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Spinner from "@/components/Spinner";
 import NumberInput from "@/components/NumberInput";
+import RegistrationFieldsEditor from "@/components/RegistrationFieldsEditor";
+import type { RegistrationField } from "@/lib/registration-fields";
+import { normalizeRegistrationFields } from "@/lib/registration-fields";
 import { useData } from "@/contexts/DataContext";
 import { createEvent, updateEvent } from "@/lib/api";
 import { uploadFile } from "@/lib/upload";
@@ -149,6 +152,7 @@ export default function NewEventPage() {
       fee: 0, is_ticket_feature_enabled: true, ma_ppt: 1, min_ppt: 1,
       is_feedback_enabled: false, is_only_somaiya: true,
       registration_type: "ONPLATFORM", more_details_enabled: false,
+      registration_fields: [] as RegistrationField[],
       is_submission_enabled: false,
       urls: { instagram: "", facebook: "", linkedin: "", other: "" },
     },
@@ -204,7 +208,7 @@ export default function NewEventPage() {
     1: ["name", "tag_line", "description", "long_description", "event_page_image_url", "banner_url"],
     2: ["event_type", "dates", "venue", "online_event_link"],
     3: ["fee", "ticket_count", "external_registration_link", "min_ppt", "ma_ppt"],
-    4: [], 5: [],
+    4: ["registration_fields"], 5: [],
   };
 
   async function goNext() {
@@ -217,6 +221,11 @@ export default function NewEventPage() {
     const data = methods.getValues();
     data.logo_image_url = data.event_page_image_url;
     if (!showParent) data.parent_id = null;
+    if (data.registration_fields) {
+      data.registration_fields = normalizeRegistrationFields(
+        data.registration_fields as RegistrationField[],
+      );
+    }
     setLoading(true);
     try {
       if (existing) {
@@ -237,6 +246,11 @@ export default function NewEventPage() {
   const onSubmit = async (data: NewEventSchema) => {
     data.logo_image_url = data.event_page_image_url;
     if (!showParent) data.parent_id = null;
+    if (data.registration_fields) {
+      data.registration_fields = normalizeRegistrationFields(
+        data.registration_fields as RegistrationField[],
+      );
+    }
     setLoading(true);
     try {
       if (existing) {
@@ -260,6 +274,7 @@ export default function NewEventPage() {
   const isExternal    = watch("registration_type") === "EXTERNAL";
   const feedbackOn    = watch("is_feedback_enabled") ?? false;
   const moreDetails   = watch("more_details_enabled") ?? false;
+  const regFields     = watch("registration_fields") ?? [];
   const submission    = watch("is_submission_enabled") ?? false;
   const wName         = watch("name");
   const wFee          = watch("fee");
@@ -546,7 +561,27 @@ export default function NewEventPage() {
 
                     <Toggle on={feedbackOn}   onToggle={() => setValue("is_feedback_enabled",   !feedbackOn)}  label="Post-Event Feedback"      sub="Send a feedback form to all participants after the event ends." />
                     <Toggle on={submission}   onToggle={() => setValue("is_submission_enabled", !submission)}   label="Project Submissions"      sub="Allow participants to submit files or links as project deliverables." />
-                    <Toggle on={moreDetails}  onToggle={() => setValue("more_details_enabled",  !moreDetails)}  label="Extra Registration Fields" sub="Collect additional info from registrants beyond name and email." />
+                    <Toggle on={moreDetails}  onToggle={() => {
+                      const next = !moreDetails;
+                      setValue("more_details_enabled", next);
+                      if (next && regFields.length === 0) {
+                        setValue("registration_fields", [{
+                          id: "answer",
+                          label: "",
+                          type: "text",
+                          required: true,
+                        }]);
+                      }
+                    }}  label="Extra Registration Fields" sub="Collect additional info from registrants beyond name and email." />
+                    {moreDetails && (
+                      <RegistrationFieldsEditor
+                        fields={regFields as RegistrationField[]}
+                        onChange={(fields) => setValue("registration_fields", fields, { shouldValidate: true })}
+                      />
+                    )}
+                    {errors.registration_fields?.message && (
+                      <p className="text-red-400 text-xs font-fira">{String(errors.registration_fields.message)}</p>
+                    )}
 
                     <FieldWrap label="In-Event Live Activity (optional)">
                       <input className={INPUT} {...register("in_event_activity")} placeholder="https://quiz.example.com/live/…" />

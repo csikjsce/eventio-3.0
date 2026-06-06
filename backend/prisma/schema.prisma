@@ -47,6 +47,7 @@ model Events {
   ticket_count               Int?
   female_requirement         Int?
   more_details_enabled       Boolean           @default(false)
+  registration_fields        Json?
   is_submission_enabled      Boolean           @default(false)
   Participant                Participant[]
   Teams                      Team[]

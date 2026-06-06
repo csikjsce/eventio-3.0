@@ -1,0 +1,62 @@
+---
+description: Frontend apps, env vars, auth tokens, and API clients
+globs: frontend/**
+alwaysApply: false
+---
+
+# Frontend Apps
+
+## Scope
+
+Work **only** in `frontend/app/`, `frontend/council-app/`, and `frontend/faculty/`.
+
+**Ignore completely** (redundant, do not search or reference):
+`frontend/student/`, `frontend/council/`, `frontend/dean/`
+
+## Active apps
+
+| Folder | Users | Key paths |
+|--------|-------|-----------|
+| `frontend/app/` | Students | `lib/api.ts`, `app/`, `components/screens/` |
+| `frontend/council-app/` | Council | `lib/api.ts`, `app/(dashboard)/`, `contexts/DataContext.tsx` |
+| `frontend/faculty/` | Faculty, Principal | `lib/api.ts`, `app/(dashboard)/`, `contexts/DataContext.tsx` |
+
+## Env vars & API base
+
+All three Next.js apps use `NEXT_PUBLIC_SERVER_ADDRESS` → `${SERVER}/api/v1`.
+
+| App | Token keys (localStorage) |
+|-----|---------------------------|
+| `frontend/app/` | `accessToken`, `refreshToken` |
+| `frontend/council-app/` | `council_accessToken`, `council_refreshToken` |
+| `frontend/faculty/` | `faculty_accessToken`, `faculty_refreshToken` |
+
+API clients with 401 refresh interceptors:
+- `frontend/app/lib/api.ts`
+- `frontend/council-app/lib/api.ts`
+- `frontend/faculty/lib/api.ts`
+
+## frontend/app (student)
+
+- Browse events, register, teams, tickets, my events, calendar
+- Read `frontend/app/AGENTS.md` for Next.js version notes
+
+## frontend/council-app (council)
+
+- Read `frontend/council-app/AGENTS.md` for Next.js version notes
+- Event transform + approval chain: `lib/api.ts`
+- State controls: `app/(dashboard)/controls/[id]/page.tsx`
+- Submit/resubmit: `app/(dashboard)/approvals/page.tsx`
+
+## frontend/faculty (faculty / principal)
+
+- Roles: `FACULTY`, `PRINCIPAL` only (layout + login guard)
+- `approveEvent(id, { sendToPrincipal, isPrincipal })` — direct approve or escalate
+- `returnEventToCouncil(id, feedback)` — `DRAFT` + comment
+- Pending queue: `app/(dashboard)/pending/page.tsx`
+
+## Cross-app consistency
+
+- Keep event types and `transformEvent` logic aligned between council-app and faculty `lib/api.ts`
+- Backend is shared — API changes in `backend/` may require updates in all three frontends
+- Match each app's existing Tailwind tokens and component patterns

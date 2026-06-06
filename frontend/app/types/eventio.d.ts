@@ -1,3 +1,12 @@
+interface RegistrationField {
+  id: string;
+  label: string;
+  type: "text" | "textarea" | "url" | "number" | "select";
+  required?: boolean;
+  placeholder?: string;
+  options?: string[];
+}
+
 interface EventData {
   attendance_type: string | null;
   banner_url: string;
@@ -56,6 +65,7 @@ interface EventData {
   in_event_activity?: string;
   start_in_event_activity?: boolean;
   more_details_enabled: boolean;
+  registration_fields?: RegistrationField[];
   report_url: string;
   urls: {
     [name: string]: string;
@@ -99,4 +109,4 @@ type UserResponse = {
   events?: Events;
 };
 
-export type { EventData, Events, User, UserResponse };
+export type { EventData, Events, User, UserResponse, RegistrationField };

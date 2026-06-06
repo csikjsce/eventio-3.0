@@ -49,6 +49,7 @@ export interface EventData {
   start_in_event_activity?: boolean | null;
   female_requirement?: number | null;
   more_details_enabled?: boolean;
+  registration_fields?: import("./registration-fields").RegistrationField[];
   is_submission_enabled?: boolean;
   report_url?: string | null;
   geo_tag_url?: string | null;
@@ -266,7 +267,12 @@ export function getPipelineIndex(stage: PipelineStage): number {
 export function getNextAction(event: EventData): { label: string; cta: string; route?: string } | null {
   switch (event.state) {
     case "DRAFT":
-      return { label: "Submit proposal to faculty advisor for review.", cta: "Submit Proposal" };
+      return event.comment
+        ? {
+            label: "Faculty requested changes. Edit the event if needed, then resubmit your proposal.",
+            cta: "Resubmit Proposal",
+          }
+        : { label: "Submit proposal to faculty advisor for review.", cta: "Submit Proposal" };
     case "APPLIED_FOR_APPROVAL":
       return { label: "Waiting for faculty advisor to review your proposal.", cta: "Check Status" };
     case "APPLIED_FOR_PRINCI_APPROVAL":
@@ -285,7 +291,7 @@ export function getNextAction(event: EventData): { label: string; cta: string; r
     case "TICKET_CLOSED":
       return { label: "All done! View post-event statistics.", cta: "View Statistics", route: `/statistics` };
     case "REJECTED":
-      return { label: "Submission was rejected. Review feedback and resubmit.", cta: "Edit & Resubmit", route: `/new-event/${event.id}` };
+      return { label: "Submission was rejected. Review feedback, edit if needed, then resubmit.", cta: "Resubmit Proposal" };
     default:
       return null;
   }

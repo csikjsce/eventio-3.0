@@ -64,6 +64,28 @@ export const newEventSchema = yup.object({
   }).optional(),
   female_requirement: yup.number().min(0).nullable().notRequired(),
   more_details_enabled: yup.boolean().default(false).notRequired(),
+  registration_fields: yup
+    .array()
+    .of(
+      yup.object({
+        id: yup.string().trim().notRequired(),
+        label: yup.string().trim().required(),
+        type: yup
+          .string()
+          .oneOf(["text", "textarea", "url", "number", "select"])
+          .default("text"),
+        required: yup.boolean().default(true),
+        placeholder: yup.string().trim().notRequired(),
+        options: yup.array().of(yup.string().trim()).optional(),
+      }),
+    )
+    .default([])
+    .when("more_details_enabled", {
+      is: true,
+      then: (s) =>
+        s.min(1, "Add at least one custom registration field"),
+      otherwise: (s) => s.notRequired(),
+    }),
   is_submission_enabled: yup.boolean().default(false).notRequired(),
   report_url: yup.string().trim().url().nullable().notRequired(),
 });

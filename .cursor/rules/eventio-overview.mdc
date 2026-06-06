@@ -1,0 +1,46 @@
+---
+description: Eventio 3.0 repo map, roles, and architecture
+alwaysApply: true
+---
+
+# Eventio 3.0 Overview
+
+College event platform for Somaiya University. Council creates events; faculty/principal approve; students register and attend.
+
+## Active workspaces (only these four)
+
+| Path | Role | Stack |
+|------|------|-------|
+| `backend/` | REST API, auth, Prisma, business logic | Express, port **8000** |
+| `frontend/app/` | **Student** portal — browse, register, my events | Next.js App Router |
+| `frontend/council-app/` | **Council** portal — create events, approvals, controls | Next.js App Router |
+| `frontend/faculty/` | **Faculty / Principal** portal — review, approve, return | Next.js App Router |
+
+## Ignore completely (redundant dead code)
+
+**Never** read, search, edit, copy from, or suggest changes in:
+
+- `frontend/student/`
+- `frontend/council/`
+- `frontend/dean/`
+
+These are obsolete Vite SPAs superseded by `frontend/app/`, `frontend/council-app/`, and `frontend/faculty/`. Treat them as if they do not exist. Do not use them as reference when implementing features — use the active Next.js apps instead.
+
+## Auth & roles
+
+- Google OAuth only (`somaiya.edu` in production)
+- Roles: `USER`, `COUNCIL`, `FACULTY`, `PRINCIPAL`, `ADMIN`
+- API prefix: `/api/v1`
+
+## Key backend files
+
+- `backend/prisma/schema.prisma` — data models & enums
+- `backend/routes/event.route.js` — events, registration, attendance, state updates
+- `backend/middleware/auth.middleware.js` — JWT
+- `backend/middleware/field-validator.middlware.js` — role-based field allowlist on event updates
+
+## Conventions
+
+- Minimize diff scope; match existing patterns in the touched app
+- Do not commit unless explicitly asked
+- State machine lives in Prisma `STATE` enum — see `event-lifecycle` rule

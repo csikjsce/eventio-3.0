@@ -18,6 +18,7 @@ import Loader from "@/components/Loader";
 import Passage from "@/components/Passage";
 import Spinner from "@/components/Spinner";
 import FeedbackModal from "@/components/FeedbackModal";
+import RegistrationDetailsModal from "@/components/RegistrationDetailsModal";
 import { fetchEvent, registerForEvent, claimTicket as apiClaimTicket, rateEvent } from "@/lib/api";
 import { EventDetailsSkeleton } from "@/components/Skeletons";
 import type { EventData } from "@/types/eventio";
@@ -27,6 +28,7 @@ export default function EventDetailsScreen() {
   const [loading, setLoading] = useState(true);
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [isFeedbackPopupOpen, setIsFeedbackPopupOpen] = useState(false);
+  const [showRegistrationForm, setShowRegistrationForm] = useState(false);
 
   const [buttonState, setButtonState] = useState<{
     text: string;
@@ -44,17 +46,32 @@ export default function EventDetailsScreen() {
   const id = params.id as string;
   const router = useRouter();
 
-  const register = useCallback(async () => {
+  const register = useCallback(async (moreDetails?: Record<string, string>) => {
     setButtonState({ text: "Registering", loading: true, disabled: true, onClick: () => {} });
     try {
-      await registerForEvent(Number(id));
+      await registerForEvent(Number(id), moreDetails);
+      setShowRegistrationForm(false);
       setButtonState({ text: "Registered ✓", loading: false, disabled: true, onClick: () => {} });
       setSnackbarVisible(true);
       setTimeout(() => setSnackbarVisible(false), 3000);
     } catch {
-      setButtonState({ text: "Register Now", loading: false, disabled: false, onClick: register });
+      setButtonState({
+        text: "Register Now",
+        loading: false,
+        disabled: false,
+        onClick: () => {
+          if (
+            event?.more_details_enabled &&
+            (event.registration_fields?.length ?? 0) > 0
+          ) {
+            setShowRegistrationForm(true);
+          } else {
+            register();
+          }
+        },
+      });
     }
-  }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [id, event]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const claimTicket = useCallback(async () => {
     setButtonState({ text: "RSVPing…", loading: true, disabled: true, onClick: () => {} });
@@ -98,7 +115,18 @@ export default function EventDetailsScreen() {
           } else if (eventData.Participant) {
             setButtonState({ text: "Registered ✓", loading: false, disabled: true, onClick: () => {} });
           } else {
-            setButtonState({ text: "Register Now", loading: false, disabled: false, onClick: register });
+            const needsExtraFields =
+              eventData.more_details_enabled &&
+              (eventData.registration_fields?.length ?? 0) > 0;
+            setButtonState({
+              text: "Register Now",
+              loading: false,
+              disabled: false,
+              onClick: () => {
+                if (needsExtraFields) setShowRegistrationForm(true);
+                else register();
+              },
+            });
           }
         } else if (s === "REGISTRATION_CLOSED") {
           setButtonState({
@@ -284,6 +312,17 @@ export default function EventDetailsScreen() {
           </button>
         </div>
       </div>
+
+      {/* Registration extra-fields modal */}
+      {showRegistrationForm && event.registration_fields && event.registration_fields.length > 0 && (
+        <RegistrationDetailsModal
+          fields={event.registration_fields}
+          onClose={() => setShowRegistrationForm(false)}
+          onSubmit={async (answers) => {
+            await register(answers);
+          }}
+        />
+      )}
 
       {/* Feedback modal */}
       {isFeedbackPopupOpen && (
