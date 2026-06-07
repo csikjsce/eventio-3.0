@@ -92,9 +92,9 @@ async function sendGenericEmail(to, subject, { title, body, badge, footerNote, c
 }
 
 /** Event announcement blast (BCC). */
-async function sendAnnouncementEmail(recipients, title, body, eventName) {
+async function sendAnnouncementEmail(recipients, title, body, eventName, bodyFormat = "plain") {
     if (!recipients?.length) return null;
-    const html = buildAnnouncementEmail({ title, body, eventName });
+    const html = buildAnnouncementEmail({ title, body, eventName, bodyFormat });
     return sendMail({ bcc: recipients, subject: title, html });
 }
 

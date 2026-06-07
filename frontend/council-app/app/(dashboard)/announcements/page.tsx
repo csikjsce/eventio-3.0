@@ -7,6 +7,11 @@ import {
 } from "@/lib/api";
 import { Megaphone, Plus, X, Send, Mail, Bell, BellRing, ChevronDown, Users, Trash2, CheckCircle2, Lightbulb } from "lucide-react";
 import EmailPreview from "@/components/EmailPreview";
+import {
+  BODY_FORMAT_OPTIONS,
+  BODY_FORMAT_PLACEHOLDER,
+  type EmailBodyFormat,
+} from "@/lib/email-body";
 
 const CHANNEL_OPTIONS = [
   { value: "EMAIL", label: "Email only",   icon: <Mail     size={14} /> },
@@ -42,7 +47,7 @@ export default function AnnouncementsPage() {
   const [selectedTemplate, setSelectedTemplate] = useState("");
 
   const [form, setForm] = useState({
-    title: "", body: "", channel: "BOTH" as Channel,
+    title: "", body: "", channel: "BOTH" as Channel, bodyFormat: "plain" as EmailBodyFormat,
   });
 
   function showToastMsg(msg: string) {
@@ -88,9 +93,10 @@ export default function AnnouncementsPage() {
         title: form.title.trim(),
         body: form.body.trim(),
         channel: form.channel,
+        body_format: form.bodyFormat,
       });
       setAnnouncements(prev => [res.announcement, ...prev]);
-      setForm({ title: "", body: "", channel: "BOTH" });
+      setForm({ title: "", body: "", channel: "BOTH", bodyFormat: "plain" });
       setSelectedTemplate("");
       setShowCompose(false);
       showToastMsg(`Announcement sent! (${res.recipients_queued} queued)`);
@@ -177,13 +183,15 @@ export default function AnnouncementsPage() {
 
       {/* Compose modal */}
       {showCompose && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 flex items-end sm:items-center justify-center p-0 sm:p-4">
-          <div className="bg-surface border border-border-c rounded-t-3xl sm:rounded-2xl w-full sm:max-w-lg shadow-2xl max-h-[90vh] flex flex-col">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 flex items-end lg:items-center justify-center p-0 lg:p-6">
+          <div className="bg-surface border border-border-c rounded-t-3xl lg:rounded-2xl w-full lg:max-w-5xl xl:max-w-6xl shadow-2xl max-h-[92vh] lg:max-h-[88vh] flex flex-col">
             <div className="flex items-center justify-between px-5 py-4 border-b border-border-c shrink-0">
               <h2 className="text-tx font-fira font-semibold text-base">New Announcement</h2>
               <button type="button" onClick={() => setShowCompose(false)} className="text-muted-tx hover:text-tx transition-colors"><X size={18} /></button>
             </div>
-            <div className="overflow-y-auto flex-1 px-5 py-5 space-y-4">
+
+            <div className="flex-1 min-h-0 flex flex-col lg:flex-row overflow-hidden">
+              <div className="flex-1 lg:flex-none lg:w-[min(100%,420px)] xl:w-[440px] overflow-y-auto px-5 py-5 space-y-4 lg:border-r lg:border-border-c">
               {/* Event */}
               <div>
                 <label className="block text-muted-tx text-xs font-fira uppercase tracking-wider mb-1.5">Event</label>
@@ -227,6 +235,34 @@ export default function AnnouncementsPage() {
                 </div>
               </div>
 
+              {/* Message format — email body only; header logos stay fixed */}
+              {(form.channel === "EMAIL" || form.channel === "BOTH") && (
+                <div>
+                  <label className="block text-muted-tx text-xs font-fira uppercase tracking-wider mb-1.5">
+                    Message format
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {BODY_FORMAT_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setForm((f) => ({ ...f, bodyFormat: opt.value }))}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-fira border transition-all ${
+                          form.bodyFormat === opt.value
+                            ? "bg-red-500/10 border-red-500/40 text-red-600 dark:text-red-400"
+                            : "border-border-c text-muted-tx hover:text-tx"
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-subtle-tx text-[11px] font-fira mt-1.5 leading-relaxed">
+                    {BODY_FORMAT_OPTIONS.find((o) => o.value === form.bodyFormat)?.hint}
+                  </p>
+                </div>
+              )}
+
               {/* Title + Body */}
               <div>
                 <label className="block text-muted-tx text-xs font-fira uppercase tracking-wider mb-1.5">Subject</label>
@@ -235,24 +271,70 @@ export default function AnnouncementsPage() {
                   className="bg-surface2 border border-border-c focus:border-red-500/40 rounded-lg px-3 py-2 text-sm font-fira text-tx placeholder-subtle-tx outline-none transition-colors w-full" />
               </div>
               <div>
-                <label className="block text-muted-tx text-xs font-fira uppercase tracking-wider mb-1.5">Message</label>
-                <textarea value={form.body} rows={4} placeholder="Write your message…"
+                <label className="block text-muted-tx text-xs font-fira uppercase tracking-wider mb-1.5">
+                  {form.bodyFormat === "plain" ? "Message" : form.bodyFormat === "markdown" ? "Message (Markdown)" : "Message (HTML)"}
+                </label>
+                <textarea
+                  value={form.body}
+                  rows={form.bodyFormat === "plain" ? 5 : 8}
+                  placeholder={BODY_FORMAT_PLACEHOLDER[form.bodyFormat]}
                   onChange={e => setForm(p => ({ ...p, body: e.target.value }))}
-                  className="bg-surface2 border border-border-c focus:border-red-500/40 rounded-lg px-3 py-2 text-sm font-fira text-tx placeholder-subtle-tx outline-none transition-colors w-full resize-none" />
+                  className={`bg-surface2 border border-border-c focus:border-red-500/40 rounded-lg px-3 py-2 text-sm font-fira text-tx placeholder-subtle-tx outline-none transition-colors w-full resize-y min-h-[120px] lg:min-h-[160px] ${
+                    form.bodyFormat !== "plain" ? "font-mono text-[13px] leading-relaxed" : ""
+                  }`}
+                />
                 <p className="text-subtle-tx text-[11px] font-fira text-right mt-0.5">{form.body.length} chars</p>
               </div>
 
               {(form.channel === "EMAIL" || form.channel === "BOTH") && (
-                <div>
+                <div className="lg:hidden">
                   <label className="block text-muted-tx text-xs font-fira uppercase tracking-wider mb-1.5">Email preview</label>
                   <EmailPreview
                     title={form.title}
                     body={form.body}
                     eventName={selectedEvent?.name}
+                    bodyFormat={form.bodyFormat}
                   />
                 </div>
               )}
+              </div>
+
+              <div className="hidden lg:flex flex-1 min-w-0 flex-col overflow-y-auto bg-zinc-100/80 dark:bg-zinc-900/40 p-6">
+                <p className="text-muted-tx text-xs font-fira uppercase tracking-wider mb-4 shrink-0">
+                  {form.channel === "PUSH" ? "Push preview" : "Email preview"}
+                </p>
+                <div className="flex-1 flex items-start justify-center min-h-0">
+                  {form.channel === "EMAIL" || form.channel === "BOTH" ? (
+                    <div className="w-full max-w-xl">
+                      <EmailPreview
+                        title={form.title}
+                        body={form.body}
+                        eventName={selectedEvent?.name}
+                        bodyFormat={form.bodyFormat}
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-full max-w-sm bg-surface border border-border-c rounded-2xl p-4 shadow-sm">
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center shrink-0">
+                          <Bell size={18} className="text-red-500" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[11px] font-fira text-muted-tx">Eventio · now</p>
+                          <p className="text-sm font-fira font-semibold text-tx mt-0.5 leading-snug">
+                            {form.title.trim() || "Notification title"}
+                          </p>
+                          <p className="text-xs font-fira text-muted-tx mt-1 leading-relaxed line-clamp-4 whitespace-pre-wrap">
+                            {form.body.trim() || "Message preview…"}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
+
             <div className="flex items-center justify-end gap-3 px-5 py-4 border-t border-border-c shrink-0">
               <button type="button" onClick={() => setShowCompose(false)} className="px-4 py-2 text-sm font-fira text-muted-tx border border-border-c hover:border-red-500/20 rounded-lg transition-all">Cancel</button>
               <button type="button" onClick={handleSend} disabled={!form.title.trim() || !form.body.trim() || !eventId || sending}

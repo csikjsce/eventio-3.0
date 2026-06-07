@@ -391,6 +391,7 @@ export async function sendAnnouncement(data: {
   title: string;
   body: string;
   channel: "EMAIL" | "PUSH" | "BOTH";
+  body_format?: "plain" | "markdown" | "html";
 }): Promise<{ announcement: AnnouncementRow; recipients_queued: number }> {
   const res = await api.post("/announcement/p", data);
   return res.data;

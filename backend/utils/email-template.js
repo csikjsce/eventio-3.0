@@ -5,6 +5,8 @@
  * All outbound mail must go through utils/mailer.js (never nodemailer directly).
  */
 
+const { renderAnnouncementBodyHtml } = require("./email-body");
+
 const BRAND = {
     primary: "#b61f2d",
     primaryDark: "#991b1b",
@@ -207,16 +209,12 @@ function buildInfoBox(rows) {
     </table>`;
 }
 
-function buildAnnouncementEmail({ title, body, eventName }) {
-    const eventLine = eventName
-        ? `<p style="margin:0 0 16px;font-family:${FONT.body};font-size:13px;color:${BRAND.muted};"><strong style="color:${BRAND.text};">Event:</strong> ${escapeHtml(eventName)}</p>`
-        : "";
-
+function buildAnnouncementEmail({ title, body, eventName, bodyFormat = "plain" }) {
     return buildEventioEmail({
         title,
         preheader: body.slice(0, 120),
         badge: eventName ? "Event announcement" : "Announcement",
-        bodyHtml: `${eventLine}${textToHtml(body)}`,
+        bodyHtml: renderAnnouncementBodyHtml(body, bodyFormat, eventName),
         footerNote: "You received this because you are registered for the event on Eventio.",
     });
 }

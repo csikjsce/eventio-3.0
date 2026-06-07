@@ -52,7 +52,7 @@ router.get(p + "/:eventId", authCheck, requireCouncilEventAccess, async (req, re
 // ─── POST send announcement ──────────────────────────────────────────
 // POST /api/v1/announcement/p
 router.post(p, authCheck, requireCouncilEventAccess, async (req, res) => {
-    const { title, body: msgBody, channel, all_participants } = req.body;
+    const { title, body: msgBody, channel, all_participants, body_format } = req.body;
 
     if (!title || !msgBody || !channel) {
         return res.status(400).json({ error: true, message: "title, body, channel required" });
@@ -61,6 +61,8 @@ router.post(p, authCheck, requireCouncilEventAccess, async (req, res) => {
     if (!VALID_CHANNELS.includes(channel)) {
         return res.status(400).json({ error: true, message: "channel must be EMAIL, PUSH, or BOTH" });
     }
+    const VALID_BODY_FORMATS = ["plain", "markdown", "html"];
+    const bodyFormat = VALID_BODY_FORMATS.includes(body_format) ? body_format : "plain";
 
     try {
         // Collect recipient emails if sending by email
@@ -101,6 +103,7 @@ router.post(p, authCheck, requireCouncilEventAccess, async (req, res) => {
                 title,
                 msgBody,
                 eventRecord?.name,
+                bodyFormat,
             ).catch(console.error);
         }
 
