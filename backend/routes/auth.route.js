@@ -48,13 +48,13 @@ router.get(
         let redirectURL;
         switch (userDB.role) {
             case "FACULTY":
-                redirectURL = process.env.DEAN_CLIENT_URL || process.env.CLIENT_URL;
+                redirectURL = process.env.FACULTY_CLIENT_URL || process.env.DEAN_CLIENT_URL || process.env.CLIENT_URL;
                 break;
             case "COUNCIL":
                 redirectURL = process.env.COUNCIL_CLIENT_URL || process.env.CLIENT_URL;
                 break;
             case "PRINCIPAL":
-                redirectURL = process.env.DEAN_CLIENT_URL || process.env.CLIENT_URL;
+                redirectURL = process.env.FACULTY_CLIENT_URL || process.env.DEAN_CLIENT_URL || process.env.CLIENT_URL;
                 break;
             default:
                 redirectURL = process.env.CLIENT_URL;

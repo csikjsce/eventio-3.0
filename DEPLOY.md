@@ -9,10 +9,11 @@ Production runs on the SWDC server behind **Nginx Proxy Manager**. Deployments a
 | Backend API | `backend/` | 3500 | https://eventioapi.swdc.somaiya.edu |
 | Student app (Next.js) | `frontend/app/` | 4173 | https://eventio.somaiya.edu |
 | Council app (Next.js) | `frontend/council-app/` | 4174 | https://eventio-council.swdc.somaiya.edu |
+| Faculty app (Next.js) | `frontend/faculty/` | 4175 | https://eventio-faculty.swdc.somaiya.edu |
 
-NPM forwards `eventio.somaiya.edu` → `127.0.0.1:4173` and `eventio-council.swdc.somaiya.edu` → `127.0.0.1:4174`.
+NPM forwards `eventio.somaiya.edu` → `127.0.0.1:4173`, `eventio-council.swdc.somaiya.edu` → `127.0.0.1:4174`, and `eventio-faculty.swdc.somaiya.edu` → `127.0.0.1:4175`.
 
-Both Next.js apps are built with `NEXT_PUBLIC_SERVER_ADDRESS=https://eventioapi.swdc.somaiya.edu`. Ensure `COUNCIL_CLIENT_URL` in `backend/.env` matches the council public URL.
+All Next.js apps are built with `NEXT_PUBLIC_SERVER_ADDRESS=https://eventioapi.swdc.somaiya.edu`. Ensure `COUNCIL_CLIENT_URL` and `FACULTY_CLIENT_URL` in `backend/.env` match the public URLs.
 
 ## One-time server setup
 
@@ -53,9 +54,10 @@ SKIP_GIT_PULL=1 DEPLOY_BACKEND=0 bash scripts/deploy.sh   # frontends only
 DEPLOY_APP=0 bash scripts/deploy.sh                        # backend + council
 DEPLOY_COUNCIL_APP=0 bash scripts/deploy.sh                # backend + student app
 SKIP_GIT_PULL=1 DEPLOY_BACKEND=0 DEPLOY_APP=0 bash scripts/deploy.sh  # council only
+SKIP_GIT_PULL=1 DEPLOY_BACKEND=0 DEPLOY_APP=0 DEPLOY_COUNCIL_APP=0 bash scripts/deploy.sh  # faculty only
 ```
 
-Service logs: `/tmp/eventio/backend.log`, `/tmp/eventio/app.log`, `/tmp/eventio/council-app.log`
+Service logs: `/tmp/eventio/backend.log`, `/tmp/eventio/app.log`, `/tmp/eventio/council-app.log`, `/tmp/eventio/faculty.log`
 
 ## How it works
 
@@ -73,12 +75,14 @@ Deploy fails if these checks fail:
 - `http://127.0.0.1:3500/api/v1/health`
 - `http://127.0.0.1:4173/login`
 - `http://127.0.0.1:4174/login`
+- `http://127.0.0.1:4175/login`
 
 Public verification:
 
 - https://eventioapi.swdc.somaiya.edu/api/v1/health
 - https://eventio.somaiya.edu/login
 - https://eventio-council.swdc.somaiya.edu/login
+- https://eventio-faculty.swdc.somaiya.edu/login
 
 ## GitHub Actions
 

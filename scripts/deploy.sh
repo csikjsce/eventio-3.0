@@ -17,6 +17,7 @@ fi
 : "${BACKEND_PORT:=3500}"
 : "${APP_PORT:=4173}"
 : "${COUNCIL_APP_PORT:=4174}"
+: "${FACULTY_APP_PORT:=4175}"
 : "${LOG_DIR:=/tmp/eventio}"
 : "${RUN_DIR:=/tmp/eventio}"
 : "${GIT_REMOTE:=origin}"
@@ -26,6 +27,7 @@ fi
 : "${DEPLOY_BACKEND:=1}"
 : "${DEPLOY_APP:=1}"
 : "${DEPLOY_COUNCIL_APP:=1}"
+: "${DEPLOY_FACULTY_APP:=1}"
 : "${STOP_STUDENT_PREVIEW:=1}"
 : "${STOP_OLD_COUNCIL_PREVIEW:=1}"
 
@@ -130,6 +132,20 @@ deploy_council_app() {
   wait_for_http "http://127.0.0.1:${COUNCIL_APP_PORT}/login"
 }
 
+deploy_faculty_app() {
+  log "Deploying frontend/faculty (Next.js)"
+  load_nvm
+  cd "$REPO_DIR/frontend/faculty"
+
+  export NEXT_PUBLIC_SERVER_ADDRESS
+  npm ci
+  npm run build
+
+  start_detached faculty "$REPO_DIR/frontend/faculty" "$FACULTY_APP_PORT" \
+    env PORT="$FACULTY_APP_PORT" npm run start -- --port "$FACULTY_APP_PORT"
+  wait_for_http "http://127.0.0.1:${FACULTY_APP_PORT}/login"
+}
+
 main() {
   trap on_deploy_err ERR
   trap on_deploy_exit EXIT
@@ -146,6 +162,7 @@ main() {
   [[ "$DEPLOY_BACKEND" == "1" ]] && deploy_backend
   [[ "$DEPLOY_APP" == "1" ]] && deploy_app
   [[ "$DEPLOY_COUNCIL_APP" == "1" ]] && deploy_council_app
+  [[ "$DEPLOY_FACULTY_APP" == "1" ]] && deploy_faculty_app
 
   GITHUB_STATUS_REPORTED=1
   github_report_success "Deployed to production"
