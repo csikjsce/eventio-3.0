@@ -951,19 +951,35 @@ router.post(
                 });
             }
 
-            const facultySignatures = (proposal.facultySignatures ?? []).filter(
-                (s) => s.user_id !== req.user.id,
-            );
-            facultySignatures.push({
-                user_id: req.user.id,
-                name: req.user.name,
-                email: req.user.email,
-                png_url: pngUrl,
-                signed_at: new Date().toISOString(),
-            });
-
             const approve = req.body?.approve === true;
             const sendToPrincipal = req.body?.sendToPrincipal === true;
+
+            const alreadySigned = (proposal.facultySignatures ?? []).some(
+                (s) => s.user_id === req.user.id,
+            );
+
+            let facultySignatures = [...(proposal.facultySignatures ?? [])];
+
+            if (approve) {
+                if (!alreadySigned) {
+                    return res.status(400).json({
+                        error: true,
+                        message:
+                            "Sign the proposal document first, then approve.",
+                    });
+                }
+            } else {
+                facultySignatures = facultySignatures.filter(
+                    (s) => s.user_id !== req.user.id,
+                );
+                facultySignatures.push({
+                    user_id: req.user.id,
+                    name: req.user.name,
+                    email: req.user.email,
+                    png_url: pngUrl,
+                    signed_at: new Date().toISOString(),
+                });
+            }
 
             let newState = event.state;
             let state_history = [...(event.state_history ?? [])];
@@ -1268,6 +1284,30 @@ router.post(
                             message: "Invalid faculty approval transition.",
                         });
                     }
+                    if (
+                        ["APPLIED_FOR_PRINCI_APPROVAL", "UNLISTED"].includes(newState)
+                    ) {
+                        const proposal = normalizeProposal(
+                            existingEvent.proposal_document,
+                        );
+                        if (!proposal.document) {
+                            return res.status(400).json({
+                                error: true,
+                                message:
+                                    "Council must submit a proposal document before you can approve.",
+                            });
+                        }
+                        const hasSigned = (proposal.facultySignatures ?? []).some(
+                            (s) => s.user_id === req.user.id,
+                        );
+                        if (!hasSigned) {
+                            return res.status(400).json({
+                                error: true,
+                                message:
+                                    "Sign the proposal document before approving.",
+                            });
+                        }
+                    }
                 }
 
                 // Principal: final approve or return to council
@@ -1280,6 +1320,28 @@ router.post(
                             error: true,
                             message: "Invalid principal approval transition.",
                         });
+                    }
+                    if (newState === "UNLISTED") {
+                        const proposal = normalizeProposal(
+                            existingEvent.proposal_document,
+                        );
+                        if (!proposal.document) {
+                            return res.status(400).json({
+                                error: true,
+                                message:
+                                    "No proposal document found for this event.",
+                            });
+                        }
+                        const hasSigned = (proposal.facultySignatures ?? []).some(
+                            (s) => s.user_id === req.user.id,
+                        );
+                        if (!hasSigned) {
+                            return res.status(400).json({
+                                error: true,
+                                message:
+                                    "Sign the proposal document before approving.",
+                            });
+                        }
                     }
                 }
 

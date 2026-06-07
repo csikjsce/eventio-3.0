@@ -4,8 +4,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getNextAction, type EventData, type EventDocument, type ApprovalStep } from "@/lib/dummy-data";
 import { fetchEvent, fetchDocuments, addDocument, deleteDocument, transitionEventState, fetchCouncilProfile, mapStateToPipeline, type DocumentRow, type FacultyAdvisorRow } from "@/lib/api";
-import { submitProposal } from "@/lib/proposal";
-import FacultyReviewerSelect from "@/components/FacultyReviewerSelect";
+import { fetchProposal, type ProposalPackage } from "@/lib/proposal";
+import ProposalWorkflowPanel from "@/components/ProposalWorkflowPanel";
+import ProposalDocumentView from "@/components/ProposalDocumentView";
 import { uploadFile, type UploadType } from "@/lib/upload";
 import { useData } from "@/contexts/DataContext";
 import {
@@ -286,20 +287,19 @@ function AddDocumentSection({ eventId, docs, onDocUpdated, onDocAdded }: {
 
 // ─── Next Action Panel ────────────────────────────────────────────────────────
 
-function NextActionPanel({ event, onAction, actionLoading, advisors, selectedFaculty, onFacultyChange }: {
+function NextActionPanel({ event, onAction, actionLoading }: {
   event: EventData;
   onAction: (cta: string) => void;
   actionLoading?: boolean;
-  advisors: FacultyAdvisorRow[];
-  selectedFaculty: string[];
-  onFacultyChange: (emails: string[]) => void;
 }) {
   const action = getNextAction(event);
   if (!action || action.cta === "Check Status") return null;
 
-  const needsFaculty =
+  const isProposalSubmit =
     event.state === "DRAFT" &&
     (action.cta === "Submit Proposal" || action.cta === "Resubmit Proposal");
+
+  if (isProposalSubmit) return null;
 
   return (
     <div className="rounded-2xl border p-5 bg-red-50 dark:bg-red-500/5 border-red-200 dark:border-red-500/20">
@@ -310,17 +310,6 @@ function NextActionPanel({ event, onAction, actionLoading, advisors, selectedFac
           <p className="text-muted-tx text-xs font-fira leading-relaxed">{action.label}</p>
         </div>
       </div>
-
-      {needsFaculty && (
-        <div className="mb-4 pb-4 border-b border-red-200/60 dark:border-red-500/20">
-          <FacultyReviewerSelect
-            advisors={advisors}
-            selected={selectedFaculty}
-            onChange={onFacultyChange}
-            compact
-          />
-        </div>
-      )}
 
       {action.route ? (
         <Link href={action.route}
@@ -346,7 +335,7 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
   const { events, refreshEvents } = useData();
 
   const [event, setEvent]         = useState<EventData | null>(events.find(e => String(e.id) === id) ?? null);
-  const [tab, setTab]             = useState<"journey" | "documents">("journey");
+  const [tab, setTab]             = useState<"journey" | "proposal" | "documents">("journey");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [docs, setDocs]           = useState<any[]>(event?.documents ?? []);
   const [toast, setToast]         = useState("");
@@ -354,12 +343,19 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
   const [actionLoading, setActionLoading] = useState(false);
   const [advisors, setAdvisors] = useState<FacultyAdvisorRow[]>([]);
   const [selectedFaculty, setSelectedFaculty] = useState<string[]>([]);
+  const [proposal, setProposal] = useState<ProposalPackage | null>(null);
 
   useEffect(() => {
     fetchCouncilProfile()
       .then((p) => setAdvisors(p.profile?.faculty_advisors ?? []))
       .catch(() => setAdvisors([]));
   }, []);
+
+  useEffect(() => {
+    fetchProposal(id)
+      .then(({ proposal: pkg }) => setProposal(pkg))
+      .catch(() => setProposal(null));
+  }, [id, event?.state]);
 
   useEffect(() => {
     if (event?.assigned_faculty_emails?.length) {
@@ -416,27 +412,13 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
     const newState = STATE_TRANSITIONS[cta];
     if (newState) {
       if (actionLoading) return;
-      if (
-        (cta === "Submit Proposal" || cta === "Resubmit Proposal") &&
-        selectedFaculty.length === 0
-      ) {
-        showToast("Select at least one faculty advisor before submitting.");
-        return;
-      }
       setActionLoading(true);
       try {
-        if (cta === "Submit Proposal" || cta === "Resubmit Proposal") {
-          await submitProposal(id, selectedFaculty);
-        } else {
-          await transitionEventState(id, newState);
-        }
-        // refresh local event + global list
+        await transitionEventState(id, newState);
         const updated = await fetchEvent(id);
         setEvent(updated);
         await refreshEvents();
         showToast(
-          cta === "Submit Proposal" ? "Proposal submitted to faculty advisor!" :
-          cta === "Resubmit Proposal" ? "Revised proposal resubmitted to faculty!" :
           cta === "Open Registration" ? "Registration is now open!" :
           "Updated successfully."
         );
@@ -464,6 +446,20 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
   }
 
   const ticketPct = event.ticket_count > 0 ? Math.round((event.tickets_sold ?? 0) / event.ticket_count * 100) : 0;
+  const nextAction = getNextAction(event);
+  const isDraftProposal =
+    event.state === "DRAFT" && !!nextAction && nextAction.cta !== "Check Status";
+  const hasProposalDoc = !!proposal?.document;
+
+  async function refreshProposalAndEvent() {
+    const [updated, pkg] = await Promise.all([
+      fetchEvent(id),
+      fetchProposal(id).then((r) => r.proposal).catch(() => null),
+    ]);
+    setEvent(updated);
+    setProposal(pkg);
+    await refreshEvents();
+  }
 
   return (
     <div className="min-h-screen bg-bg">
@@ -566,11 +562,17 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
             </div>
 
             {/* Tabs */}
-            <div className="flex gap-1 p-1 bg-surface border border-border-c rounded-xl w-fit">
-              {(["journey", "documents"] as const).map(t => (
+            <div className="flex gap-1 p-1 bg-surface border border-border-c rounded-xl w-fit flex-wrap">
+              {([
+                ["journey", "Approval Journey"],
+                ...(hasProposalDoc || isDraftProposal
+                  ? [["proposal", "Proposal Letter"] as const]
+                  : []),
+                ["documents", `Documents (${docs.length})`],
+              ] as const).map(([t, label]) => (
                 <button key={t} type="button" onClick={() => setTab(t)}
                   className={`px-4 py-2 rounded-lg text-sm font-fira transition-all ${t === tab ? "bg-red-500 text-white font-semibold" : "text-muted-tx hover:text-tx"}`}>
-                  {t === "journey" ? "Approval Journey" : `Documents (${docs.length})`}
+                  {label}
                 </button>
               ))}
             </div>
@@ -584,6 +586,26 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
                 </>
               )}
 
+              {tab === "proposal" && (
+                proposal?.document ? (
+                  <ProposalDocumentView proposal={proposal} />
+                ) : (
+                  <div className="text-center py-8 space-y-3">
+                    <p className="text-muted-tx text-sm font-fira">
+                      No proposal letter saved yet.
+                    </p>
+                    {isDraftProposal && (
+                      <Link
+                        href={`/document-builder?eventId=${event.id}`}
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-fira"
+                      >
+                        <FileText size={14} /> Open Doc Builder
+                      </Link>
+                    )}
+                  </div>
+                )
+              )}
+
               {tab === "documents" && (
                 <AddDocumentSection eventId={id} docs={docs} onDocUpdated={handleDocUpdated} onDocAdded={(doc) => setDocs(prev => [...prev, doc])} />
               )}
@@ -593,15 +615,27 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
 
           {/* ── Right: sidebar ── */}
           <div className="space-y-4">
-            {/* Next action */}
-            <NextActionPanel
-              event={event}
-              onAction={handleAction}
-              actionLoading={actionLoading}
-              advisors={advisors}
-              selectedFaculty={selectedFaculty}
-              onFacultyChange={setSelectedFaculty}
-            />
+            {isDraftProposal ? (
+              <ProposalWorkflowPanel
+                eventId={id}
+                resubmit={!!event.comment}
+                advisors={advisors}
+                selectedFaculty={selectedFaculty}
+                onFacultyChange={setSelectedFaculty}
+                onSubmitted={async () => {
+                  await refreshProposalAndEvent();
+                  showToast("Proposal submitted to faculty!");
+                  setTab("proposal");
+                }}
+                onError={showToast}
+              />
+            ) : (
+              <NextActionPanel
+                event={event}
+                onAction={handleAction}
+                actionLoading={actionLoading}
+              />
+            )}
 
             {/* Ticket progress */}
             {event.is_ticket_feature_enabled && (

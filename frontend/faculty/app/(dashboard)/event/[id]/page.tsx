@@ -11,7 +11,7 @@ import {
 import { useData } from "@/contexts/DataContext";
 import {
   fetchEvent, fetchDocuments, fetchBudget,
-  returnEventToCouncil, approveEvent,
+  returnEventToCouncil,
 } from "@/lib/api";
 import {
   facultySignProposal,
@@ -72,43 +72,145 @@ function EventReviewContent({ id }: { id: string }) {
   const canApprove   = !!(event && pendingState && event.state === pendingState);
   const isPrincipal  = user?.role === "PRINCIPAL";
 
+  const alreadySigned = proposal?.facultySignatures?.some(
+    (s) => s.user_id === user?.id,
+  );
+  const hasSavedSignature = userHasSignature(user?.signature);
+  const hasProposalDoc = !!proposal?.document;
+
+  useEffect(() => {
+    if (canApprove && hasProposalDoc) {
+      setTab("proposal");
+    }
+  }, [canApprove, hasProposalDoc, id]);
+
   async function approve() {
     if (!event) return;
+    if (!hasProposalDoc) return;
+    if (!alreadySigned) return;
     setBusy(true);
     try {
-      if (proposal?.document && !isPrincipal) {
-        await facultySignProposal(event.id, {
-          approve: true,
-          sendToPrincipal,
-        });
-      } else if (proposal?.document && isPrincipal) {
-        await facultySignProposal(event.id, { approve: true });
-      } else {
-        await approveEvent(event.id, { sendToPrincipal, isPrincipal });
-      }
+      await facultySignProposal(event.id, {
+        approve: true,
+        sendToPrincipal: isPrincipal ? false : sendToPrincipal,
+      });
       await refresh();
       router.push("/pending");
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message;
+      alert(msg ?? "Approval failed.");
     } finally {
       setBusy(false);
     }
   }
 
   async function signProposalOnly() {
-    if (!event) return;
+    if (!event || !hasProposalDoc) return;
     setBusy(true);
     try {
       await facultySignProposal(event.id, { approve: false });
       const updated = await fetchProposal(event.id);
       setProposal(updated);
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message;
+      alert(msg ?? "Could not sign proposal.");
     } finally {
       setBusy(false);
     }
   }
 
-  const alreadySigned = proposal?.facultySignatures?.some(
-    (s) => s.user_id === user?.id,
-  );
-  const hasSavedSignature = userHasSignature(user?.signature);
+  function ReviewActions() {
+    if (!canApprove) return null;
+
+    if (!hasProposalDoc) {
+      return (
+        <div className="mt-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/25 text-sm text-amber-800 dark:text-amber-300">
+          The council has not submitted a proposal letter for this event yet. You
+          cannot approve until they do.
+        </div>
+      );
+    }
+
+    return (
+      <div className="mt-6 pt-6 border-t border-border space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold">Your review</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Read the proposal above, sign it, then approve or return to council.
+            </p>
+          </div>
+          {alreadySigned && (
+            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+              ✓ You have signed this proposal
+            </span>
+          )}
+        </div>
+
+        {!hasSavedSignature && (
+          <p className="text-sm text-amber-700 dark:text-amber-400">
+            <Link href="/settings" className="underline font-medium">
+              Add your digital signature in Settings
+            </Link>{" "}
+            before signing.
+          </p>
+        )}
+
+        {!isPrincipal && (
+          <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={sendToPrincipal}
+              onChange={(e) => setSendToPrincipal(e.target.checked)}
+              className="rounded border-border"
+            />
+            Requires Principal approval
+          </label>
+        )}
+
+        <div className="flex flex-wrap gap-2">
+          {!alreadySigned && hasSavedSignature && (
+            <button
+              type="button"
+              onClick={signProposalOnly}
+              disabled={busy}
+              className="px-4 py-2.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-medium disabled:opacity-50 flex items-center gap-2"
+            >
+              {busy ? <Loader2 size={14} className="animate-spin" /> : <PenLine size={14} />}
+              Sign proposal
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setShowReturnBox((v) => !v)}
+            disabled={busy}
+            className="px-4 py-2.5 rounded-lg border border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 text-sm disabled:opacity-50 flex items-center gap-1.5"
+          >
+            <RotateCcw size={14} />
+            Return to Council
+          </button>
+          <button
+            type="button"
+            onClick={approve}
+            disabled={busy || !hasSavedSignature || !alreadySigned}
+            className="px-4 py-2.5 rounded-lg border border-border bg-muted/50 hover:bg-muted text-sm font-medium disabled:opacity-40 flex items-center gap-2"
+            title={!alreadySigned ? "Sign the proposal first" : undefined}
+          >
+            {busy && <Loader2 size={14} className="animate-spin" />}
+            {isPrincipal
+              ? "Approve event"
+              : sendToPrincipal
+                ? "Forward to Principal"
+                : "Approve event"}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   async function returnToCouncil() {
     if (!event || !returnFeedback.trim()) return;
@@ -165,48 +267,10 @@ function EventReviewContent({ id }: { id: string }) {
           </div>
         </div>
 
-        {canApprove && (
-          <div className="flex flex-col items-end gap-2 shrink-0">
-            {!isPrincipal && (
-              <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={sendToPrincipal}
-                  onChange={(e) => setSendToPrincipal(e.target.checked)}
-                  className="rounded border-border"
-                />
-                Requires Principal approval
-              </label>
-            )}
-            <div className="flex items-center gap-2 flex-wrap justify-end">
-              {!hasSavedSignature && (
-                <Link href="/settings"
-                  className="text-xs text-amber-700 dark:text-amber-400 hover:underline">
-                  Add signature in Settings
-                </Link>
-              )}
-              {proposal?.document && !alreadySigned && hasSavedSignature && (
-                <button type="button" onClick={signProposalOnly} disabled={busy}
-                  className="px-4 py-2 rounded-lg border border-border text-sm hover:border-red-500/30 flex items-center gap-1.5">
-                  <PenLine size={14} /> Sign proposal
-                </button>
-              )}
-              <button type="button" onClick={() => setShowReturnBox((v) => !v)} disabled={busy}
-                className="px-4 py-2 rounded-lg border border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 text-sm transition-all disabled:opacity-50 flex items-center gap-1.5">
-                <RotateCcw size={14} />
-                Return to Council
-              </button>
-              <button type="button" onClick={approve} disabled={busy || !hasSavedSignature}
-                className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-medium transition-all disabled:opacity-50 flex items-center gap-2">
-                {busy && <Loader2 size={14} className="animate-spin" />}
-                {isPrincipal
-                  ? "Sign & Approve Event"
-                  : sendToPrincipal
-                    ? "Sign & Forward to Principal"
-                    : "Sign & Approve Event"}
-              </button>
-            </div>
-          </div>
+        {canApprove && !hasProposalDoc && (
+          <p className="text-xs text-amber-700 dark:text-amber-400 shrink-0">
+            Awaiting council proposal letter
+          </p>
         )}
       </div>
 
@@ -329,13 +393,16 @@ function EventReviewContent({ id }: { id: string }) {
         )}
 
         {tab === "proposal" && (
-          proposal?.document ? (
-            <ProposalDocumentView proposal={proposal} />
-          ) : (
-            <p className="text-muted-foreground text-sm text-center py-8">
-              The council has not submitted a proposal document for this event yet.
-            </p>
-          )
+          <>
+            {proposal?.document ? (
+              <ProposalDocumentView proposal={proposal} />
+            ) : (
+              <p className="text-muted-foreground text-sm text-center py-8">
+                The council has not submitted a proposal document for this event yet.
+              </p>
+            )}
+            <ReviewActions />
+          </>
         )}
 
         {tab === "documents" && (
