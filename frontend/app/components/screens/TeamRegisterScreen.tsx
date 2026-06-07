@@ -2,9 +2,11 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { Add, Login } from "iconsax-react";
 import { TeamPageSkeleton } from "@/components/Skeletons";
 import Spinner from "@/components/Spinner";
 import MoreDetailsForm from "@/components/MoreDetailsForm";
+import TeamEventHeader from "@/components/team/TeamEventHeader";
 import {
   fetchEvent,
   createTeam as apiCreateTeam,
@@ -15,6 +17,9 @@ import {
   buildInitialAnswers,
   validateClientAnswers,
 } from "@/lib/registration-fields";
+
+const INPUT =
+  "w-full h-12 bg-surface border border-border rounded-xl px-4 text-foreground font-poppins text-sm outline-none focus:border-primary/50 placeholder:text-mute transition-colors";
 
 export default function TeamRegisterScreen() {
   const params = useParams();
@@ -127,7 +132,7 @@ export default function TeamRegisterScreen() {
     }
   };
 
-  if (!event) return <TeamPageSkeleton />;
+  if (!event) return <TeamPageSkeleton variant="register" />;
 
   if (event.ma_ppt === 1) {
     router.push(`/event-details/${id}`);
@@ -135,90 +140,124 @@ export default function TeamRegisterScreen() {
   }
 
   return (
-    <div className="p-4 text-foreground font-fira mb-20">
-      <div className="flex justify-between items-center">
-        <div className="font-marcellus">
-          <p className="text-2xl">{event.name}</p>
-          <p className="text-md text-mute">{event.description}</p>
-        </div>
-        <img
-          src={event.event_page_image_url}
-          alt={event.name}
-          className="w-20 h-20 rounded-lg object-cover"
-        />
-      </div>
+    <div className="min-h-screen bg-background pb-24">
+      <TeamEventHeader event={event} eventId={id} title="Team registration" />
 
-      {registrationFields.length > 0 && (
-        <div className="mt-5 mb-6">
-          <p className="text-sm text-mute mb-3">Additional registration info</p>
-          <MoreDetailsForm
-            fields={registrationFields}
-            values={formData}
-            onChange={setFormData}
-          />
-          {formError && (
-            <p className="text-red-400 text-sm mt-2">{formError}</p>
-          )}
-        </div>
-      )}
+      <div className="px-5 pt-5 flex flex-col gap-5 max-w-lg mx-auto w-full">
+        {registrationFields.length > 0 && (
+          <div className="bg-card border border-border rounded-2xl p-4">
+            <p className="text-mute text-[11px] font-poppins font-semibold uppercase tracking-wider mb-3">
+              Additional info
+            </p>
+            <MoreDetailsForm
+              fields={registrationFields}
+              values={formData}
+              onChange={setFormData}
+            />
+            {formError && (
+              <p className="text-red-500 text-sm font-poppins mt-3">{formError}</p>
+            )}
+          </div>
+        )}
 
-      <div
-        className="mt-6 flex justify-center items-center h-12 bg-primary text-white rounded-full hover:cursor-pointer active:bg-primary/70"
-        onClick={() => setChoice("create")}
-      >
-        Create Team
-      </div>
-      <div
-        className="mt-4 flex justify-center items-center h-12 bg-card rounded-full hover:cursor-pointer active:bg-card/70"
-        onClick={() => setChoice("join")}
-      >
-        Join Team
-      </div>
-      {choice === "join" && (
-        <form onSubmit={joinTeam}>
-          <input
-            type="text"
-            name="invite_code"
-            placeholder="Enter invite code (try CW26X)"
-            required
-            minLength={5}
-            maxLength={5}
-            className="mt-6 flex w-full h-12 bg-transparent border-b border-mute focus:outline-none p-4"
-          />
-          <div className="mt-4 flex justify-end">
+        {!choice && (
+          <>
+            <p className="text-mute text-sm font-poppins leading-relaxed">
+              Register as a team for this event. Create a new team and share an invite code, or join an existing team.
+            </p>
+            <button
+              type="button"
+              onClick={() => setChoice("create")}
+              className="flex items-center gap-3 w-full bg-primary text-white rounded-2xl px-4 py-4 text-left active:scale-[0.99] transition-transform"
+            >
+              <span className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
+                <Add size={22} color="white" />
+              </span>
+              <span>
+                <span className="block font-poppins font-semibold text-base">Create a team</span>
+                <span className="block text-white/80 text-xs font-poppins mt-0.5">You&apos;ll get an invite code to share</span>
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setChoice("join")}
+              className="flex items-center gap-3 w-full bg-card border border-border rounded-2xl px-4 py-4 text-left active:scale-[0.99] transition-transform"
+            >
+              <span className="w-10 h-10 rounded-xl bg-surface border border-border flex items-center justify-center shrink-0">
+                <Login size={22} color="currentColor" className="text-foreground" />
+              </span>
+              <span>
+                <span className="block font-poppins font-semibold text-foreground text-base">Join a team</span>
+                <span className="block text-mute text-xs font-poppins mt-0.5">Enter the 5-character invite code</span>
+              </span>
+            </button>
+          </>
+        )}
+
+        {choice === "join" && (
+          <form onSubmit={joinTeam} className="bg-card border border-border rounded-2xl p-4 flex flex-col gap-4">
+            <div className="flex items-center justify-between gap-2">
+              <p className="font-poppins font-semibold text-foreground">Join with invite code</p>
+              <button
+                type="button"
+                className="text-mute text-xs font-poppins"
+                onClick={() => setChoice(null)}
+              >
+                Back
+              </button>
+            </div>
+            <input
+              type="text"
+              name="invite_code"
+              placeholder="e.g. CW26X"
+              required
+              minLength={5}
+              maxLength={5}
+              className={`${INPUT} font-mono tracking-widest uppercase`}
+            />
             <button
               type="submit"
-              className="bg-card/90 p-2 rounded-full text-sm"
+              className="w-full h-12 bg-primary text-white rounded-xl font-poppins font-semibold text-sm flex items-center justify-center disabled:opacity-50"
               disabled={loading}
             >
-              {loading ? <Spinner /> : "Submit"}
+              {loading ? <Spinner /> : "Join team"}
             </button>
-          </div>
-        </form>
-      )}
-      {choice === "create" && (
-        <form onSubmit={createTeam}>
-          <input
-            type="text"
-            name="team_name"
-            placeholder="Enter team name"
-            required
-            className="mt-6 flex w-full h-12 bg-transparent border-b border-mute focus:outline-none p-4"
-            minLength={3}
-          />
-          <div className="mt-4 flex justify-end">
+          </form>
+        )}
+
+        {choice === "create" && (
+          <form onSubmit={createTeam} className="bg-card border border-border rounded-2xl p-4 flex flex-col gap-4">
+            <div className="flex items-center justify-between gap-2">
+              <p className="font-poppins font-semibold text-foreground">Name your team</p>
+              <button
+                type="button"
+                className="text-mute text-xs font-poppins"
+                onClick={() => setChoice(null)}
+              >
+                Back
+              </button>
+            </div>
+            <input
+              type="text"
+              name="team_name"
+              placeholder="e.g. Code Warriors"
+              required
+              minLength={3}
+              className={INPUT}
+            />
             <button
               type="submit"
-              className="bg-card/90 p-2 rounded-full text-sm"
+              className="w-full h-12 bg-primary text-white rounded-xl font-poppins font-semibold text-sm flex items-center justify-center disabled:opacity-50"
               disabled={loading}
             >
-              {loading ? <Spinner /> : "Submit"}
+              {loading ? <Spinner /> : "Create team"}
             </button>
-          </div>
-        </form>
-      )}
+          </form>
+        )}
+      </div>
+
       <div
-        className={`fixed bottom-5 left-1/2 transform -translate-x-1/2 w-64 bg-primary text-center text-white p-4 rounded-md z-40 transition-all duration-500 ease-in-out ${snackbarVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10 pointer-events-none"}`}
+        className={`fixed bottom-6 left-1/2 -translate-x-1/2 max-w-[calc(100%-2rem)] bg-foreground text-background text-center font-poppins text-sm px-4 py-3 rounded-xl z-40 shadow-lg transition-all duration-300 ${snackbarVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"}`}
       >
         {snackbarMessage}
       </div>

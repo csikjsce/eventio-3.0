@@ -2,10 +2,11 @@
 
 import { useContext, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Trash, Copy } from "iconsax-react";
+import { Copy, TickCircle, Trash } from "iconsax-react";
 import { UserDataContext } from "@/contexts/userContext";
 import { TeamPageSkeleton } from "@/components/Skeletons";
 import Spinner from "@/components/Spinner";
+import TeamEventHeader from "@/components/team/TeamEventHeader";
 import { fetchEvent, deleteTeam as apiDeleteTeam } from "@/lib/api";
 import type { EventData } from "@/types/eventio";
 
@@ -23,36 +24,41 @@ function ConfirmationModal({
   const [isVisible, setIsVisible] = useState(false);
   useEffect(() => {
     setTimeout(() => setIsVisible(showModal), 50);
-  });
+  }, [showModal]);
+
   const cancel = () => {
     setIsVisible(false);
-    setTimeout(() => onCancel(), 50);
+    setTimeout(() => onCancel(), 200);
   };
   const confirm = () => {
     setIsVisible(false);
-    setTimeout(() => onConfirm(), 50);
+    setTimeout(() => onConfirm(), 200);
   };
+
+  if (!showModal) return null;
 
   return (
     <div
-      className={`fixed inset-0 flex items-center justify-center bg-background/90 z-50 ${isVisible ? "opacity-100" : "opacity-0"} transition-all duration-300`}
+      className={`fixed inset-0 flex items-end sm:items-center justify-center bg-black/50 z-50 p-4 transition-opacity duration-200 ${isVisible ? "opacity-100" : "opacity-0"}`}
     >
       <div
-        className={`bg-card p-6 rounded-lg shadow-lg w-80 text-center ${isVisible ? "scale-100" : "scale-95"} transition-transform duration-300`}
+        className={`bg-card border border-border rounded-2xl p-5 w-full max-w-sm shadow-xl transition-transform duration-200 ${isVisible ? "scale-100 translate-y-0" : "scale-95 translate-y-2"}`}
       >
-        <p className="mb-4">{message}</p>
-        <div className="flex justify-between">
+        <p className="font-poppins text-foreground text-sm leading-relaxed mb-5">{message}</p>
+        <div className="flex gap-3">
           <button
-            className="bg-mute text-white px-4 py-2 rounded-lg hover:bg-mute/90 active:bg-mute/70"
+            type="button"
+            className="flex-1 py-2.5 rounded-xl border border-border text-foreground font-poppins text-sm font-medium"
             onClick={cancel}
           >
             Cancel
           </button>
           <button
-            className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 active:bg-primary/70"
+            type="button"
+            className="flex-1 py-2.5 rounded-xl bg-primary text-white font-poppins text-sm font-medium"
             onClick={confirm}
           >
-            Confirm
+            Delete
           </button>
         </div>
       </div>
@@ -67,6 +73,7 @@ export default function TeamDetailsScreen() {
   const [event, setEvent] = useState<EventData | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [copied, setCopied] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -74,7 +81,9 @@ export default function TeamDetailsScreen() {
       try {
         const eventData = await fetchEvent(Number(id));
         if (eventData) setEvent(eventData);
-      } catch { /* handled by interceptor */ }
+      } catch {
+        /* handled by interceptor */
+      }
     }
     load();
   }, [id]);
@@ -85,20 +94,26 @@ export default function TeamDetailsScreen() {
     try {
       const team = event?.Participant && (event.Participant as { team?: { id: number } }).team;
       if (team) await apiDeleteTeam(Number(id), team.id);
-    } catch { /* ignore */ } finally {
+    } catch {
+      /* ignore */
+    } finally {
       setDeleteLoading(false);
       router.push(`/team-register/${id}`);
     }
   };
 
-  const copy = () => {
-    if (!event || event.Participant === false || !event.Participant.team) {
-      return;
+  const copyCode = async () => {
+    if (!event || event.Participant === false || !event.Participant.team) return;
+    try {
+      await navigator.clipboard.writeText(event.Participant.team.invite_code);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* ignore */
     }
-    navigator.clipboard.writeText(event.Participant.team.invite_code);
   };
 
-  if (!event || !userData) return <TeamPageSkeleton />;
+  if (!event || !userData) return <TeamPageSkeleton variant="details" />;
 
   if (event.ma_ppt === 1) {
     router.push(`/event-details/${id}`);
@@ -111,60 +126,105 @@ export default function TeamDetailsScreen() {
   }
 
   const team = event.Participant.team;
+  const isLeader = userData.id === team.leader_id;
+  const memberCount = team.Participant.length;
+  const spotsLeft = Math.max(0, event.ma_ppt - memberCount);
 
   return (
-    <div className="p-4 text-foreground font-fira mb-20">
-      <div className="flex justify-between items-center">
-        <div className="font-marcellus">
-          <p className="text-2xl">{event.name}</p>
-          <p className="text-md text-mute">{event.description}</p>
-        </div>
-        <img
-          src={event.event_page_image_url}
-          alt={event.name}
-          className="w-20 h-20 rounded-lg object-cover outline outline-1 outline-mute"
-        />
-      </div>
-      <p className="mt-6 text-xl text-center font-poppins mb-2">
-        {team.name}
-      </p>
-      <p className="flex justify-center items-center gap-2 text-sm text-center text-mute font-poppins mb-2">
-        Invite Code - {team.invite_code}
-        <Copy
-          className="hover:cursor-pointer active:text-mute/70"
-          onClick={() => copy()}
-        />
-      </p>
-      {team.Participant.map((u) => (
-        <div
-          className="mt-2 flex gap-4 items-center bg-card rounded-lg p-2"
-          key={u.user.id}
-        >
-          <img
-            src={u.user.photo_url}
-            alt={u.user.name}
-            className="w-10 h-10 rounded-full"
-          />
-          <p className="text-lg flex-1">
-            {u.user.name}{" "}
-            {u.user.id === team.leader_id && "(Leader)"}
+    <div className="min-h-screen bg-background pb-32">
+      <TeamEventHeader event={event} eventId={id} title="Your team" />
+
+      <div className="px-5 pt-5 flex flex-col gap-5 max-w-lg mx-auto w-full">
+        {/* Team name */}
+        <div className="bg-card border border-border rounded-2xl p-5 text-center">
+          <p className="text-mute text-[11px] font-poppins font-semibold uppercase tracking-wider mb-1">
+            Team name
+          </p>
+          <h2 className="font-marcellus text-2xl text-foreground leading-tight">{team.name}</h2>
+          <p className="text-mute text-sm font-poppins mt-2">
+            {memberCount} of {event.ma_ppt} members
+            {spotsLeft > 0 && (
+              <span className="text-foreground/70"> · {spotsLeft} spot{spotsLeft !== 1 ? "s" : ""} left</span>
+            )}
           </p>
         </div>
-      ))}
-      {userData.id === team.leader_id && (
-        <div className="fixed bottom-0 left-0 w-screen p-4">
+
+        {/* Invite code */}
+        <div className="bg-card border border-border rounded-2xl p-4">
+          <p className="text-mute text-[11px] font-poppins font-semibold uppercase tracking-wider mb-2">
+            Invite code
+          </p>
           <button
-            className="w-full flex justify-center items-center gap-2 h-12 bg-primary text-white rounded-full hover:cursor-pointer active:bg-primary/70"
+            type="button"
+            onClick={copyCode}
+            className="w-full flex items-center justify-between gap-3 bg-surface border border-border rounded-xl px-4 py-3.5 active:scale-[0.99] transition-transform"
+          >
+            <span className="font-mono text-lg font-semibold tracking-[0.2em] text-foreground">
+              {team.invite_code}
+            </span>
+            <span className="flex items-center gap-1.5 text-primary shrink-0">
+              <Copy size={18} color="currentColor" />
+              <span className="text-xs font-poppins font-medium">{copied ? "Copied!" : "Copy"}</span>
+            </span>
+          </button>
+          <p className="text-mute text-xs font-poppins mt-2 leading-relaxed">
+            Teammates enter this code on the join screen to register with your team.
+          </p>
+        </div>
+
+        {/* Members */}
+        <div>
+          <p className="text-mute text-[11px] font-poppins font-semibold uppercase tracking-wider mb-3">
+            Members ({memberCount})
+          </p>
+          <div className="flex flex-col gap-2">
+            {team.Participant.map((u) => {
+              const leader = u.user.id === team.leader_id;
+              return (
+                <div
+                  key={u.user.id}
+                  className="flex items-center gap-3 bg-card border border-border rounded-xl p-3"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={u.user.photo_url}
+                    alt=""
+                    className="w-11 h-11 rounded-full object-cover shrink-0 ring-2 ring-border"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-poppins font-medium text-foreground truncate">{u.user.name}</p>
+                    {leader && (
+                      <p className="text-primary text-xs font-poppins mt-0.5 flex items-center gap-1">
+                        <TickCircle size={12} color="currentColor" variant="Bold" />
+                        Team leader
+                      </p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {isLeader && (
+        <div className="fixed bottom-0 inset-x-0 p-4 pb-6 bg-background/95 backdrop-blur-sm border-t border-border">
+          <button
+            type="button"
+            className="w-full max-w-lg mx-auto flex justify-center items-center gap-2 h-12 border border-red-500/40 text-red-500 rounded-2xl font-poppins text-sm font-semibold active:bg-red-500/10 disabled:opacity-50"
             disabled={deleteLoading}
             onClick={() => setShowModal(true)}
           >
-            Delete Team {deleteLoading && <Spinner />}
+            <Trash size={18} color="currentColor" />
+            {deleteLoading ? "Deleting…" : "Delete team"}
+            {deleteLoading && <Spinner />}
           </button>
         </div>
       )}
+
       {showModal && (
         <ConfirmationModal
-          message="Are you sure you want to delete the team?"
+          message="Delete this team? All members will need to create or join a team again."
           onConfirm={deleteTeam}
           onCancel={() => setShowModal(false)}
           showModal={showModal}

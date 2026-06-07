@@ -233,21 +233,29 @@ export function MyEventsScreenSkeleton() {
 }
 
 /** Team register / team details page */
-export function TeamPageSkeleton() {
+export function TeamPageSkeleton({ variant = "register" }: { variant?: "register" | "details" }) {
   return (
-    <div className="p-4 flex flex-col gap-5 mb-20">
-      {/* Event header */}
-      <div className="flex justify-between items-center gap-4">
-        <div className="flex flex-col gap-2 flex-1">
-          <Sh className="h-6 w-3/4" rounded="rounded-full" />
-          <Sh className="h-4 w-1/2" rounded="rounded-full" />
-        </div>
-        <Sh className="w-20 h-20 rounded-xl flex-shrink-0" />
+    <div className="min-h-screen bg-background pb-24">
+      <div className="border-b border-border px-4 py-3 flex items-center gap-3">
+        <Sh className="w-9 h-9 rounded-full shrink-0" />
+        <Sh className="h-5 w-28" rounded="rounded-full" />
       </div>
-
-      {/* Buttons */}
-      <Sh className="h-12 w-full rounded-full" rounded="rounded-full" />
-      <Sh className="h-12 w-full rounded-full" rounded="rounded-full" />
+      <div className="px-5 pt-5 flex flex-col gap-5">
+        <Sh className="h-[4.5rem] w-full rounded-2xl" />
+        {variant === "details" ? (
+          <>
+            <Sh className="h-28 w-full rounded-2xl" />
+            <Sh className="h-24 w-full rounded-2xl" />
+            <Sh className="h-16 w-full rounded-xl" />
+            <Sh className="h-16 w-full rounded-xl" />
+          </>
+        ) : (
+          <>
+            <Sh className="h-16 w-full rounded-2xl" />
+            <Sh className="h-16 w-full rounded-2xl" />
+          </>
+        )}
+      </div>
     </div>
   );
 }
