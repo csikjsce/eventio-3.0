@@ -10,6 +10,7 @@ const { sendTeamInviteEmail } = require("../utils/mailer");
 const fetch = require("node-fetch");
 const { get: cGet, set: cSet, del: cDel, keys: cKeys, TTL, invalidateEvent } = require("../utils/cache");
 const { validateMoreDetails, normalizeRegistrationFields } = require("../utils/registration-fields");
+const { pickEventUpdateData } = require("../utils/event-update");
 
 let protected = "/p";
 
@@ -785,13 +786,12 @@ router.post(
             });
         }
 
-        let field = req.body;
+        let field = pickEventUpdateData(req.body);
 
-        field.logo_image__url = field.logo_image_url;
-        delete field.logo_image_url;
+        if (req.body.logo_image_url !== undefined) {
+            field.logo_image__url = req.body.logo_image_url;
+        }
 
-        delete field.organizer;
-        delete field.Participant;
         if (field.dates && field.dates.length) {
             field.dates = field.dates.map((d) => new Date(d));
         }

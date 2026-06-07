@@ -10,9 +10,10 @@ import {
 } from "@/lib/registration-fields";
 
 const INPUT =
-  "w-full bg-zinc-900/60 border border-white/10 rounded-xl px-3 py-2 text-sm font-fira text-zinc-100 outline-none focus:border-red-500/50 placeholder:text-zinc-600";
+  "w-full bg-surface border border-border-c rounded-lg px-3 py-2 text-sm font-fira text-tx outline-none focus:border-red-500/40 placeholder:text-subtle-tx transition-colors";
 const SELECT =
-  "bg-zinc-900/60 border border-white/10 rounded-xl px-3 py-2 text-sm font-fira text-zinc-100 outline-none focus:border-red-500/50";
+  "w-full bg-surface border border-border-c rounded-lg px-3 py-2 text-sm font-fira text-tx outline-none focus:border-red-500/40 transition-colors";
+const LABEL = "text-muted-tx text-xs font-fira mb-1 block";
 
 interface Props {
   fields: RegistrationField[];
@@ -42,12 +43,12 @@ export default function RegistrationFieldsEditor({ fields, onChange }: Props) {
 
   return (
     <div className="space-y-3 mt-3">
-      <p className="text-zinc-500 text-xs font-fira">
+      <p className="text-muted-tx text-xs font-fira leading-relaxed">
         Add any questions or inputs you want students to fill during registration — e.g. T-shirt size, dietary preference, GitHub handle, year of study.
       </p>
 
       {fields.length === 0 && (
-        <p className="text-zinc-600 text-xs font-fira italic py-2">
+        <p className="text-subtle-tx text-xs font-fira italic py-2">
           No fields yet. Click &quot;Add field&quot; to create your first question.
         </p>
       )}
@@ -55,16 +56,14 @@ export default function RegistrationFieldsEditor({ fields, onChange }: Props) {
       {fields.map((field, index) => (
         <div
           key={index}
-          className="rounded-xl border border-white/10 bg-zinc-900/40 p-4 space-y-3"
+          className="rounded-xl border border-border-c bg-surface2 p-4 space-y-3"
         >
           <div className="flex items-start gap-2">
-            <GripVertical size={16} className="text-zinc-600 mt-2 shrink-0" />
+            <GripVertical size={16} className="text-subtle-tx mt-2 shrink-0" />
             <div className="flex-1 space-y-3 min-w-0">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-zinc-400 text-xs font-fira mb-1 block">
-                    Question / label *
-                  </label>
+                  <label className={LABEL}>Question / label *</label>
                   <input
                     className={INPUT}
                     value={field.label}
@@ -73,11 +72,9 @@ export default function RegistrationFieldsEditor({ fields, onChange }: Props) {
                   />
                 </div>
                 <div>
-                  <label className="text-zinc-400 text-xs font-fira mb-1 block">
-                    Input type
-                  </label>
+                  <label className={LABEL}>Input type</label>
                   <select
-                    className={`${SELECT} w-full`}
+                    className={SELECT}
                     value={field.type}
                     onChange={(e) =>
                       updateField(index, {
@@ -96,9 +93,7 @@ export default function RegistrationFieldsEditor({ fields, onChange }: Props) {
               </div>
 
               <div>
-                <label className="text-zinc-400 text-xs font-fira mb-1 block">
-                  Placeholder (optional)
-                </label>
+                <label className={LABEL}>Placeholder (optional)</label>
                 <input
                   className={INPUT}
                   value={field.placeholder ?? ""}
@@ -109,20 +104,19 @@ export default function RegistrationFieldsEditor({ fields, onChange }: Props) {
 
               {field.type === "select" && (
                 <div>
-                  <label className="text-zinc-400 text-xs font-fira mb-1 block">
-                    Options (one per line) *
-                  </label>
+                  <label className={LABEL}>Options (one per line) *</label>
                   <textarea
-                    className={`${INPUT} resize-none min-h-[72px]`}
+                    className={`${INPUT} resize-y min-h-[88px]`}
+                    rows={4}
                     value={(field.options ?? []).join("\n")}
                     onChange={(e) =>
                       updateField(index, {
-                        options: e.target.value
-                          .split("\n")
-                          .map((l) => l.trim())
-                          .filter(Boolean),
+                        options: e.target.value.split("\n"),
                       })
                     }
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") e.stopPropagation();
+                    }}
                     placeholder={"S\nM\nL\nXL"}
                   />
                 </div>
@@ -131,17 +125,17 @@ export default function RegistrationFieldsEditor({ fields, onChange }: Props) {
               <label className="flex items-center gap-2 cursor-pointer select-none">
                 <input
                   type="checkbox"
-                  className="accent-red-600 w-4 h-4"
+                  className="rounded border-border-c text-red-500 focus:ring-red-500/30 w-4 h-4"
                   checked={field.required !== false}
                   onChange={(e) => updateField(index, { required: e.target.checked })}
                 />
-                <span className="text-zinc-400 text-xs font-fira">Required</span>
+                <span className="text-muted-tx text-xs font-fira">Required</span>
               </label>
             </div>
             <button
               type="button"
               onClick={() => removeField(index)}
-              className="p-2 rounded-lg text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-colors shrink-0"
+              className="p-2 rounded-lg text-muted-tx hover:text-red-500 hover:bg-red-500/10 transition-colors shrink-0"
               aria-label="Remove field"
             >
               <Trash2 size={16} />
@@ -153,7 +147,7 @@ export default function RegistrationFieldsEditor({ fields, onChange }: Props) {
       <button
         type="button"
         onClick={addField}
-        className="flex items-center gap-2 px-4 py-2 rounded-xl border border-dashed border-white/15 text-zinc-400 hover:text-zinc-200 hover:border-red-500/30 text-sm font-fira transition-colors"
+        className="flex items-center gap-2 px-4 py-2 rounded-xl border border-dashed border-border-c text-muted-tx hover:text-tx hover:border-red-500/30 text-sm font-fira transition-colors"
       >
         <Plus size={16} />
         Add field

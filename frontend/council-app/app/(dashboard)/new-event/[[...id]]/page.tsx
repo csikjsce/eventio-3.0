@@ -10,7 +10,7 @@ import RegistrationFieldsEditor from "@/components/RegistrationFieldsEditor";
 import type { RegistrationField } from "@/lib/registration-fields";
 import { normalizeRegistrationFields } from "@/lib/registration-fields";
 import { useData } from "@/contexts/DataContext";
-import { createEvent, updateEvent } from "@/lib/api";
+import { createEvent, updateEvent, toEventUpdatePayload } from "@/lib/api";
 import { uploadFile } from "@/lib/upload";
 import {
   Trophy, Wrench, Mic2, Monitor, Sparkles,
@@ -162,8 +162,13 @@ export default function NewEventPage() {
 
   useEffect(() => {
     if (existing) {
+      methods.reset({
+        ...toEventUpdatePayload(existing as unknown as Record<string, unknown>),
+        dates: existing.dates.map((d) => new Date(d)),
+        registration_fields: existing.registration_fields ?? [],
+        urls: existing.urls ?? { instagram: "", facebook: "", linkedin: "", other: "" },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      methods.reset(existing as any);
+      } as any);
       if (existing.dates[0]) setStartDate(dateToString(new Date(existing.dates[0])));
       if (existing.dates.length > 1) {
         const last = new Date(existing.dates[existing.dates.length - 1]);

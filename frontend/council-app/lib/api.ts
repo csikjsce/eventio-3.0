@@ -260,8 +260,28 @@ export async function createEvent(data: Record<string, unknown>): Promise<EventD
   return transformEvent(res.data.event);
 }
 
+/** Fields the backend accepts on POST /event/p/update/:id — excludes UI-only EventData props. */
+const EVENT_UPDATE_KEYS = [
+  "name", "description", "long_description", "tag_line", "fee", "event_type",
+  "online_event_link", "dates", "venue", "ma_ppt", "min_ppt", "tags", "state",
+  "banner_url", "logo_image_url", "event_page_image_url", "parent_id",
+  "is_feedback_enabled", "is_only_somaiya", "attendance_type", "registration_type",
+  "external_registration_link", "is_ticket_feature_enabled", "in_event_activity",
+  "start_in_event_activity", "comment", "ticket_count", "female_requirement",
+  "more_details_enabled", "registration_fields", "is_submission_enabled",
+  "report_url", "urls",
+] as const;
+
+export function toEventUpdatePayload(data: Record<string, unknown>): Record<string, unknown> {
+  const payload: Record<string, unknown> = {};
+  for (const key of EVENT_UPDATE_KEYS) {
+    if (data[key] !== undefined) payload[key] = data[key];
+  }
+  return payload;
+}
+
 export async function updateEvent(id: number | string, data: Record<string, unknown>): Promise<EventData> {
-  const res = await api.post(`/event/p/update/${id}`, data);
+  const res = await api.post(`/event/p/update/${id}`, toEventUpdatePayload(data));
   return transformEvent(res.data.event ?? {});
 }
 
