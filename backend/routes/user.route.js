@@ -4,19 +4,26 @@ const authCheck = require("../middleware/auth.middleware");
 const prisma = require("../utils/prisma_client");
 const logger = require("../utils/logger");
 const { del, keys } = require("../utils/cache");
+const { ensureFacultyRoleForAdvisor } = require("../utils/faculty-access");
 
 let protected = "/p";
-router.post(protected + "/me", authCheck, (req, res) => {
-    delete req.user["google_id"];
-    delete req.user["refresh_token"];
-    delete req.user["updated_at"];
-    delete req.user["created_at"];
-    delete req.user["council_type"];
-    delete req.user["about"];
-    res.json({
-        error: false,
-        user: req.user,
-    });
+router.post(protected + "/me", authCheck, async (req, res) => {
+    try {
+        const user = await ensureFacultyRoleForAdvisor(req.user);
+        delete user["google_id"];
+        delete user["refresh_token"];
+        delete user["updated_at"];
+        delete user["created_at"];
+        delete user["council_type"];
+        delete user["about"];
+        res.json({
+            error: false,
+            user,
+        });
+    } catch (err) {
+        logger.error(err);
+        res.status(500).json({ error: true, message: "Failed to load profile" });
+    }
 });
 router.post(protected + "/update", authCheck, (req, res) => {
     const {

@@ -8,6 +8,10 @@ const logger = require("./utils/logger");
 const passport = require("passport");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const prisma = require("./utils/prisma_client");
+const {
+    ensureFacultyRoleForAdvisor,
+    resolveRoleForNewUser,
+} = require("./utils/faculty-access");
 const session = require("express-session");
 
 const userRoute = require("./routes/user.route");
@@ -34,8 +38,12 @@ passport.use(
                 let user = await prisma.user.findUnique({
                     where: { google_id: profile.id },
                 });
-                profile["user_id"] = user.id;
-                return done(null, profile);
+                if (user) {
+                    user = await ensureFacultyRoleForAdvisor(user);
+                    profile["user_id"] = user.id;
+                    return done(null, profile);
+                }
+                throw new Error("USER_NOT_FOUND");
             } catch (e) {
                 let email = profile.emails[0].value;
                 let is_somaiya_student = email.split("@")[1] == "somaiya.edu";
@@ -45,6 +53,10 @@ passport.use(
                         let admin = await prisma.admins.findUnique({
                             where: { email: email },
                         });
+                        const role = await resolveRoleForNewUser(
+                            email,
+                            admin?.role,
+                        );
 
                         let User = await prisma.user.create({
                             data: {
@@ -53,13 +65,14 @@ passport.use(
                                 name: profile.displayName,
                                 photo_url: profile.photos[0].value,
                                 is_somaiya_student: is_somaiya_student,
-                                role: admin.role,
+                                role,
                             },
                         });
                         profile["user_id"] = User.id;
                         return done(null, profile);
                     } catch (e) {
                         console.error(e);
+                        const role = await resolveRoleForNewUser(email, null);
                         let user = await prisma.user.create({
                             data: {
                                 google_id: profile.id,
@@ -67,6 +80,7 @@ passport.use(
                                 name: profile.displayName,
                                 photo_url: profile.photos[0].value,
                                 is_somaiya_student: is_somaiya_student,
+                                role,
                             },
                         });
                         profile["user_id"] = user.id;

@@ -11,6 +11,13 @@ const fetch = require("node-fetch");
 const { get: cGet, set: cSet, del: cDel, keys: cKeys, TTL, invalidateEvent } = require("../utils/cache");
 const { validateMoreDetails, normalizeRegistrationFields } = require("../utils/registration-fields");
 const { pickEventUpdateData } = require("../utils/event-update");
+const {
+    normalizeAssignedFacultyEmails,
+    getCouncilOrganizerIdsForFaculty,
+    getCouncilAdvisorEmails,
+    facultyCanAccessEvent,
+    filterEventsForFaculty,
+} = require("../utils/faculty-access");
 
 let protected = "/p";
 
@@ -23,39 +30,6 @@ function generateRandomCode() {
         code += chars[Math.floor(Math.random() * chars.length)];
     }
     return code;
-}
-
-function normalizeEmail(email) {
-    return String(email || "").trim().toLowerCase();
-}
-
-function normalizeAssignedFacultyEmails(emails) {
-    if (!Array.isArray(emails)) return [];
-    return [
-        ...new Set(
-            emails.map(normalizeEmail).filter(Boolean),
-        ),
-    ];
-}
-
-/** Empty list = legacy events visible to all faculty reviewers. */
-function facultyIsAssigned(userEmail, assignedEmails) {
-    const list = assignedEmails ?? [];
-    if (list.length === 0) return true;
-    const norm = normalizeEmail(userEmail);
-    return list.some((e) => normalizeEmail(e) === norm);
-}
-
-async function getCouncilAdvisorEmails(councilUserId) {
-    const profile = await prisma.councilProfile.findUnique({
-        where: { user_id: councilUserId },
-        include: {
-            faculty_advisors: { select: { email: true } },
-        },
-    });
-    return (profile?.faculty_advisors ?? []).map((a) =>
-        normalizeEmail(a.email),
-    );
 }
 
 async function assertCouncilEventAccess(user, eventId) {
@@ -249,13 +223,26 @@ router.post(protected + "/get", authCheck, async (req, res) => {
         }
     }
 
-    // Handle FACULTY role (existing)
+    // Handle FACULTY role — only events from councils that list this faculty as advisor
     else if (req.user.role === "FACULTY") {
         try {
+            const councilIds = await getCouncilOrganizerIdsForFaculty(
+                req.user.email,
+            );
+            if (councilIds.length === 0) {
+                return res.json({
+                    error: false,
+                    events: {},
+                    message: "No council assignments for this faculty account",
+                });
+            }
+
+            const organizerFilter = { organizer_id: { in: councilIds } };
             let events = [];
             if (req.query.state) {
                 events = await prisma.events.findMany({
                     where: {
+                        ...organizerFilter,
                         state: {
                             in: req.query.state,
                         },
@@ -280,6 +267,7 @@ router.post(protected + "/get", authCheck, async (req, res) => {
             } else {
                 events = await prisma.events.findMany({
                     where: {
+                        ...organizerFilter,
                         state: {
                             in: [
                                 "APPLIED_FOR_APPROVAL",
@@ -312,13 +300,11 @@ router.post(protected + "/get", authCheck, async (req, res) => {
                     },
                 });
             }
-            events = events.filter((e) => {
-                if (e.state !== "APPLIED_FOR_APPROVAL") return true;
-                return facultyIsAssigned(
-                    req.user.email,
-                    e.assigned_faculty_emails,
-                );
-            });
+            events = filterEventsForFaculty(
+                events,
+                req.user.email,
+                councilIds,
+            );
             let event = {};
             events.forEach((e) => {
                 if (!event[e.state]) [(event[e.state] = [])];
@@ -637,15 +623,14 @@ router.post(protected + "/get/:id", authCheck, async (req, res) => {
             return res.status(403).json({ error: true, message: "Event not publicly accessible" });
         }
 
-        if (
-            req.user.role === "FACULTY" &&
-            event.state === "APPLIED_FOR_APPROVAL" &&
-            !facultyIsAssigned(req.user.email, event.assigned_faculty_emails)
-        ) {
-            return res.status(403).json({
-                error: true,
-                message: "This event is not assigned to you for review.",
-            });
+        if (req.user.role === "FACULTY") {
+            const allowed = await facultyCanAccessEvent(req.user, event);
+            if (!allowed) {
+                return res.status(403).json({
+                    error: true,
+                    message: "You do not have access to this council event.",
+                });
+            }
         }
 
         let eventResponse = {
@@ -888,19 +873,18 @@ router.post(
                 const role = req.user.role;
                 const newState = field.state;
 
-                if (
-                    role === "FACULTY" &&
-                    state === "APPLIED_FOR_APPROVAL" &&
-                    !facultyIsAssigned(
-                        req.user.email,
-                        existingEvent.assigned_faculty_emails,
-                    )
-                ) {
-                    return res.status(403).json({
-                        error: true,
-                        message:
-                            "This event is not assigned to you for review.",
-                    });
+                if (role === "FACULTY" && state === "APPLIED_FOR_APPROVAL") {
+                    const allowed = await facultyCanAccessEvent(
+                        req.user,
+                        existingEvent,
+                    );
+                    if (!allowed) {
+                        return res.status(403).json({
+                            error: true,
+                            message:
+                                "You do not have access to this council event.",
+                        });
+                    }
                 }
 
                 // Returning to council requires written feedback
@@ -1021,16 +1005,34 @@ router.get(protected + "/search/", authCheck, async (req, res) => {
             .json({ error: true, message: "Invalid search query" });
     }
     try {
-        let events = await prisma.events.findMany({
-            where: {
-                OR: [
-                    { name: { contains: q, mode: "insensitive" } },
-                    { description: { contains: q, mode: "insensitive" } },
-                    { long_description: { contains: q, mode: "insensitive" } },
-                    { tag_line: { contains: q, mode: "insensitive" } },
-                    { tags: { hasSome: [q] } },
+        let searchWhere = {
+            OR: [
+                { name: { contains: q, mode: "insensitive" } },
+                { description: { contains: q, mode: "insensitive" } },
+                { long_description: { contains: q, mode: "insensitive" } },
+                { tag_line: { contains: q, mode: "insensitive" } },
+                { tags: { hasSome: [q] } },
+            ],
+        };
+
+        if (req.user.role === "FACULTY") {
+            const councilIds = await getCouncilOrganizerIdsForFaculty(
+                req.user.email,
+            );
+            searchWhere = {
+                AND: [
+                    searchWhere,
+                    {
+                        organizer_id: {
+                            in: councilIds.length ? councilIds : [-1],
+                        },
+                    },
                 ],
-            },
+            };
+        }
+
+        let events = await prisma.events.findMany({
+            where: searchWhere,
             orderBy: {
                 created_at: "desc",
             },
@@ -1050,6 +1052,8 @@ router.get(protected + "/search/", authCheck, async (req, res) => {
                 dates: true,
                 is_only_somaiya: true,
                 registration_type: true,
+                organizer_id: true,
+                assigned_faculty_emails: true,
                 organizer: {
                     select: {
                         id: true,
@@ -1059,6 +1063,18 @@ router.get(protected + "/search/", authCheck, async (req, res) => {
                 },
             },
         });
+
+        if (req.user.role === "FACULTY") {
+            const councilIds = await getCouncilOrganizerIdsForFaculty(
+                req.user.email,
+            );
+            events = filterEventsForFaculty(
+                events,
+                req.user.email,
+                councilIds,
+            );
+        }
+
         res.json({ error: false, events });
     } catch (er) {
         console.error(er);
@@ -1080,11 +1096,20 @@ router.get(protected + "/stats", authCheck, async (req, res) => {
     if (cached) return res.json(cached);
 
     try {
+        let statsWhere;
+        if (req.user.role === "COUNCIL") {
+            statsWhere = { organizer_id: req.user.id };
+        } else if (req.user.role === "FACULTY") {
+            const councilIds = await getCouncilOrganizerIdsForFaculty(
+                req.user.email,
+            );
+            statsWhere = {
+                organizer_id: { in: councilIds.length ? councilIds : [-1] },
+            };
+        }
+
         const eventsStats = await prisma.events.findMany({
-            where:
-                req.user.role === "COUNCIL"
-                    ? { organizer_id: req.user.id }
-                    : undefined,
+            where: statsWhere,
             select: {
                 id: true,
                 name: true,
@@ -1174,6 +1199,23 @@ router.post(protected + "/get-children/:id", authCheck, async (req, res) => {
             }
         }
 
+        if (req.user.role === "FACULTY") {
+            const parent = await prisma.events.findUnique({
+                where: { id: parentId },
+                select: { organizer_id: true, state: true, assigned_faculty_emails: true },
+            });
+            if (!parent) {
+                return res.status(404).json({ error: true, message: "Event not found" });
+            }
+            const allowed = await facultyCanAccessEvent(req.user, parent);
+            if (!allowed) {
+                return res.status(403).json({
+                    error: true,
+                    message: "You do not have access to this council event.",
+                });
+            }
+        }
+
         const childWhere = { parent_id: parentId };
         // Non-privileged users only see publicly visible children
         if (!isPrivileged) {
@@ -1235,7 +1277,21 @@ router.post(protected + "/get-calendar", authCheck, async (req, res) => {
                     { state: { in: publicCalendarStates } },
                 ],
             };
-        } else if (role === "FACULTY" || role === "PRINCIPAL") {
+        } else if (role === "FACULTY") {
+            const councilIds = await getCouncilOrganizerIdsForFaculty(
+                req.user.email,
+            );
+            whereClause = {
+                organizer_id: { in: councilIds.length ? councilIds : [-1] },
+                state: {
+                    in: [
+                        "APPLIED_FOR_APPROVAL",
+                        "APPLIED_FOR_PRINCI_APPROVAL",
+                        ...publicCalendarStates,
+                    ],
+                },
+            };
+        } else if (role === "PRINCIPAL") {
             whereClause = { state: { in: publicCalendarStates } };
         } else {
             whereClause = { state: { in: studentCalendarStates } };

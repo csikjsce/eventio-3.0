@@ -2,6 +2,7 @@ const express = require("express");
 const authCheck = require("../middleware/auth.middleware");
 const prisma = require("../utils/prisma_client");
 const { get, set, del, keys, TTL } = require("../utils/cache");
+const { facultyCanAccessEvent } = require("../utils/faculty-access");
 const router = express.Router();
 
 const p = "/p";
@@ -11,12 +12,28 @@ async function requireEventAccess(req, res, next) {
     const eventId = parseInt(req.params.eventId || req.body.event_id);
     if (!eventId) return res.status(400).json({ error: true, message: "event_id required" });
 
-    const event = await prisma.events.findUnique({ where: { id: eventId }, select: { organizer_id: true } });
+    const event = await prisma.events.findUnique({
+        where: { id: eventId },
+        select: {
+            organizer_id: true,
+            state: true,
+            assigned_faculty_emails: true,
+        },
+    });
     if (!event) return res.status(404).json({ error: true, message: "Event not found" });
 
     const role = req.user.role;
     if (role === "COUNCIL" && event.organizer_id !== req.user.id) {
         return res.status(403).json({ error: true, message: "Not your event" });
+    }
+    if (role === "FACULTY") {
+        const allowed = await facultyCanAccessEvent(req.user, event);
+        if (!allowed) {
+            return res.status(403).json({
+                error: true,
+                message: "You do not have access to this council event.",
+            });
+        }
     }
     if (!["COUNCIL", "FACULTY", "PRINCIPAL", "ADMIN"].includes(role)) {
         return res.status(403).json({ error: true, message: "Access denied" });

@@ -2,6 +2,7 @@ const express = require("express");
 const authCheck = require("../middleware/auth.middleware");
 const prisma = require("../utils/prisma_client");
 const { get, set, del, keys, TTL } = require("../utils/cache");
+const { facultyCanAccessEvent } = require("../utils/faculty-access");
 const router = express.Router();
 
 const p = "/p";
@@ -19,6 +20,25 @@ async function requireCouncilEventAccess(req, res, next) {
         if (!event) return res.status(404).json({ error: true, message: "Event not found" });
         if (event.organizer_id !== req.user.id) {
             return res.status(403).json({ error: true, message: "Not your event" });
+        }
+    }
+
+    if (req.user.role === "FACULTY") {
+        const event = await prisma.events.findUnique({
+            where: { id: eventId },
+            select: {
+                organizer_id: true,
+                state: true,
+                assigned_faculty_emails: true,
+            },
+        });
+        if (!event) return res.status(404).json({ error: true, message: "Event not found" });
+        const allowed = await facultyCanAccessEvent(req.user, event);
+        if (!allowed) {
+            return res.status(403).json({
+                error: true,
+                message: "You do not have access to this council event.",
+            });
         }
     }
 

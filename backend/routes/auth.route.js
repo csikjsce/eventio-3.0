@@ -4,6 +4,7 @@ const router = express.Router();
 const passport = require("passport");
 const prisma = require("../utils/prisma_client");
 const logger = require("../utils/logger");
+const { ensureFacultyRoleForAdvisor, resolveRoleForNewUser } = require("../utils/faculty-access");
 const { OAuth2Client } = require("google-auth-library");
 const client = new OAuth2Client(
     process.env.GOOGLE_CLIENT_ID,
@@ -45,8 +46,13 @@ router.get(
                 logger.error(e);
                 res.redirect(`${process.env.CLIENT_URL}?failure=${500}`);
             });
+
+        const promoted = userDB
+            ? await ensureFacultyRoleForAdvisor(userDB)
+            : userDB;
+
         let redirectURL;
-        switch (userDB.role) {
+        switch (promoted?.role) {
             case "FACULTY":
                 redirectURL = process.env.FACULTY_CLIENT_URL || process.env.DEAN_CLIENT_URL || process.env.CLIENT_URL;
                 break;
