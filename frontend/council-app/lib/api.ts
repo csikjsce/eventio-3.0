@@ -462,6 +462,7 @@ export interface CouncilProfile {
   name: string;
   email: string;
   photo_url: string;
+  phone_number?: string | null;
   about?: string;
   council_type?: string;
   profile?: {

@@ -79,6 +79,7 @@ router.get(p + "/profile/:id", authCheck, async (req, res) => {
                 name: true,
                 email: true,
                 photo_url: true,
+                phone_number: true,
                 role: true,
                 council_type: true,
                 about: true,
@@ -131,6 +132,7 @@ router.get(p + "/me", authCheck, councilOnly, async (req, res) => {
                 name: true,
                 email: true,
                 photo_url: true,
+                phone_number: true,
                 council_type: true,
                 about: true,
                 CouncilProfile: {
@@ -151,6 +153,7 @@ router.get(p + "/me", authCheck, councilOnly, async (req, res) => {
                 name:         user.name,
                 email:        user.email,
                 photo_url:    user.photo_url,
+                phone_number: user.phone_number,
                 council_type: user.council_type,
                 about:        user.about,
                 profile:      user.CouncilProfile ?? {},
@@ -192,6 +195,17 @@ router.put(p + "/me", authCheck, councilOnly, async (req, res) => {
         if (req.body.name)         userUpdate.name         = req.body.name;
         if (req.body.photo_url)    userUpdate.photo_url    = req.body.photo_url;
         if (req.body.council_type) userUpdate.council_type = req.body.council_type;
+        if (req.body.phone_number !== undefined) {
+            userUpdate.phone_number =
+                req.body.phone_number === null || req.body.phone_number === ""
+                    ? null
+                    : String(req.body.phone_number);
+        } else if (req.body.phone !== undefined) {
+            userUpdate.phone_number =
+                req.body.phone === null || req.body.phone === ""
+                    ? null
+                    : String(req.body.phone);
+        }
 
         if (Object.keys(userUpdate).length > 0) {
             await prisma.user.update({ where: { id: req.user.id }, data: userUpdate });

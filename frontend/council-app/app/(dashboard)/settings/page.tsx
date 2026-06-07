@@ -604,6 +604,7 @@ export default function SettingsPage() {
         ...prev,
         name:        profile.name      ?? prev.name,
         email:       profile.email     ?? prev.email,
+        phone:       profile.phone_number != null ? String(profile.phone_number) : prev.phone,
         logo_url:    profile.photo_url ?? prev.logo_url,
         tagline:     p.tagline         ?? prev.tagline,
         description: p.about          ?? prev.description,
@@ -644,6 +645,7 @@ export default function SettingsPage() {
       await updateCouncilProfile({
         name:             settings.name,
         email:            settings.email,
+        phone_number:     settings.phone.trim() || null,
         photo_url:        settings.logo_url,
         tagline:          settings.tagline,
         about:            settings.description,
