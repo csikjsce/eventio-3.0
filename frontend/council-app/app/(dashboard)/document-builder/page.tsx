@@ -122,7 +122,11 @@ export default function DocumentBuilderPage() {
       permission: applyPermissionTemplate(templateId, s.permission),
     }));
     const label = PERMISSION_TEMPLATES.find((t) => t.id === templateId)?.label ?? "Template";
-    showToast(`${label} template applied.`);
+    showToast(
+      templateId === "custom"
+        ? "Custom letter — edit subject and body freely."
+        : `${label} template applied.`,
+    );
   }
 
   const applyEvent = useCallback(
@@ -142,7 +146,10 @@ export default function DocumentBuilderPage() {
         return {
           ...s,
           eventId,
-          permission: applyPermissionTemplate(s.permissionTemplate, permission),
+          permission:
+            s.permissionTemplate === "custom"
+              ? permission
+              : applyPermissionTemplate(s.permissionTemplate, permission),
           report: {
             ...s.report,
             eventName: event.name,
@@ -267,7 +274,7 @@ export default function DocumentBuilderPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-[360px_1fr] gap-8 items-start">
+      <div className="grid grid-cols-1 xl:grid-cols-[360px_1fr] gap-8 items-start min-w-0">
         {/* Editor panel */}
         <aside className="document-builder-chrome space-y-5">
           <div className="bg-surface border border-border-c rounded-2xl p-5 space-y-4">
@@ -338,29 +345,63 @@ export default function DocumentBuilderPage() {
             </div>
           </div>
 
-          {/* Letterhead upload */}
+          {/* Letterhead */}
           <div className="bg-surface border border-border-c rounded-2xl p-5 space-y-3">
             <p className="text-tx text-sm font-fira font-semibold">Letterhead</p>
             <p className="text-muted-tx text-xs font-fira leading-relaxed">
-              Eventio (left) and Somaiya (centre) logos are fixed. Upload your council letterhead logo on the right.
+              The header on printed letters: Eventio and Somaiya logos are fixed. Your council logo appears on the
+              right — upload or replace it below. Manage the default in{" "}
+              <Link href="/settings" className="text-red-500 hover:underline">Settings → Letterhead Logo</Link>.
             </p>
             <Letterhead
               councilLetterheadUrl={state.letterheadUrl}
               onUpload={handleLetterheadUpload}
+              onRemove={() => {
+                setState((s) => ({ ...s, letterheadUrl: "" }));
+                showToast("Council logo removed from this document.");
+              }}
               uploading={uploadingHead}
               editable
             />
-            {state.letterheadUrl && (
-              <button
-                type="button"
-                disabled={savingHead}
-                onClick={persistLetterheadToProfile}
-                className="flex items-center gap-2 text-xs font-fira text-red-500 hover:underline disabled:opacity-50"
-              >
-                <Upload size={12} />
-                {savingHead ? "Saving…" : "Save letterhead to council settings"}
-              </button>
-            )}
+            <div className="flex flex-wrap gap-3 pt-1">
+              <label className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border-c bg-surface2 hover:border-red-500/30 text-xs font-fira text-tx cursor-pointer">
+                <Upload size={13} className="text-red-500" />
+                {uploadingHead ? "Uploading…" : state.letterheadUrl ? "Replace logo" : "Upload logo"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={uploadingHead}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleLetterheadUpload(file);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+              {state.letterheadUrl && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setState((s) => ({ ...s, letterheadUrl: "" }));
+                      showToast("Council logo removed from this document.");
+                    }}
+                    className="px-3 py-1.5 rounded-lg border border-border-c text-xs font-fira text-muted-tx hover:text-red-500 hover:border-red-500/30"
+                  >
+                    Remove
+                  </button>
+                  <button
+                    type="button"
+                    disabled={savingHead}
+                    onClick={persistLetterheadToProfile}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-fira text-red-500 hover:underline disabled:opacity-50"
+                  >
+                    {savingHead ? "Saving…" : "Save as default in settings"}
+                  </button>
+                </>
+              )}
+            </div>
           </div>
 
           {/* Signatories */}
@@ -449,10 +490,12 @@ export default function DocumentBuilderPage() {
                 <Field label="Body" value={p.body} onChange={(v) => setState((s) => ({ ...s, permission: { ...s.permission, body: v } }))} multiline rows={6} />
                 <Field label="Event name" value={p.eventName} onChange={(v) => setState((s) => ({ ...s, permission: { ...s.permission, eventName: v } }))} />
                 <Field label="Event date" value={p.eventDate} onChange={(v) => setState((s) => ({ ...s, permission: { ...s.permission, eventDate: v } }))} />
-                {(state.permissionTemplate === "event" || state.permissionTemplate === "venue") && (
+                {(state.permissionTemplate === "event" ||
+                  state.permissionTemplate === "venue" ||
+                  state.permissionTemplate === "custom") && (
                   <Field label="Venue" value={p.venue} onChange={(v) => setState((s) => ({ ...s, permission: { ...s.permission, venue: v } }))} />
                 )}
-                {state.permissionTemplate === "banner" && (
+                {(state.permissionTemplate === "banner" || state.permissionTemplate === "custom") && (
                   <Field
                     label="Banner location(s)"
                     value={p.bannerLocation}
@@ -461,7 +504,7 @@ export default function DocumentBuilderPage() {
                     rows={3}
                   />
                 )}
-                {state.permissionTemplate === "pr" && (
+                {(state.permissionTemplate === "pr" || state.permissionTemplate === "custom") && (
                   <Field
                     label="Publicity channels"
                     value={p.publicityChannels}
@@ -471,6 +514,7 @@ export default function DocumentBuilderPage() {
                   />
                 )}
                 <Field label="Council name" value={p.councilName} onChange={(v) => setState((s) => ({ ...s, permission: { ...s.permission, councilName: v } }))} />
+                {state.permissionTemplate !== "custom" && (
                 <button
                   type="button"
                   onClick={() =>
@@ -483,6 +527,7 @@ export default function DocumentBuilderPage() {
                 >
                   Reset subject &amp; body from template
                 </button>
+                )}
               </>
             ) : (
               <>
@@ -518,7 +563,7 @@ export default function DocumentBuilderPage() {
         </aside>
 
         {/* Preview */}
-        <div className="document-builder-preview bg-zinc-200/80 dark:bg-zinc-900/50 rounded-2xl p-4 sm:p-8 overflow-x-auto">
+        <div className="document-builder-preview min-w-0 bg-zinc-200/80 dark:bg-zinc-900/50 rounded-2xl p-4 sm:p-8 overflow-x-hidden overflow-y-auto">
           <DocumentSheet
             sheetRef={sheetRef}
             kind={state.kind}

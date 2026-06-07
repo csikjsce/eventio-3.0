@@ -1,6 +1,6 @@
 export type DocumentKind = "permission_letter" | "report";
 
-export type PermissionTemplateId = "event" | "venue" | "banner" | "pr";
+export type PermissionTemplateId = "event" | "venue" | "banner" | "pr" | "custom";
 
 export const SOMAIYA_KJSCE_LOGO = "/somaiya-kjsce-logo.png";
 
@@ -30,6 +30,11 @@ export const PERMISSION_TEMPLATES: PermissionTemplateMeta[] = [
     id: "pr",
     label: "PR Permission",
     description: "Permission for publicity, announcements, and social media",
+  },
+  {
+    id: "custom",
+    label: "Custom",
+    description: "Write your own subject, body, and recipient",
   },
 ];
 
@@ -103,6 +108,8 @@ function templateSubject(id: PermissionTemplateId, ctx: TemplateContext): string
       return `Permission for display of promotional banners — ${name}`;
     case "pr":
       return `Permission for publicity and communications — ${name}`;
+    case "custom":
+      return "";
   }
 }
 
@@ -134,6 +141,8 @@ function templateBody(id: PermissionTemplateId, ctx: TemplateContext): string {
         `We, on behalf of ${council}, hereby request your kind permission to carry out publicity and communications for "${name}" through ${channels}.\n\n` +
         "All content shall be factual, respectful, and approved by the faculty advisor before publication. We shall comply with the institute's social media and communication policies."
       );
+    case "custom":
+      return "";
   }
 }
 
@@ -141,6 +150,8 @@ function templateRecipient(id: PermissionTemplateId): string {
   switch (id) {
     case "venue":
       return "The Estate Officer,\nK J Somaiya School of Engineering,\nSomaiya Vidyavihar University";
+    case "custom":
+      return DEFAULT_RECIPIENT;
     case "banner":
     case "pr":
       return DEFAULT_RECIPIENT;
@@ -155,6 +166,13 @@ export function applyPermissionTemplate(
   templateId: PermissionTemplateId,
   existing: PermissionLetterFields,
 ): PermissionLetterFields {
+  if (templateId === "custom") {
+    return {
+      ...existing,
+      date: existing.date || todayISO(),
+    };
+  }
+
   const ctx: TemplateContext = {
     councilName: existing.councilName,
     eventName: existing.eventName,

@@ -47,6 +47,17 @@ html.dark {
   &::-webkit-scrollbar { display: none; }
 }
 
+/* Document builder — preview fits column; print stays full A4 */
+.document-builder-preview {
+  overflow-x: hidden;
+}
+
+.document-builder-preview .document-sheet {
+  width: 100%;
+  max-width: 210mm;
+  box-sizing: border-box;
+}
+
 @media print {
   body * {
     visibility: hidden;

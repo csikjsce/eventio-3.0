@@ -88,6 +88,7 @@ function PermissionDetails({
     venue: "Venue details",
     banner: "Banner details",
     pr: "Publicity details",
+    custom: "Additional details",
   }[template];
 
   return (
@@ -96,13 +97,13 @@ function PermissionDetails({
       <ul className="list-disc pl-5 space-y-1">
         {p.eventName && <li>Event: {p.eventName}</li>}
         {p.eventDate && <li>Date: {formatDisplayDate(p.eventDate)}</li>}
-        {p.venue && (template === "event" || template === "venue") && (
+        {p.venue && (template === "event" || template === "venue" || template === "custom") && (
           <li>Venue: {p.venue}</li>
         )}
-        {template === "banner" && p.bannerLocation && (
+        {(template === "banner" || template === "custom") && p.bannerLocation && (
           <li>Display location(s): {p.bannerLocation}</li>
         )}
-        {template === "pr" && p.publicityChannels && (
+        {(template === "pr" || template === "custom") && p.publicityChannels && (
           <li>Channels: {p.publicityChannels}</li>
         )}
         {p.councilName && <li>Organized by: {p.councilName}</li>}
@@ -122,7 +123,11 @@ function PermissionBody({
 }) {
   const subject =
     p.subject.trim() ||
-    (p.eventName ? `Permission for conducting ${p.eventName}` : "Permission for conducting the event");
+    (template === "custom"
+      ? ""
+      : p.eventName
+        ? `Permission for conducting ${p.eventName}`
+        : "Permission for conducting the event");
 
   return (
     <div className="space-y-4 text-[13px] font-fira text-zinc-800 leading-relaxed">
@@ -218,8 +223,8 @@ export default function DocumentSheet({
   return (
     <article
       ref={sheetRef}
-      className="document-sheet mx-auto bg-white text-zinc-900 shadow-xl print:shadow-none"
-      style={{ width: "210mm", minHeight: "297mm", padding: "18mm 20mm" }}
+      className="document-sheet mx-auto w-full max-w-[210mm] bg-white text-zinc-900 shadow-xl print:shadow-none"
+      style={{ minHeight: "297mm", padding: "18mm 20mm" }}
     >
       <Letterhead councilLetterheadUrl={letterheadUrl} editable={false} />
       {kind === "permission_letter" ? (
