@@ -3,7 +3,8 @@ import { use, useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getNextAction, type EventData, type EventDocument, type ApprovalStep } from "@/lib/dummy-data";
-import { fetchEvent, fetchDocuments, addDocument, deleteDocument, transitionEventState, mapStateToPipeline, type DocumentRow } from "@/lib/api";
+import { fetchEvent, fetchDocuments, addDocument, deleteDocument, transitionEventState, fetchCouncilProfile, mapStateToPipeline, type DocumentRow, type FacultyAdvisorRow } from "@/lib/api";
+import FacultyReviewerSelect from "@/components/FacultyReviewerSelect";
 import { uploadFile, type UploadType } from "@/lib/upload";
 import { useData } from "@/contexts/DataContext";
 import {
@@ -284,13 +285,20 @@ function AddDocumentSection({ eventId, docs, onDocUpdated, onDocAdded }: {
 
 // ─── Next Action Panel ────────────────────────────────────────────────────────
 
-function NextActionPanel({ event, onAction, actionLoading }: {
+function NextActionPanel({ event, onAction, actionLoading, advisors, selectedFaculty, onFacultyChange }: {
   event: EventData;
   onAction: (cta: string) => void;
   actionLoading?: boolean;
+  advisors: FacultyAdvisorRow[];
+  selectedFaculty: string[];
+  onFacultyChange: (emails: string[]) => void;
 }) {
   const action = getNextAction(event);
   if (!action || action.cta === "Check Status") return null;
+
+  const needsFaculty =
+    event.state === "DRAFT" &&
+    (action.cta === "Submit Proposal" || action.cta === "Resubmit Proposal");
 
   return (
     <div className="rounded-2xl border p-5 bg-red-50 dark:bg-red-500/5 border-red-200 dark:border-red-500/20">
@@ -301,6 +309,18 @@ function NextActionPanel({ event, onAction, actionLoading }: {
           <p className="text-muted-tx text-xs font-fira leading-relaxed">{action.label}</p>
         </div>
       </div>
+
+      {needsFaculty && (
+        <div className="mb-4 pb-4 border-b border-red-200/60 dark:border-red-500/20">
+          <FacultyReviewerSelect
+            advisors={advisors}
+            selected={selectedFaculty}
+            onChange={onFacultyChange}
+            compact
+          />
+        </div>
+      )}
+
       {action.route ? (
         <Link href={action.route}
           className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-fira font-semibold transition-all bg-red-500 hover:bg-red-600 text-white">
@@ -331,6 +351,20 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
   const [toast, setToast]         = useState("");
   const [loading, setLoading]     = useState(!event);
   const [actionLoading, setActionLoading] = useState(false);
+  const [advisors, setAdvisors] = useState<FacultyAdvisorRow[]>([]);
+  const [selectedFaculty, setSelectedFaculty] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetchCouncilProfile()
+      .then((p) => setAdvisors(p.profile?.faculty_advisors ?? []))
+      .catch(() => setAdvisors([]));
+  }, []);
+
+  useEffect(() => {
+    if (event?.assigned_faculty_emails?.length) {
+      setSelectedFaculty(event.assigned_faculty_emails);
+    }
+  }, [event?.id, event?.assigned_faculty_emails]);
 
   useEffect(() => {
     if (event) {
@@ -381,9 +415,22 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
     const newState = STATE_TRANSITIONS[cta];
     if (newState) {
       if (actionLoading) return;
+      if (
+        (cta === "Submit Proposal" || cta === "Resubmit Proposal") &&
+        selectedFaculty.length === 0
+      ) {
+        showToast("Select at least one faculty advisor before submitting.");
+        return;
+      }
       setActionLoading(true);
       try {
-        await transitionEventState(id, newState);
+        await transitionEventState(
+          id,
+          newState,
+          cta === "Submit Proposal" || cta === "Resubmit Proposal"
+            ? { assigned_faculty_emails: selectedFaculty }
+            : undefined,
+        );
         // refresh local event + global list
         const updated = await fetchEvent(id);
         setEvent(updated);
@@ -545,7 +592,14 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
           {/* ── Right: sidebar ── */}
           <div className="space-y-4">
             {/* Next action */}
-            <NextActionPanel event={event} onAction={handleAction} actionLoading={actionLoading} />
+            <NextActionPanel
+              event={event}
+              onAction={handleAction}
+              actionLoading={actionLoading}
+              advisors={advisors}
+              selectedFaculty={selectedFaculty}
+              onFacultyChange={setSelectedFaculty}
+            />
 
             {/* Ticket progress */}
             {event.is_ticket_feature_enabled && (

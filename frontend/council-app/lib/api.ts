@@ -267,7 +267,7 @@ const EVENT_UPDATE_KEYS = [
   "banner_url", "logo_image_url", "event_page_image_url", "parent_id",
   "is_feedback_enabled", "is_only_somaiya", "attendance_type", "registration_type",
   "external_registration_link", "is_ticket_feature_enabled", "in_event_activity",
-  "start_in_event_activity", "comment", "ticket_count", "female_requirement",
+  "start_in_event_activity", "comment", "assigned_faculty_emails", "ticket_count", "female_requirement",
   "more_details_enabled", "registration_fields", "is_submission_enabled",
   "report_url", "urls",
 ] as const;
@@ -297,8 +297,9 @@ export async function updateEvent(id: number | string, data: Record<string, unkn
 export async function transitionEventState(
   id: number | string,
   newState: string,
+  extra?: Record<string, unknown>,
 ): Promise<void> {
-  await api.post(`/event/p/update/${id}`, { state: newState });
+  await api.post(`/event/p/update/${id}`, { state: newState, ...extra });
 }
 
 // ── Statistics ─────────────────────────────────────────────────────────────────

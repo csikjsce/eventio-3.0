@@ -25,6 +25,39 @@ function generateRandomCode() {
     return code;
 }
 
+function normalizeEmail(email) {
+    return String(email || "").trim().toLowerCase();
+}
+
+function normalizeAssignedFacultyEmails(emails) {
+    if (!Array.isArray(emails)) return [];
+    return [
+        ...new Set(
+            emails.map(normalizeEmail).filter(Boolean),
+        ),
+    ];
+}
+
+/** Empty list = legacy events visible to all faculty reviewers. */
+function facultyIsAssigned(userEmail, assignedEmails) {
+    const list = assignedEmails ?? [];
+    if (list.length === 0) return true;
+    const norm = normalizeEmail(userEmail);
+    return list.some((e) => normalizeEmail(e) === norm);
+}
+
+async function getCouncilAdvisorEmails(councilUserId) {
+    const profile = await prisma.councilProfile.findUnique({
+        where: { user_id: councilUserId },
+        include: {
+            faculty_advisors: { select: { email: true } },
+        },
+    });
+    return (profile?.faculty_advisors ?? []).map((a) =>
+        normalizeEmail(a.email),
+    );
+}
+
 async function assertCouncilEventAccess(user, eventId) {
     if (user.role !== "COUNCIL") return null;
 
@@ -279,6 +312,13 @@ router.post(protected + "/get", authCheck, async (req, res) => {
                     },
                 });
             }
+            events = events.filter((e) => {
+                if (e.state !== "APPLIED_FOR_APPROVAL") return true;
+                return facultyIsAssigned(
+                    req.user.email,
+                    e.assigned_faculty_emails,
+                );
+            });
             let event = {};
             events.forEach((e) => {
                 if (!event[e.state]) [(event[e.state] = [])];
@@ -597,6 +637,17 @@ router.post(protected + "/get/:id", authCheck, async (req, res) => {
             return res.status(403).json({ error: true, message: "Event not publicly accessible" });
         }
 
+        if (
+            req.user.role === "FACULTY" &&
+            event.state === "APPLIED_FOR_APPROVAL" &&
+            !facultyIsAssigned(req.user.email, event.assigned_faculty_emails)
+        ) {
+            return res.status(403).json({
+                error: true,
+                message: "This event is not assigned to you for review.",
+            });
+        }
+
         let eventResponse = {
             id: event.id,
             description: event.description,
@@ -636,6 +687,7 @@ router.post(protected + "/get/:id", authCheck, async (req, res) => {
             urls: event.urls,
             report_url: event.report_url,
             state_history: event.state_history ?? [],
+            assigned_faculty_emails: event.assigned_faculty_emails ?? [],
         };
         res.json({ error: false, event: eventResponse });
     } catch (err) {
@@ -761,16 +813,23 @@ router.post(
         }
         let state_history = [];
         let state = "";
+        let existingEvent = null;
         try {
-            const event = await prisma.events.findUnique({
+            existingEvent = await prisma.events.findUnique({
                 where: {
                     id: parseInt(req.params.id),
                 },
             });
-            state_history = event.state_history;
-            state = event.state;
+            if (!existingEvent) {
+                return res.status(404).json({
+                    error: true,
+                    message: "Event not found",
+                });
+            }
+            state_history = existingEvent.state_history;
+            state = existingEvent.state;
             if (
-                event.organizer_id != req.user.id &&
+                existingEvent.organizer_id != req.user.id &&
                 req.user.role != "FACULTY" &&
                 req.user.role != "PRINCIPAL"
             ) {
@@ -801,10 +860,48 @@ router.post(
             );
         }
 
+        if (req.user.role !== "COUNCIL") {
+            delete field.assigned_faculty_emails;
+        } else if (field.assigned_faculty_emails !== undefined) {
+            field.assigned_faculty_emails = normalizeAssignedFacultyEmails(
+                field.assigned_faculty_emails,
+            );
+            if (state !== "DRAFT") {
+                delete field.assigned_faculty_emails;
+            } else {
+                const allowed = await getCouncilAdvisorEmails(req.user.id);
+                const invalid = field.assigned_faculty_emails.filter(
+                    (e) => !allowed.includes(e),
+                );
+                if (invalid.length) {
+                    return res.status(400).json({
+                        error: true,
+                        message:
+                            "Selected faculty must be configured in council settings.",
+                    });
+                }
+            }
+        }
+
         try {
             if (field.state != null && field.state !== state) {
                 const role = req.user.role;
                 const newState = field.state;
+
+                if (
+                    role === "FACULTY" &&
+                    state === "APPLIED_FOR_APPROVAL" &&
+                    !facultyIsAssigned(
+                        req.user.email,
+                        existingEvent.assigned_faculty_emails,
+                    )
+                ) {
+                    return res.status(403).json({
+                        error: true,
+                        message:
+                            "This event is not assigned to you for review.",
+                    });
+                }
 
                 // Returning to council requires written feedback
                 if (
@@ -855,6 +952,27 @@ router.post(
                     state === "DRAFT" &&
                     newState === "APPLIED_FOR_APPROVAL"
                 ) {
+                    const assigned = normalizeAssignedFacultyEmails(
+                        field.assigned_faculty_emails ??
+                            existingEvent.assigned_faculty_emails,
+                    );
+                    if (assigned.length === 0) {
+                        return res.status(400).json({
+                            error: true,
+                            message:
+                                "Select at least one faculty advisor before submitting.",
+                        });
+                    }
+                    const allowed = await getCouncilAdvisorEmails(req.user.id);
+                    const invalid = assigned.filter((e) => !allowed.includes(e));
+                    if (invalid.length) {
+                        return res.status(400).json({
+                            error: true,
+                            message:
+                                "Selected faculty must be configured in council settings.",
+                        });
+                    }
+                    field.assigned_faculty_emails = assigned;
                     field.comment = null;
                 }
 

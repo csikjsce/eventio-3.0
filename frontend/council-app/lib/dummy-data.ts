@@ -56,6 +56,7 @@ export interface EventData {
   parent_id?: number | null;
   urls?: Record<string, string>;
   comment?: string;
+  assigned_faculty_emails?: string[];
   state_history?: string[];
   children: { id: number }[];
   organizer: { id: number; name: string; photo_url: string };

@@ -41,6 +41,7 @@ export interface EventData {
   min_ppt?:                  number;
   ma_ppt?:                   number;
   comment?:                  string | null;
+  assigned_faculty_emails?:  string[];
   state_history:             string[];
   approval_chain:            ApprovalStep[];
   organizer:                 { id: number; name: string; photo_url?: string; email?: string };
