@@ -1,10 +1,8 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { getNextAction, PIPELINE_STAGES, type EventData } from "@/lib/dummy-data";
-import { transitionEventState, fetchCouncilProfile, type FacultyAdvisorRow } from "@/lib/api";
-import { submitProposal } from "@/lib/proposal";
-import FacultyReviewerSelect from "@/components/FacultyReviewerSelect";
+import { transitionEventState } from "@/lib/api";
 import { useData } from "@/contexts/DataContext";
 import {
   Inbox, Clock, CheckCircle2, XCircle, AlertCircle, ChevronRight,
@@ -229,61 +227,10 @@ function Section({ title, icon, events, onAction, loadingId, defaultOpen = true 
   );
 }
 
-// ─── Submit proposal modal (faculty selection) ────────────────────────────────
-
-function SubmitProposalModal({
-  event,
-  advisors,
-  loading,
-  onClose,
-  onConfirm,
-}: {
-  event: EventData;
-  advisors: FacultyAdvisorRow[];
-  loading: boolean;
-  onClose: () => void;
-  onConfirm: (emails: string[]) => void;
-}) {
-  const [selected, setSelected] = useState<string[]>(
-    event.assigned_faculty_emails ?? [],
-  );
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-surface border border-border-c rounded-2xl w-full max-w-md shadow-xl p-5 sm:p-6">
-        <h2 className="text-tx font-marcellus text-lg mb-1">Submit proposal</h2>
-        <p className="text-muted-tx text-xs font-fira mb-4">
-          Choose which faculty advisors should review &ldquo;{event.name}&rdquo;.
-        </p>
-        <FacultyReviewerSelect
-          advisors={advisors}
-          selected={selected}
-          onChange={setSelected}
-        />
-        <div className="flex gap-3 mt-5">
-          <button type="button" onClick={onClose} disabled={loading}
-            className="flex-1 py-2.5 border border-border-c rounded-xl text-sm font-fira text-muted-tx hover:text-tx transition-all">
-            Cancel
-          </button>
-          <button
-            type="button"
-            disabled={loading || selected.length === 0}
-            onClick={() => onConfirm(selected)}
-            className="flex-1 py-2.5 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white text-sm font-fira font-semibold rounded-xl transition-all"
-          >
-            {loading ? "Submitting…" : "Submit to faculty"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 const STATE_TRANSITIONS: Record<string, string> = {
-  "Submit Proposal":   "APPLIED_FOR_APPROVAL",
-  "Resubmit Proposal": "APPLIED_FOR_APPROVAL",
   "Open Registration": "REGISTRATION_OPEN",
 };
 
@@ -291,46 +238,23 @@ export default function ApprovalsPage() {
   const { events, loading, refreshEvents } = useData();
   const [toast, setToast]       = useState("");
   const [loadingId, setLoadingId] = useState<number | null>(null);
-  const [advisors, setAdvisors] = useState<FacultyAdvisorRow[]>([]);
-  const [submitModal, setSubmitModal] = useState<{ event: EventData; cta: string } | null>(null);
-
-  useEffect(() => {
-    fetchCouncilProfile()
-      .then((p) => setAdvisors(p.profile?.faculty_advisors ?? []))
-      .catch(() => setAdvisors([]));
-  }, []);
 
   function showToast(msg: string) {
     setToast(msg); setTimeout(() => setToast(""), 3500);
   }
 
-  async function performTransition(
-    event: EventData,
-    cta: string,
-    assignedFaculty?: string[],
-  ) {
+  async function performTransition(event: EventData, cta: string) {
     const newState = STATE_TRANSITIONS[cta];
     if (!newState) return;
     if (loadingId !== null) return;
     setLoadingId(event.id);
     try {
-      if (cta === "Submit Proposal" || cta === "Resubmit Proposal") {
-        if (!assignedFaculty?.length) {
-          showToast("Select at least one faculty advisor before submitting.");
-          return;
-        }
-        await submitProposal(event.id, assignedFaculty);
-      } else {
-        await transitionEventState(event.id, newState);
-      }
+      await transitionEventState(event.id, newState);
       await refreshEvents();
       const successMsg: Record<string, string> = {
-        "Submit Proposal":   `Proposal for "${event.name}" submitted to selected faculty!`,
-        "Resubmit Proposal": `Revised proposal for "${event.name}" resubmitted to faculty!`,
         "Open Registration": `Registration for "${event.name}" is now open!`,
       };
       showToast(successMsg[cta]);
-      setSubmitModal(null);
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data
@@ -344,10 +268,6 @@ export default function ApprovalsPage() {
   async function handleAction(event: EventData, cta: string) {
     const newState = STATE_TRANSITIONS[cta];
     if (newState) {
-      if (cta === "Submit Proposal" || cta === "Resubmit Proposal") {
-        setSubmitModal({ event, cta });
-        return;
-      }
       await performTransition(event, cta);
     } else {
       const infoMsg: Record<string, string> = {
@@ -408,15 +328,6 @@ export default function ApprovalsPage() {
         </div>
       )}
 
-      {submitModal && (
-        <SubmitProposalModal
-          event={submitModal.event}
-          advisors={advisors}
-          loading={loadingId === submitModal.event.id}
-          onClose={() => setSubmitModal(null)}
-          onConfirm={(emails) => performTransition(submitModal.event, submitModal.cta, emails)}
-        />
-      )}
     </div>
   );
 }

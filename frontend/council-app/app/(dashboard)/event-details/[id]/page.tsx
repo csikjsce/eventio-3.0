@@ -6,7 +6,8 @@ import { getNextAction, type EventData, type EventDocument, type ApprovalStep } 
 import { fetchEvent, fetchDocuments, addDocument, deleteDocument, transitionEventState, fetchCouncilProfile, mapStateToPipeline, type DocumentRow, type FacultyAdvisorRow } from "@/lib/api";
 import { fetchProposal, type ProposalPackage } from "@/lib/proposal";
 import { resolveFacultyReviewers, type AssignedFacultyReviewer } from "@/lib/document-builder";
-import ProposalWorkflowPanel from "@/components/ProposalWorkflowPanel";
+import ProposalApprovalCard from "@/components/ProposalApprovalCard";
+import { proposalBuilderPath } from "@/lib/proposal-routes";
 import ProposalDocumentView from "@/components/ProposalDocumentView";
 import { uploadFile, type UploadType } from "@/lib/upload";
 import { useData } from "@/contexts/DataContext";
@@ -296,11 +297,11 @@ function NextActionPanel({ event, onAction, actionLoading }: {
   const action = getNextAction(event);
   if (!action || action.cta === "Check Status") return null;
 
-  const isProposalSubmit =
+  const isProposalAction =
     event.state === "DRAFT" &&
-    (action.cta === "Submit Proposal" || action.cta === "Resubmit Proposal");
+    (action.cta === "Prepare proposal" || action.cta === "Review & resubmit");
 
-  if (isProposalSubmit) return null;
+  if (isProposalAction) return null;
 
   return (
     <div className="rounded-2xl border p-5 bg-red-50 dark:bg-red-500/5 border-red-200 dark:border-red-500/20">
@@ -459,20 +460,6 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
     event.state === "DRAFT" && !!nextAction && nextAction.cta !== "Check Status";
   const hasProposalDoc = !!proposal?.document;
 
-  async function refreshProposalAndEvent() {
-    const [updated, propRes] = await Promise.all([
-      fetchEvent(id),
-      fetchProposal(id).catch(() => ({
-        proposal: null,
-        assigned_faculty_reviewers: [] as AssignedFacultyReviewer[],
-      })),
-    ]);
-    setEvent(updated);
-    setProposal(propRes.proposal);
-    setFacultyReviewers(propRes.assigned_faculty_reviewers ?? []);
-    await refreshEvents();
-  }
-
   return (
     <div className="min-h-screen bg-bg">
       {/* Toast */}
@@ -625,10 +612,10 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
                     </p>
                     {isDraftProposal && (
                       <Link
-                        href={`/document-builder?eventId=${event.id}`}
+                        href={proposalBuilderPath(event.id)}
                         className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-fira"
                       >
-                        <FileText size={14} /> Open Doc Builder
+                        <ClipboardList size={14} /> Open Proposal Builder
                       </Link>
                     )}
                   </div>
@@ -645,18 +632,10 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
           {/* ── Right: sidebar ── */}
           <div className="space-y-4">
             {isDraftProposal ? (
-              <ProposalWorkflowPanel
+              <ProposalApprovalCard
                 eventId={id}
                 resubmit={!!event.comment}
-                advisors={advisors}
-                selectedFaculty={selectedFaculty}
-                onFacultyChange={setSelectedFaculty}
-                onSubmitted={async () => {
-                  await refreshProposalAndEvent();
-                  showToast("Proposal submitted to faculty!");
-                  setTab("proposal");
-                }}
-                onError={showToast}
+                selectedFacultyCount={selectedFaculty.length}
               />
             ) : (
               <NextActionPanel
@@ -689,9 +668,9 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
               <p className="text-tx text-sm font-fira font-semibold mb-3">Quick Links</p>
               <div className="space-y-1">
                 {event.state === "DRAFT" && (
-                  <Link href={`/document-builder?eventId=${event.id}`}
+                  <Link href={proposalBuilderPath(event.id)}
                     className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-fira text-red-600 dark:text-red-400 hover:bg-red-500/5 transition-all border border-red-500/20 mb-1">
-                    <FileText size={14} /> Build &amp; sign proposal
+                    <ClipboardList size={14} /> Proposal Builder
                     <ChevronRight size={13} className="ml-auto" />
                   </Link>
                 )}

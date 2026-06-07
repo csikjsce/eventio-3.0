@@ -270,14 +270,14 @@ export function getNextAction(event: EventData): { label: string; cta: string; r
     case "DRAFT":
       return event.comment
         ? {
-            label: "Faculty requested changes. Update the proposal, re-sign, and resubmit from event details.",
+            label: "Faculty requested changes. Update the proposal, re-sign, and resubmit in the Proposal Builder.",
             cta: "Review & resubmit",
-            route: `/event-details/${event.id}`,
+            route: `/proposal/${event.id}`,
           }
         : {
-            label: "Build and sign your proposal letter, then submit to faculty from event details.",
+            label: "Build and sign your proposal letter, then submit to faculty in the Proposal Builder.",
             cta: "Prepare proposal",
-            route: `/event-details/${event.id}`,
+            route: `/proposal/${event.id}`,
           };
     case "APPLIED_FOR_APPROVAL":
       return { label: "Waiting for faculty advisor to review your proposal.", cta: "Check Status" };
@@ -298,9 +298,9 @@ export function getNextAction(event: EventData): { label: string; cta: string; r
       return { label: "All done! View post-event statistics.", cta: "View Statistics", route: `/statistics` };
     case "REJECTED":
       return {
-        label: "Review feedback, update the proposal, and resubmit from event details.",
+        label: "Review feedback, update the proposal, and resubmit in the Proposal Builder.",
         cta: "Review & resubmit",
-        route: `/event-details/${event.id}`,
+        route: `/proposal/${event.id}`,
       };
     default:
       return null;

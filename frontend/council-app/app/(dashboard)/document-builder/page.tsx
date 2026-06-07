@@ -3,27 +3,18 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ExternalLink, FileText, Printer, RotateCcw, Save, Send, Upload } from "lucide-react";
+import { FileText, Printer, RotateCcw, Upload } from "lucide-react";
 import DocumentSheet from "@/components/document-builder/DocumentSheet";
 import CouncilSignatorySigning from "@/components/document-builder/CouncilSignatorySigning";
-import FacultyReviewerSelect from "@/components/FacultyReviewerSelect";
 import Letterhead from "@/components/document-builder/Letterhead";
 import { useData } from "@/contexts/DataContext";
 import {
   fetchCouncilProfile,
   updateCouncilProfile,
   type CouncilMemberRow,
-  type FacultyAdvisorRow,
 } from "@/lib/api";
-import {
-  allCouncilSigned,
-  councilSignaturesFromDocument,
-  dataUrlToFile,
-  fetchProposal,
-  mergeCouncilSignatures,
-  saveProposal,
-  submitProposal,
-} from "@/lib/proposal";
+import { dataUrlToFile } from "@/lib/proposal";
+import { proposalBuilderPath } from "@/lib/proposal-routes";
 import {
   applyPermissionTemplate,
   buildDefaultState,
@@ -32,8 +23,6 @@ import {
   PERMISSION_TEMPLATES,
   resolveLetterheadUrl,
   saveDraft,
-  applyFacultyReviewersToDocument,
-  resolveFacultyReviewers,
   type DocumentBuilderState,
   type DocumentKind,
   type DocumentSignatory,
@@ -89,13 +78,7 @@ export default function DocumentBuilderPage() {
   const [state, setState] = useState<DocumentBuilderState>(() => buildDefaultState());
   const [uploadingHead, setUploadingHead] = useState(false);
   const [savingHead, setSavingHead] = useState(false);
-  const [attachEventId, setAttachEventId] = useState("");
-  const [eventState, setEventState] = useState<string | null>(null);
   const [members, setMembers] = useState<CouncilMemberRow[]>([]);
-  const [advisors, setAdvisors] = useState<FacultyAdvisorRow[]>([]);
-  const [selectedFaculty, setSelectedFaculty] = useState<string[]>([]);
-  const [savingProposal, setSavingProposal] = useState(false);
-  const [submittingProposal, setSubmittingProposal] = useState(false);
   const [toast, setToast] = useState("");
 
   const showToast = (msg: string) => {
@@ -137,34 +120,16 @@ export default function DocumentBuilderPage() {
         if (Array.isArray(profile.profile?.members)) {
           setMembers(profile.profile.members);
         }
-        if (Array.isArray(profile.profile?.faculty_advisors)) {
-          setAdvisors(profile.profile.faculty_advisors);
-        }
       })
       .catch(() => {});
   }, []);
 
   useEffect(() => {
     const param = searchParams.get("eventId");
-    if (!param) return;
-    setAttachEventId(param);
-    fetchProposal(param)
-      .then(({ proposal, event_state, assigned_faculty_emails }) => {
-        setEventState(event_state);
-        setSelectedFaculty(assigned_faculty_emails ?? []);
-        if (proposal.document) {
-          setState(
-            mergeCouncilSignatures(
-              { ...proposal.document, eventId: param },
-              proposal.councilSignatures ?? [],
-            ),
-          );
-        } else {
-          applyEvent(param, true);
-        }
-      })
-      .catch(() => applyEvent(param, true));
-  }, [searchParams]);
+    if (param) {
+      router.replace(proposalBuilderPath(param));
+    }
+  }, [searchParams, router]);
 
   useEffect(() => {
     saveDraft(state);
@@ -189,7 +154,6 @@ export default function DocumentBuilderPage() {
 
   const applyEvent = useCallback(
     (eventId: string, preselectHeads = false) => {
-      setAttachEventId(eventId);
       setState((s) => ({ ...s, eventId }));
       const event = events.find((e) => String(e.id) === eventId);
       if (!event) return;
@@ -281,7 +245,6 @@ export default function DocumentBuilderPage() {
     fresh.letterheadUrl = profileLetterheadRef.current;
     fresh.permission = applyPermissionTemplate("event", fresh.permission);
     setState(fresh);
-    setAttachEventId("");
     showToast("Document cleared — start fresh.");
   }
 
@@ -323,9 +286,6 @@ export default function DocumentBuilderPage() {
     }));
   }
 
-  const canEditProposal = !eventState || eventState === "DRAFT";
-  const linkedEvent = attachEventId ? events.find((e) => String(e.id) === attachEventId) : null;
-
   async function handleSignCouncilMember(index: number, dataUrl: string) {
     const sig = state.signatories[index];
     const file = dataUrlToFile(
@@ -344,71 +304,8 @@ export default function DocumentBuilderPage() {
     showToast(`${sig.name} signed.`);
   }
 
-  async function handleSaveProposal() {
-    if (!attachEventId) {
-      showToast("Link this document to a draft event first.");
-      return;
-    }
-    setSavingProposal(true);
-    try {
-      const reviewers = resolveFacultyReviewers(advisors, selectedFaculty);
-      const doc = applyFacultyReviewersToDocument(
-        { ...state, eventId: attachEventId },
-        reviewers,
-      );
-      await saveProposal(
-        attachEventId,
-        doc,
-        councilSignaturesFromDocument(doc),
-      );
-      setState(doc);
-      showToast("Proposal saved to event.");
-    } catch {
-      showToast("Could not save proposal.");
-    } finally {
-      setSavingProposal(false);
-    }
-  }
-
-  async function handleSubmitProposal() {
-    if (!attachEventId) return;
-    if (!allCouncilSigned(state)) {
-      showToast("All council signatories must sign first.");
-      return;
-    }
-    if (selectedFaculty.length === 0) {
-      showToast("Select faculty reviewers before submitting.");
-      return;
-    }
-    setSubmittingProposal(true);
-    try {
-      const reviewers = resolveFacultyReviewers(advisors, selectedFaculty);
-      const doc = applyFacultyReviewersToDocument(
-        { ...state, eventId: attachEventId },
-        reviewers,
-      );
-      await saveProposal(
-        attachEventId,
-        doc,
-        councilSignaturesFromDocument(doc),
-      );
-      setState(doc);
-      await submitProposal(attachEventId, selectedFaculty);
-      showToast("Proposal submitted to faculty!");
-      router.push(`/event-details/${attachEventId}`);
-    } catch {
-      showToast("Submit failed — check signatures and faculty selection.");
-    } finally {
-      setSubmittingProposal(false);
-    }
-  }
-
   const p = state.permission;
   const r = state.report;
-  const previewDoc = applyFacultyReviewersToDocument(
-    state,
-    resolveFacultyReviewers(advisors, selectedFaculty),
-  );
 
   return (
     <div className="px-4 py-6 sm:px-8 sm:py-8 max-w-[1600px] mx-auto">
@@ -426,7 +323,12 @@ export default function DocumentBuilderPage() {
             Document Builder
           </h1>
           <p className="text-muted-tx text-sm font-fira mt-1">
-            Compose permission letters and post-event reports on official letterhead.
+            Compose permission letters and post-event reports on official letterhead. For faculty
+            approval proposals, use{" "}
+            <Link href="/approvals" className="text-red-500 hover:underline">
+              Approvals
+            </Link>{" "}
+            or open Proposal Builder from an event.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -444,34 +346,6 @@ export default function DocumentBuilderPage() {
           >
             <Printer size={15} /> Print / Save PDF
           </button>
-          {attachEventId && (
-            <Link
-              href={`/event-details/${attachEventId}`}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border-c bg-surface hover:border-red-500/30 text-tx text-sm font-fira"
-            >
-              <ExternalLink size={15} /> Event details
-            </Link>
-          )}
-          {attachEventId && canEditProposal && (
-            <>
-              <button
-                type="button"
-                onClick={handleSaveProposal}
-                disabled={savingProposal || submittingProposal}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border-c bg-surface hover:border-red-500/30 text-tx text-sm font-fira disabled:opacity-50"
-              >
-                <Save size={15} /> {savingProposal ? "Saving…" : "Save proposal"}
-              </button>
-              <button
-                type="button"
-                onClick={handleSubmitProposal}
-                disabled={savingProposal || submittingProposal}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white text-sm font-fira font-medium disabled:opacity-50"
-              >
-                <Send size={15} /> {submittingProposal ? "Submitting…" : "Submit to faculty"}
-              </button>
-            </>
-          )}
         </div>
       </div>
 
@@ -674,22 +548,11 @@ export default function DocumentBuilderPage() {
             </button>
           </div>
 
-          {canEditProposal && state.signatories.some((s) => s.name.trim()) && (
+          {state.signatories.some((s) => s.name.trim()) && (
             <CouncilSignatorySigning
               signatories={state.signatories}
               onSign={handleSignCouncilMember}
-              disabled={!attachEventId}
             />
-          )}
-
-          {attachEventId && canEditProposal && (
-            <div className="bg-surface border border-border-c rounded-2xl p-5">
-              <FacultyReviewerSelect
-                advisors={advisors}
-                selected={selectedFaculty}
-                onChange={setSelectedFaculty}
-              />
-            </div>
           )}
 
           {/* Fields */}
@@ -757,66 +620,18 @@ export default function DocumentBuilderPage() {
               </>
             )}
           </div>
-
-          <div>
-            <label className={LABEL}>Link to event (proposal)</label>
-            <select
-              value={attachEventId}
-              onChange={(e) => {
-                const id = e.target.value;
-                if (id) {
-                  applyEvent(id, true);
-                  router.replace(`/document-builder?eventId=${id}`);
-                  fetchProposal(id)
-                    .then(({ proposal, event_state, assigned_faculty_emails }) => {
-                      setEventState(event_state);
-                      setSelectedFaculty(assigned_faculty_emails ?? []);
-                      if (proposal.document) {
-                        setState(
-                          mergeCouncilSignatures(
-                            { ...proposal.document, eventId: id },
-                            proposal.councilSignatures ?? [],
-                          ),
-                        );
-                      }
-                    })
-                    .catch(() => {});
-                } else {
-                  setAttachEventId("");
-                  setEventState(null);
-                  router.replace("/document-builder");
-                }
-              }}
-              className={INPUT}
-              disabled={!canEditProposal && !!attachEventId}
-            >
-              <option value="">— None —</option>
-              {events
-                .filter((e) => e.state === "DRAFT" || String(e.id) === attachEventId)
-                .map((e) => (
-                  <option key={e.id} value={String(e.id)}>
-                    {e.name} ({e.state})
-                  </option>
-                ))}
-            </select>
-            {linkedEvent && eventState && eventState !== "DRAFT" && (
-              <p className="text-[11px] font-fira text-amber-600 mt-1.5">
-                This event is no longer in draft — proposal is read-only.
-              </p>
-            )}
-          </div>
         </aside>
 
         {/* Preview */}
         <div className="document-builder-preview min-w-0 bg-zinc-200/80 dark:bg-zinc-900/50 rounded-2xl p-4 sm:p-8 overflow-x-hidden overflow-y-auto">
           <DocumentSheet
             sheetRef={sheetRef}
-            kind={previewDoc.kind}
-            permissionTemplate={previewDoc.permissionTemplate}
-            letterheadUrl={previewDoc.letterheadUrl}
-            signatories={previewDoc.signatories}
-            permission={previewDoc.permission}
-            report={previewDoc.report}
+            kind={state.kind}
+            permissionTemplate={state.permissionTemplate}
+            letterheadUrl={state.letterheadUrl}
+            signatories={state.signatories}
+            permission={state.permission}
+            report={state.report}
           />
         </div>
       </div>
