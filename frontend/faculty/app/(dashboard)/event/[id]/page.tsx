@@ -18,6 +18,7 @@ import {
   fetchProposal,
   userHasSignature,
   type ProposalPackage,
+  type AssignedFacultyReviewer,
 } from "@/lib/proposal";
 import ProposalDocumentView from "@/components/ProposalDocumentView";
 import { PenLine } from "lucide-react";
@@ -47,6 +48,9 @@ function EventReviewContent({ id }: { id: string }) {
   const [returnFeedback, setReturnFeedback] = useState("");
   const [sendToPrincipal, setSendToPrincipal] = useState(false);
   const [proposal, setProposal] = useState<ProposalPackage | null>(null);
+  const [facultyReviewers, setFacultyReviewers] = useState<
+    AssignedFacultyReviewer[]
+  >([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -54,14 +58,15 @@ function EventReviewContent({ id }: { id: string }) {
       fetchEvent(id),
       fetchDocuments(id).catch(() => []),
       fetchBudget(id).catch(() => []),
-      fetchProposal(id).catch(() => null),
+      fetchProposal(id).catch(() => ({ proposal: null, assigned_faculty_reviewers: [] })),
     ])
-      .then(([ev, d, b, prop]) => {
+      .then(([ev, d, b, propRes]) => {
         if (cancelled) return;
         setEvent(ev);
         setDocs(d);
         setBudget(b);
-        setProposal(prop);
+        setProposal(propRes?.proposal ?? null);
+        setFacultyReviewers(propRes?.assigned_faculty_reviewers ?? []);
       })
       .catch(() => { if (!cancelled) setEvent(null); })
       .finally(() => { if (!cancelled) setLoading(false); });
@@ -111,8 +116,9 @@ function EventReviewContent({ id }: { id: string }) {
     setBusy(true);
     try {
       await facultySignProposal(event.id, { approve: false });
-      const updated = await fetchProposal(event.id);
+      const { proposal: updated, assigned_faculty_reviewers } = await fetchProposal(event.id);
       setProposal(updated);
+      setFacultyReviewers(assigned_faculty_reviewers);
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data
@@ -395,7 +401,10 @@ function EventReviewContent({ id }: { id: string }) {
         {tab === "proposal" && (
           <>
             {proposal?.document ? (
-              <ProposalDocumentView proposal={proposal} />
+              <ProposalDocumentView
+                proposal={proposal}
+                facultyReviewers={facultyReviewers}
+              />
             ) : (
               <p className="text-muted-foreground text-sm text-center py-8">
                 The council has not submitted a proposal document for this event yet.

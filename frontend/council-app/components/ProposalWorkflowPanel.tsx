@@ -22,6 +22,8 @@ import {
   dataUrlToFile,
   fetchProposal,
   mergeCouncilSignatures,
+  resolveFacultyReviewers,
+  applyFacultyReviewersToDocument,
   saveProposal,
   submitProposal,
   type ProposalPackage,
@@ -106,10 +108,17 @@ export default function ProposalWorkflowPanel({
   const allSigned = docState ? allCouncilSigned(docState) : false;
   const facultyOk = selectedFaculty.length > 0;
   const canSubmit = hasDoc && allSigned && facultyOk;
+  const previewReviewers = resolveFacultyReviewers(advisors, selectedFaculty);
 
   async function persistDocument(next: DocumentBuilderState) {
-    setDocState(next);
-    await saveProposal(eventId, next, councilSignaturesFromDocument(next));
+    const reviewers = resolveFacultyReviewers(advisors, selectedFaculty);
+    const withFaculty = applyFacultyReviewersToDocument(next, reviewers);
+    setDocState(withFaculty);
+    await saveProposal(
+      eventId,
+      withFaculty,
+      councilSignaturesFromDocument(withFaculty),
+    );
     const { proposal: pkg } = await fetchProposal(eventId);
     setProposal(pkg);
   }
@@ -139,7 +148,13 @@ export default function ProposalWorkflowPanel({
     if (!docState || !canSubmit) return;
     setBusy(true);
     try {
-      await saveProposal(eventId, docState, councilSignaturesFromDocument(docState));
+      const reviewers = resolveFacultyReviewers(advisors, selectedFaculty);
+      const withFaculty = applyFacultyReviewersToDocument(docState, reviewers);
+      await saveProposal(
+        eventId,
+        withFaculty,
+        councilSignaturesFromDocument(withFaculty),
+      );
       await submitProposal(eventId, selectedFaculty);
       onSubmitted();
     } catch (err: unknown) {
@@ -219,7 +234,11 @@ export default function ProposalWorkflowPanel({
           </div>
 
           {showPreview && proposal && (
-            <ProposalDocumentView proposal={proposal} compact />
+            <ProposalDocumentView
+              proposal={proposal}
+              compact
+              facultyReviewers={previewReviewers}
+            />
           )}
 
           {docState && (

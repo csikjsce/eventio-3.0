@@ -1,34 +1,28 @@
 "use client";
 
 import DocumentSheet from "@/components/document-builder/DocumentSheet";
+import type { AssignedFacultyReviewer } from "@/lib/document-builder";
 import type { ProposalPackage } from "@/lib/proposal";
-import { mergeCouncilSignatures } from "@/lib/proposal";
+import { mergeProposalSignatories } from "@/lib/proposal";
 
 export default function ProposalDocumentView({
   proposal,
   compact,
+  facultyReviewers,
 }: {
   proposal: ProposalPackage;
   compact?: boolean;
+  facultyReviewers?: AssignedFacultyReviewer[];
 }) {
-  if (!proposal.document) {
+  const doc = mergeProposalSignatories(proposal, facultyReviewers);
+
+  if (!doc) {
     return (
       <p className="text-muted-tx text-sm font-fira text-center py-8">
         No proposal document has been saved for this event yet.
       </p>
     );
   }
-
-  const doc = mergeCouncilSignatures(
-    proposal.document,
-    proposal.councilSignatures ?? [],
-  );
-
-  const facultySignatures = (proposal.facultySignatures ?? []).map((s) => ({
-    name: s.name,
-    png_url: s.png_url,
-    role: "Faculty Advisor",
-  }));
 
   return (
     <div
@@ -43,7 +37,6 @@ export default function ProposalDocumentView({
         permissionTemplate={doc.permissionTemplate}
         letterheadUrl={doc.letterheadUrl}
         signatories={doc.signatories}
-        facultySignatures={facultySignatures}
         permission={doc.permission}
         report={doc.report}
       />

@@ -47,6 +47,36 @@ async function getCouncilAdvisorEmails(councilUserId) {
     );
 }
 
+async function resolveAssignedFacultyReviewers(councilUserId, assignedEmails) {
+    const emails = normalizeAssignedFacultyEmails(assignedEmails);
+    if (emails.length === 0) return [];
+
+    const profile = await prisma.councilProfile.findUnique({
+        where: { user_id: councilUserId },
+        include: { faculty_advisors: true },
+    });
+
+    const byEmail = new Map(
+        (profile?.faculty_advisors ?? []).map((a) => [
+            normalizeEmail(a.email),
+            a,
+        ]),
+    );
+
+    return emails.map((email) => {
+        const advisor = byEmail.get(email);
+        if (!advisor) {
+            return { email, name: email, designation: "", dept: "" };
+        }
+        return {
+            email,
+            name: advisor.name,
+            designation: advisor.designation ?? "",
+            dept: advisor.dept ?? "",
+        };
+    });
+}
+
 async function isListedFacultyAdvisor(email) {
     const trimmed = String(email || "").trim();
     if (!trimmed) return false;
@@ -128,6 +158,7 @@ module.exports = {
     facultyIsAssignedToEvent,
     getCouncilOrganizerIdsForFaculty,
     getCouncilAdvisorEmails,
+    resolveAssignedFacultyReviewers,
     isListedFacultyAdvisor,
     ensureFacultyRoleForAdvisor,
     resolveRoleForNewUser,

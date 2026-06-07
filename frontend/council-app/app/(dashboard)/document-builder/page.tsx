@@ -32,6 +32,8 @@ import {
   PERMISSION_TEMPLATES,
   resolveLetterheadUrl,
   saveDraft,
+  applyFacultyReviewersToDocument,
+  resolveFacultyReviewers,
   type DocumentBuilderState,
   type DocumentKind,
   type DocumentSignatory,
@@ -349,12 +351,17 @@ export default function DocumentBuilderPage() {
     }
     setSavingProposal(true);
     try {
-      const doc = { ...state, eventId: attachEventId };
+      const reviewers = resolveFacultyReviewers(advisors, selectedFaculty);
+      const doc = applyFacultyReviewersToDocument(
+        { ...state, eventId: attachEventId },
+        reviewers,
+      );
       await saveProposal(
         attachEventId,
         doc,
         councilSignaturesFromDocument(doc),
       );
+      setState(doc);
       showToast("Proposal saved to event.");
     } catch {
       showToast("Could not save proposal.");
@@ -375,12 +382,17 @@ export default function DocumentBuilderPage() {
     }
     setSubmittingProposal(true);
     try {
-      const doc = { ...state, eventId: attachEventId };
+      const reviewers = resolveFacultyReviewers(advisors, selectedFaculty);
+      const doc = applyFacultyReviewersToDocument(
+        { ...state, eventId: attachEventId },
+        reviewers,
+      );
       await saveProposal(
         attachEventId,
         doc,
         councilSignaturesFromDocument(doc),
       );
+      setState(doc);
       await submitProposal(attachEventId, selectedFaculty);
       showToast("Proposal submitted to faculty!");
       router.push(`/event-details/${attachEventId}`);
@@ -393,6 +405,10 @@ export default function DocumentBuilderPage() {
 
   const p = state.permission;
   const r = state.report;
+  const previewDoc = applyFacultyReviewersToDocument(
+    state,
+    resolveFacultyReviewers(advisors, selectedFaculty),
+  );
 
   return (
     <div className="px-4 py-6 sm:px-8 sm:py-8 max-w-[1600px] mx-auto">
@@ -795,12 +811,12 @@ export default function DocumentBuilderPage() {
         <div className="document-builder-preview min-w-0 bg-zinc-200/80 dark:bg-zinc-900/50 rounded-2xl p-4 sm:p-8 overflow-x-hidden overflow-y-auto">
           <DocumentSheet
             sheetRef={sheetRef}
-            kind={state.kind}
-            permissionTemplate={state.permissionTemplate}
-            letterheadUrl={state.letterheadUrl}
-            signatories={state.signatories}
-            permission={p}
-            report={r}
+            kind={previewDoc.kind}
+            permissionTemplate={previewDoc.permissionTemplate}
+            letterheadUrl={previewDoc.letterheadUrl}
+            signatories={previewDoc.signatories}
+            permission={previewDoc.permission}
+            report={previewDoc.report}
           />
         </div>
       </div>

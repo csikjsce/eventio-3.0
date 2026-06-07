@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { getNextAction, type EventData, type EventDocument, type ApprovalStep } from "@/lib/dummy-data";
 import { fetchEvent, fetchDocuments, addDocument, deleteDocument, transitionEventState, fetchCouncilProfile, mapStateToPipeline, type DocumentRow, type FacultyAdvisorRow } from "@/lib/api";
 import { fetchProposal, type ProposalPackage } from "@/lib/proposal";
+import { resolveFacultyReviewers, type AssignedFacultyReviewer } from "@/lib/document-builder";
 import ProposalWorkflowPanel from "@/components/ProposalWorkflowPanel";
 import ProposalDocumentView from "@/components/ProposalDocumentView";
 import { uploadFile, type UploadType } from "@/lib/upload";
@@ -344,6 +345,7 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
   const [advisors, setAdvisors] = useState<FacultyAdvisorRow[]>([]);
   const [selectedFaculty, setSelectedFaculty] = useState<string[]>([]);
   const [proposal, setProposal] = useState<ProposalPackage | null>(null);
+  const [facultyReviewers, setFacultyReviewers] = useState<AssignedFacultyReviewer[]>([]);
 
   useEffect(() => {
     fetchCouncilProfile()
@@ -353,8 +355,14 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
 
   useEffect(() => {
     fetchProposal(id)
-      .then(({ proposal: pkg }) => setProposal(pkg))
-      .catch(() => setProposal(null));
+      .then(({ proposal: pkg, assigned_faculty_reviewers }) => {
+        setProposal(pkg);
+        setFacultyReviewers(assigned_faculty_reviewers ?? []);
+      })
+      .catch(() => {
+        setProposal(null);
+        setFacultyReviewers([]);
+      });
   }, [id, event?.state]);
 
   useEffect(() => {
@@ -452,12 +460,16 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
   const hasProposalDoc = !!proposal?.document;
 
   async function refreshProposalAndEvent() {
-    const [updated, pkg] = await Promise.all([
+    const [updated, propRes] = await Promise.all([
       fetchEvent(id),
-      fetchProposal(id).then((r) => r.proposal).catch(() => null),
+      fetchProposal(id).catch(() => ({
+        proposal: null,
+        assigned_faculty_reviewers: [] as AssignedFacultyReviewer[],
+      })),
     ]);
     setEvent(updated);
-    setProposal(pkg);
+    setProposal(propRes.proposal);
+    setFacultyReviewers(propRes.assigned_faculty_reviewers ?? []);
     await refreshEvents();
   }
 
@@ -588,7 +600,24 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
 
               {tab === "proposal" && (
                 proposal?.document ? (
-                  <ProposalDocumentView proposal={proposal} />
+                  <ProposalDocumentView
+                    proposal={proposal}
+                    facultyReviewers={
+                      resolveFacultyReviewers(
+                        advisors,
+                        event.assigned_faculty_emails?.length
+                          ? event.assigned_faculty_emails
+                          : selectedFaculty,
+                      ).length > 0
+                        ? resolveFacultyReviewers(
+                            advisors,
+                            event.assigned_faculty_emails?.length
+                              ? event.assigned_faculty_emails
+                              : selectedFaculty,
+                          )
+                        : facultyReviewers
+                    }
+                  />
                 ) : (
                   <div className="text-center py-8 space-y-3">
                     <p className="text-muted-tx text-sm font-fira">

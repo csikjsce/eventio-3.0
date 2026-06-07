@@ -40,7 +40,7 @@ export default function CouncilSignatorySigning({
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const required = signatories.filter((s) => s.name.trim());
+  const required = signatories.filter((s) => s.name.trim() && !s.facultyReviewer);
   if (required.length === 0) return null;
 
   async function applySign(index: number, dataUrl: string | null) {
@@ -63,7 +63,7 @@ export default function CouncilSignatorySigning({
 
       <div className="space-y-2">
         {signatories.map((sig, index) => {
-          if (!sig.name.trim()) return null;
+          if (!sig.name.trim() || sig.facultyReviewer) return null;
           const signed = !!sig.signatureUrl;
           return (
             <div

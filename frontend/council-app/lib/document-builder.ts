@@ -42,6 +42,9 @@ export interface DocumentSignatory {
   memberId?: number;
   name: string;
   role: string;
+  email?: string;
+  /** Faculty reviewer selected for proposal approval — signs after council. */
+  facultyReviewer?: boolean;
   signatureUrl?: string;
   signedAt?: string;
 }
@@ -83,6 +86,15 @@ export interface DocumentBuilderState {
   signatories: DocumentSignatory[];
   permission: PermissionLetterFields;
   report: ReportFields;
+  /** Snapshot of faculty reviewers selected for this proposal. */
+  assignedFacultyReviewers?: AssignedFacultyReviewer[];
+}
+
+export interface AssignedFacultyReviewer {
+  name: string;
+  email: string;
+  designation?: string;
+  dept?: string;
 }
 
 interface TemplateContext {
@@ -274,6 +286,9 @@ export function normalizeDraft(raw: Partial<DocumentBuilderState>): DocumentBuil
     signatories,
     letterheadUrl,
     permissionTemplate: raw.permissionTemplate ?? "event",
+    assignedFacultyReviewers: Array.isArray(raw.assignedFacultyReviewers)
+      ? raw.assignedFacultyReviewers
+      : [],
   };
 }
 
@@ -301,6 +316,77 @@ export function resolveLetterheadUrl(
   const draft = draftUrl?.trim();
   if (draft && draft !== bannerUrl?.trim()) return draft;
   return "";
+}
+
+function normEmail(email: string) {
+  return email.trim().toLowerCase();
+}
+
+/** Resolve selected faculty advisor rows from council settings. */
+export function resolveFacultyReviewers(
+  advisors: Array<{
+    name: string;
+    email: string;
+    designation?: string;
+    dept?: string;
+  }>,
+  selectedEmails: string[],
+): AssignedFacultyReviewer[] {
+  const selected = new Set(selectedEmails.map(normEmail));
+  return advisors
+    .filter((a) => selected.has(normEmail(a.email)))
+    .map((a) => ({
+      name: a.name,
+      email: a.email.trim(),
+      designation: a.designation,
+      dept: a.dept,
+    }));
+}
+
+/** Faculty reviewers as signatory slots on the permission letter. */
+export function facultyReviewersToSignatories(
+  reviewers: AssignedFacultyReviewer[],
+): DocumentSignatory[] {
+  return reviewers.map((r) => ({
+    name: r.name,
+    email: r.email.trim(),
+    role: r.designation?.trim() || "Faculty Advisor",
+    facultyReviewer: true,
+  }));
+}
+
+/** Embed selected faculty as signatories on the proposal document. */
+export function applyFacultyReviewersToDocument(
+  doc: DocumentBuilderState,
+  reviewers: AssignedFacultyReviewer[],
+): DocumentBuilderState {
+  const councilSignatories = doc.signatories.filter((s) => !s.facultyReviewer);
+
+  if (reviewers.length === 0) {
+    return { ...doc, assignedFacultyReviewers: [], signatories: councilSignatories };
+  }
+
+  const existingByEmail = new Map(
+    doc.signatories
+      .filter((s) => s.facultyReviewer && s.email)
+      .map((s) => [normEmail(s.email!), s]),
+  );
+
+  const facultySignatories = facultyReviewersToSignatories(reviewers).map((f) => {
+    const prev = existingByEmail.get(normEmail(f.email!));
+    if (!prev?.signatureUrl) return f;
+    return {
+      ...f,
+      signatureUrl: prev.signatureUrl,
+      signedAt: prev.signedAt,
+    };
+  });
+
+  return {
+    ...doc,
+    assignedFacultyReviewers: reviewers,
+    signatories: [...councilSignatories, ...facultySignatories],
+  };
 }
 
 const DRAFT_KEY = "council_document_builder_draft";

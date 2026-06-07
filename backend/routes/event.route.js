@@ -15,6 +15,7 @@ const {
     normalizeAssignedFacultyEmails,
     getCouncilOrganizerIdsForFaculty,
     getCouncilAdvisorEmails,
+    resolveAssignedFacultyReviewers,
     facultyCanAccessEvent,
     filterEventsForFaculty,
 } = require("../utils/faculty-access");
@@ -22,6 +23,8 @@ const {
     normalizeProposal,
     allCouncilSignatoriesSigned,
     getSignaturePngUrl,
+    embedFacultyReviewersInDocument,
+    applyFacultySignatureToDocument,
 } = require("../utils/proposal-document");
 
 let protected = "/p";
@@ -743,6 +746,10 @@ router.get(protected + "/proposal/:id", authCheck, async (req, res) => {
             proposal: normalizeProposal(loaded.event.proposal_document),
             event_state: loaded.event.state,
             assigned_faculty_emails: loaded.event.assigned_faculty_emails ?? [],
+            assigned_faculty_reviewers: await resolveAssignedFacultyReviewers(
+                loaded.event.organizer_id,
+                loaded.event.assigned_faculty_emails,
+            ),
         });
     } catch (err) {
         console.error(err);
@@ -866,8 +873,18 @@ router.post(protected + "/proposal/:id/submit", authCheck, async (req, res) => {
 
         const state_history = [...(event.state_history ?? []), "APPLIED_FOR_APPROVAL"];
 
+        const reviewers = await resolveAssignedFacultyReviewers(
+            req.user.id,
+            assigned,
+        );
+        const documentWithFaculty = embedFacultyReviewersInDocument(
+            proposal.document,
+            reviewers,
+        );
+
         const submittedProposal = {
             ...proposal,
+            document: documentWithFaculty,
             submittedAt: new Date().toISOString(),
         };
 
@@ -997,11 +1014,23 @@ router.post(
                 comment = null;
             }
 
+            let documentWithSig = proposal.document;
+            if (!approve) {
+                const newSig = facultySignatures[facultySignatures.length - 1];
+                if (newSig) {
+                    documentWithSig = applyFacultySignatureToDocument(
+                        proposal.document,
+                        newSig,
+                    );
+                }
+            }
+
             await prisma.events.update({
                 where: { id: eventId },
                 data: {
                     proposal_document: {
                         ...proposal,
+                        document: documentWithSig,
                         facultySignatures,
                     },
                     ...(approve
@@ -1022,6 +1051,7 @@ router.post(
                     : "Proposal signed.",
                 proposal: normalizeProposal({
                     ...proposal,
+                    document: documentWithSig,
                     facultySignatures,
                 }),
             });

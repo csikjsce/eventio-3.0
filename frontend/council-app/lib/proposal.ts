@@ -1,5 +1,9 @@
 import { api } from "@/lib/api";
-import type { DocumentBuilderState } from "@/lib/document-builder";
+import type { AssignedFacultyReviewer, DocumentBuilderState } from "@/lib/document-builder";
+import {
+  applyFacultyReviewersToDocument,
+  resolveFacultyReviewers,
+} from "@/lib/document-builder";
 
 export interface CouncilSignatureRecord {
   memberId?: number;
@@ -44,6 +48,7 @@ export function mergeCouncilSignatures(
   return {
     ...document,
     signatories: document.signatories.map((sig) => {
+      if (sig.facultyReviewer) return sig;
       const saved = map.get(sigKey({ memberId: sig.memberId, name: sig.name }));
       if (!saved) return sig;
       return {
@@ -59,7 +64,7 @@ export function councilSignaturesFromDocument(
   document: DocumentBuilderState,
 ): CouncilSignatureRecord[] {
   return document.signatories
-    .filter((s) => s.signatureUrl)
+    .filter((s) => s.name.trim() && !s.facultyReviewer && s.signatureUrl)
     .map((s) => ({
       memberId: s.memberId,
       name: s.name,
@@ -70,23 +75,75 @@ export function councilSignaturesFromDocument(
 }
 
 export function allCouncilSigned(document: DocumentBuilderState): boolean {
-  const required = document.signatories.filter((s) => s.name.trim());
+  const required = document.signatories.filter(
+    (s) => s.name.trim() && !s.facultyReviewer,
+  );
   if (required.length === 0) return false;
   return required.every((s) => !!s.signatureUrl);
+}
+
+function normProposalEmail(email: string) {
+  return email.trim().toLowerCase();
+}
+
+/** Merge council + faculty reviewer signatories for display. */
+export function mergeProposalSignatories(
+  proposal: ProposalPackage,
+  facultyReviewers?: AssignedFacultyReviewer[],
+): DocumentBuilderState | null {
+  if (!proposal.document) return null;
+
+  let doc = mergeCouncilSignatures(
+    proposal.document,
+    proposal.councilSignatures ?? [],
+  );
+
+  const reviewers =
+    facultyReviewers ?? doc.assignedFacultyReviewers ?? [];
+
+  if (reviewers.length > 0) {
+    doc = applyFacultyReviewersToDocument(doc, reviewers);
+  }
+
+  const facultySigByEmail = new Map(
+    (proposal.facultySignatures ?? []).map((s) => [
+      normProposalEmail(s.email),
+      s,
+    ]),
+  );
+
+  return {
+    ...doc,
+    signatories: doc.signatories.map((s) => {
+      if (!s.facultyReviewer || !s.email) return s;
+      const saved = facultySigByEmail.get(normProposalEmail(s.email));
+      if (!saved) return s;
+      return {
+        ...s,
+        signatureUrl: saved.png_url,
+        signedAt: saved.signed_at,
+      };
+    }),
+  };
 }
 
 export async function fetchProposal(eventId: string | number): Promise<{
   proposal: ProposalPackage;
   event_state: string;
   assigned_faculty_emails: string[];
+  assigned_faculty_reviewers: AssignedFacultyReviewer[];
 }> {
   const res = await api.get(`/event/p/proposal/${eventId}`);
   return {
     proposal: res.data.proposal,
     event_state: res.data.event_state,
     assigned_faculty_emails: res.data.assigned_faculty_emails ?? [],
+    assigned_faculty_reviewers: res.data.assigned_faculty_reviewers ?? [],
   };
 }
+
+export { applyFacultyReviewersToDocument, resolveFacultyReviewers };
+export type { AssignedFacultyReviewer };
 
 export async function saveProposal(
   eventId: string | number,

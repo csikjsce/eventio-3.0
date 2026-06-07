@@ -1,7 +1,7 @@
 "use client";
 
-import type { ProposalPackage } from "@/lib/proposal";
-import { mergeSignaturesIntoDocument } from "@/lib/proposal";
+import type { ProposalPackage, AssignedFacultyReviewer } from "@/lib/proposal";
+import { mergeProposalSignatories } from "@/lib/proposal";
 
 function formatDate(iso: string) {
   if (!iso) return "—";
@@ -16,10 +16,13 @@ function formatDate(iso: string) {
 
 export default function ProposalDocumentView({
   proposal,
+  facultyReviewers,
 }: {
   proposal: ProposalPackage;
+  facultyReviewers?: AssignedFacultyReviewer[];
 }) {
-  const doc = mergeSignaturesIntoDocument(proposal);
+  const doc = mergeProposalSignatories(proposal, facultyReviewers);
+
   if (!doc) {
     return (
       <p className="text-muted-foreground text-sm text-center py-8">
@@ -30,7 +33,6 @@ export default function ProposalDocumentView({
 
   const p = doc.permission;
   const signatories = doc.signatories.filter((s) => s.name.trim());
-  const facultySignatures = proposal.facultySignatures ?? [];
 
   return (
     <div className="rounded-xl border border-border bg-white text-zinc-900 p-6 sm:p-8 text-sm leading-relaxed overflow-x-auto">
@@ -60,7 +62,7 @@ export default function ProposalDocumentView({
         <p className="mb-2">Thanking you,</p>
         <div className="flex flex-wrap items-end gap-x-10 gap-y-4 mt-6">
           {signatories.map((s, i) => (
-            <div key={`${s.memberId ?? i}`} className="min-w-[120px]">
+            <div key={`${s.email ?? s.memberId ?? i}`} className="min-w-[120px]">
               {s.signatureUrl ? (
                 /* eslint-disable-next-line @next/next/no-img-element */
                 <img src={s.signatureUrl} alt="" className="h-12 object-contain mb-1" />
@@ -74,24 +76,6 @@ export default function ProposalDocumentView({
         </div>
         {p.councilName && <p className="mt-4">{p.councilName}</p>}
       </div>
-
-      {facultySignatures.length > 0 && (
-        <div className="mt-10 pt-6 border-t border-zinc-200">
-          <p className="text-xs font-semibold uppercase tracking-wide text-zinc-600 mb-3">
-            Faculty approval
-          </p>
-          <div className="flex flex-wrap items-end gap-x-10 gap-y-4">
-            {facultySignatures.map((s) => (
-              <div key={s.user_id} className="min-w-[120px]">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={s.png_url} alt="" className="h-12 object-contain mb-1" />
-                <p className="font-semibold">{s.name}</p>
-                <p className="text-zinc-600 text-xs">Faculty Advisor</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
