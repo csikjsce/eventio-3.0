@@ -10,7 +10,7 @@ export default function PendingPage() {
   return (
     <div className="px-4 py-6 sm:px-8 sm:py-8 max-w-3xl">
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold mb-1">Pending Approval</h1>
+        <h1 className="text-foreground font-marcellus text-xl sm:text-2xl mb-1">Pending Approval</h1>
         <p className="text-muted-foreground text-sm">
           {user?.role === "PRINCIPAL"
             ? "Events forwarded by faculty awaiting your final approval."

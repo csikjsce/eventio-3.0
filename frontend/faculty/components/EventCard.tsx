@@ -21,8 +21,8 @@ export default function EventCard({
     <Link
       href={`/event/${event.id}`}
       className={cn(
-        "block bg-card border rounded-2xl p-4 sm:p-5 hover:border-sky-500/30 transition-all group",
-        highlight ? "border-sky-500/40 ring-1 ring-sky-500/10" : "border-border",
+        "block bg-card border rounded-2xl p-4 sm:p-5 hover:border-red-500/30 transition-all group",
+        highlight ? "border-red-500/40 ring-1 ring-red-500/10" : "border-border",
       )}
     >
       <div className="flex gap-4">
@@ -34,7 +34,7 @@ export default function EventCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <p className="font-semibold text-sm truncate group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors">
+              <p className="font-semibold text-sm truncate group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
                 {event.name}
               </p>
               {showCouncil && (
@@ -54,7 +54,7 @@ export default function EventCard({
             {event.venue && <span className="truncate">{event.venue}</span>}
           </div>
         </div>
-        <ChevronRight size={16} className="text-muted-foreground shrink-0 mt-1 group-hover:text-sky-500 transition-colors" />
+        <ChevronRight size={16} className="text-muted-foreground shrink-0 mt-1 group-hover:text-red-500 transition-colors" />
       </div>
     </Link>
   );

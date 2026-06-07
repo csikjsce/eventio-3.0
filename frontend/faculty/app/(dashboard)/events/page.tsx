@@ -42,7 +42,7 @@ export default function EventsPage() {
   return (
     <div className="px-4 py-6 sm:px-8 sm:py-8 max-w-3xl">
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold mb-1">All Events</h1>
+        <h1 className="text-foreground font-marcellus text-xl sm:text-2xl mb-1">All Events</h1>
         <p className="text-muted-foreground text-sm">Browse and search events across all councils.</p>
       </div>
 
@@ -54,7 +54,7 @@ export default function EventsPage() {
           placeholder="Search by event name…"
           value={search}
           onChange={(e) => handleSearch(e.target.value)}
-          className="w-full bg-card border border-border rounded-xl pl-9 pr-4 py-2.5 text-sm outline-none focus:border-sky-500/50 transition-colors"
+          className="w-full bg-card border border-border rounded-xl pl-9 pr-4 py-2.5 text-sm outline-none focus:border-red-500/50 transition-colors"
         />
       </div>
 
@@ -70,7 +70,7 @@ export default function EventsPage() {
               className={cn(
                 "px-3 py-1.5 rounded-lg text-xs font-medium border transition-all",
                 filter === s
-                  ? "bg-sky-500/10 border-sky-500/30 text-sky-600 dark:text-sky-400"
+                  ? "bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400"
                   : "bg-card border-border text-muted-foreground hover:text-foreground",
               )}
             >

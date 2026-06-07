@@ -49,13 +49,13 @@ export default function LoginPage() {
       <Image src="/EventioLogo.svg" alt="Eventio" width={80} height={80} priority />
 
       <div className="flex flex-col items-center text-center gap-1">
-        <p className="text-sky-500 text-4xl font-semibold">Eventio</p>
+        <p className="text-red-500 text-4xl font-marcellus">Eventio</p>
         <p className="text-sm text-muted-foreground">Faculty & Principal Portal · CSI KJSCE</p>
       </div>
 
       <button
         onClick={handleLogin}
-        className="flex items-center gap-3 px-6 py-4 border-2 border-sky-500 rounded-2xl text-sky-600 dark:text-sky-400 text-base font-semibold hover:bg-sky-500/10 active:scale-95 transition-all"
+        className="flex items-center gap-3 px-6 py-4 border-2 border-red-500 rounded-2xl text-red-600 dark:text-red-400 text-base font-semibold hover:bg-red-500/10 active:scale-95 transition-all"
       >
         <Image
           src="https://docs.material-tailwind.com/icons/google.svg"

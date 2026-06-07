@@ -32,7 +32,7 @@ export default function DashboardPage() {
   return (
     <div className="px-4 py-6 sm:px-8 sm:py-8 max-w-5xl">
       <div className="mb-8">
-        <h1 className="text-2xl font-semibold mb-1">
+        <h1 className="text-foreground font-marcellus text-xl sm:text-2xl mb-1">
           Welcome{user?.name ? `, ${user.name.split(" ")[0]}` : ""}
         </h1>
         <p className="text-muted-foreground text-sm">
@@ -70,12 +70,12 @@ export default function DashboardPage() {
             label: "Total Tracked",
             value: events.length,
             icon: <CalendarDays size={16} />,
-            cls: "text-sky-600 dark:text-sky-400",
+            cls: "text-red-600 dark:text-red-400",
             href: "/events",
           },
         ].map((s) => (
           <Link key={s.label} href={s.href}
-            className="bg-card border border-border rounded-xl p-4 hover:border-sky-500/30 transition-all">
+            className="bg-card border border-border rounded-xl p-4 hover:border-red-500/30 transition-all">
             <div className="flex items-center gap-1.5 text-muted-foreground mb-2">{s.icon}
               <span className="text-[10px] uppercase tracking-widest">{s.label}</span>
             </div>
@@ -97,7 +97,7 @@ export default function DashboardPage() {
             )}
           </h2>
           {pendingEvents.length > 0 && (
-            <Link href="/pending" className="text-sky-600 dark:text-sky-400 text-sm hover:underline">
+            <Link href="/pending" className="text-red-600 dark:text-red-400 text-sm hover:underline">
               View all
             </Link>
           )}
@@ -125,7 +125,7 @@ export default function DashboardPage() {
         <section>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold">Recently Active</h2>
-            <Link href="/events" className="text-sky-600 dark:text-sky-400 text-sm hover:underline">
+            <Link href="/events" className="text-red-600 dark:text-red-400 text-sm hover:underline">
               Browse all
             </Link>
           </div>

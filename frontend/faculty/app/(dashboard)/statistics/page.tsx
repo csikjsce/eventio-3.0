@@ -84,7 +84,7 @@ export default function StatisticsPage() {
   return (
     <div className="px-4 py-6 sm:px-8 sm:py-8 max-w-5xl">
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold mb-1">Statistics</h1>
+        <h1 className="text-foreground font-marcellus text-xl sm:text-2xl mb-1">Statistics</h1>
         <p className="text-muted-foreground text-sm">Participation data across all campus events.</p>
       </div>
 
@@ -126,7 +126,7 @@ export default function StatisticsPage() {
             <select
               value={selected}
               onChange={(e) => setSelected(e.target.value)}
-              className="bg-background border border-border rounded-lg px-3 py-1.5 text-sm outline-none focus:border-sky-500/50"
+              className="bg-background border border-border rounded-lg px-3 py-1.5 text-sm outline-none focus:border-red-500/50"
             >
               {stats.map((e) => (
                 <option key={e.eventId} value={e.eventId}>{e.eventName}</option>
@@ -179,7 +179,7 @@ export default function StatisticsPage() {
                     href={attendanceReportUrl(selectedEvent.eventId)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 text-xs text-sky-600 dark:text-sky-400 hover:underline"
+                    className="flex items-center gap-1.5 text-xs text-red-600 dark:text-red-400 hover:underline"
                   >
                     <Download size={12} /> Attendance PDF
                   </a>

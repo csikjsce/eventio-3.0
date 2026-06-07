@@ -97,7 +97,7 @@ function EventReviewContent({ id }: { id: string }) {
     return (
       <div className="p-8 text-center">
         <p className="text-muted-foreground">Event not found.</p>
-        <Link href="/" className="text-sky-600 text-sm mt-2 inline-block hover:underline">Go back</Link>
+        <Link href="/" className="text-red-600 text-sm mt-2 inline-block hover:underline">Go back</Link>
       </div>
     );
   }
@@ -111,12 +111,12 @@ function EventReviewContent({ id }: { id: string }) {
       <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
         <div className="flex items-start gap-3 min-w-0">
           <Link href="/pending"
-            className="w-8 h-8 mt-1 rounded-lg bg-card border border-border hover:border-sky-500/30 flex items-center justify-center text-muted-foreground hover:text-foreground shrink-0">
+            className="w-8 h-8 mt-1 rounded-lg bg-card border border-border hover:border-red-500/30 flex items-center justify-center text-muted-foreground hover:text-foreground shrink-0">
             <ArrowLeft size={15} />
           </Link>
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap mb-1">
-              <h1 className="text-xl sm:text-2xl font-semibold leading-tight">{event.name}</h1>
+              <h1 className="text-xl sm:text-2xl font-marcellus text-foreground leading-tight">{event.name}</h1>
               <span className={cn("text-[11px] font-medium px-2 py-0.5 rounded-md", badge.cls)}>
                 {badge.label}
               </span>
@@ -148,7 +148,7 @@ function EventReviewContent({ id }: { id: string }) {
                 Return to Council
               </button>
               <button type="button" onClick={approve} disabled={busy}
-                className="px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-sm font-medium transition-all disabled:opacity-50 flex items-center gap-2">
+                className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-medium transition-all disabled:opacity-50 flex items-center gap-2">
                 {busy && <Loader2 size={14} className="animate-spin" />}
                 {isPrincipal
                   ? "Approve Event"
@@ -236,7 +236,7 @@ function EventReviewContent({ id }: { id: string }) {
           <button key={t} type="button" onClick={() => setTab(t)}
             className={cn(
               "px-4 py-2 rounded-lg text-sm transition-all",
-              tab === t ? "bg-sky-600 text-white font-medium" : "text-muted-foreground hover:text-foreground",
+              tab === t ? "bg-red-600 text-white font-medium" : "text-muted-foreground hover:text-foreground",
             )}>
             {label}
           </button>
@@ -286,7 +286,7 @@ function EventReviewContent({ id }: { id: string }) {
               {docs.map((doc) => (
                 <div key={doc.id} className="flex items-center justify-between gap-3 p-3 bg-muted/50 rounded-xl">
                   <div className="flex items-center gap-3 min-w-0">
-                    <FileText size={16} className="text-sky-500 shrink-0" />
+                    <FileText size={16} className="text-red-500 shrink-0" />
                     <div className="min-w-0">
                       <p className="text-sm font-medium truncate">{doc.name}</p>
                       <p className="text-xs text-muted-foreground capitalize">{doc.type?.replace(/_/g, " ")}</p>
@@ -294,7 +294,7 @@ function EventReviewContent({ id }: { id: string }) {
                   </div>
                   {doc.url ? (
                     <a href={doc.url} target="_blank" rel="noopener noreferrer"
-                      className="flex items-center gap-1 text-sky-600 dark:text-sky-400 text-xs shrink-0 hover:underline">
+                      className="flex items-center gap-1 text-red-600 dark:text-red-400 text-xs shrink-0 hover:underline">
                       View <ExternalLink size={11} />
                     </a>
                   ) : (

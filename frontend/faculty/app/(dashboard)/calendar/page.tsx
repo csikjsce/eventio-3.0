@@ -51,7 +51,7 @@ export default function CalendarPage() {
   return (
     <div className="px-4 py-6 sm:px-8 sm:py-8 max-w-3xl">
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold mb-1">Calendar</h1>
+        <h1 className="text-foreground font-marcellus text-xl sm:text-2xl mb-1">Calendar</h1>
         <p className="text-muted-foreground text-sm">Upcoming and live events across campus.</p>
       </div>
 
@@ -90,15 +90,15 @@ export default function CalendarPage() {
                 onClick={() => setSelected(day)}
                 className={cn(
                   "aspect-square rounded-lg flex flex-col items-center justify-center text-sm relative transition-all",
-                  isSelected ? "bg-sky-600 text-white" : "hover:bg-muted",
-                  isToday && !isSelected && "ring-1 ring-sky-500/50",
+                  isSelected ? "bg-red-600 text-white" : "hover:bg-muted",
+                  isToday && !isSelected && "ring-1 ring-red-500/50",
                 )}
               >
                 {day.getDate()}
                 {dayEvents.length > 0 && (
                   <div className="absolute bottom-1 flex gap-0.5">
                     {dayEvents.slice(0, 3).map((_, j) => (
-                      <div key={j} className={cn("w-1 h-1 rounded-full", isSelected ? "bg-white/80" : "bg-sky-500")} />
+                      <div key={j} className={cn("w-1 h-1 rounded-full", isSelected ? "bg-white/80" : "bg-red-500")} />
                     ))}
                   </div>
                 )}
@@ -123,7 +123,7 @@ export default function CalendarPage() {
               const badge = STATE_BADGE[e.state] ?? { label: e.state, cls: "bg-muted" };
               return (
                 <Link key={e.id} href={`/event/${e.id}`}
-                  className="flex items-center gap-3 p-3 bg-card border border-border rounded-xl hover:border-sky-500/30 transition-all">
+                  className="flex items-center gap-3 p-3 bg-card border border-border rounded-xl hover:border-red-500/30 transition-all">
                   {e.banner_url && (
                     <img src={e.banner_url} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />
                   )}

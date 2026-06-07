@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Inbox, CalendarDays, BarChart2,
-  List, LogOut, Sun, Moon, X,
+  List, LogOut, Sun, Moon, X, Settings,
 } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 import { logout } from "@/lib/api";
@@ -18,6 +18,7 @@ const NAV = [
   { name: "All Events", href: "/events",     Icon: List,            exact: false },
   { name: "Calendar",   href: "/calendar",   Icon: CalendarDays,    exact: false },
   { name: "Statistics", href: "/statistics", Icon: BarChart2,       exact: false },
+  { name: "Settings",   href: "/settings",   Icon: Settings,        exact: false },
 ];
 
 export default function Sidebar({ onClose }: { onClose?: () => void }) {
@@ -33,7 +34,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
       <div className="flex items-center gap-3 px-6 py-5 border-b border-border shrink-0">
         <Image src="/EventioLogo.svg" alt="Eventio" width={32} height={32} />
         <div className="flex-1 min-w-0">
-          <p className="text-sky-500 text-xl leading-none font-semibold tracking-wide">Eventio</p>
+          <p className="text-red-500 font-marcellus text-xl leading-none tracking-wide">Eventio</p>
           <p className="text-muted-foreground text-[10px] mt-0.5 tracking-widest uppercase">
             {user?.role === "PRINCIPAL" ? "Principal Portal" : "Faculty Portal"}
           </p>
@@ -57,14 +58,14 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all border",
                 active
-                  ? "bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20"
+                  ? "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground border-transparent",
               )}
             >
               <Icon size={17} />
               {name}
               {badge && (
-                <span className="ml-auto min-w-[1.25rem] h-5 px-1.5 rounded-full bg-sky-500 text-white text-[10px] font-bold flex items-center justify-center">
+                <span className="ml-auto min-w-[1.25rem] h-5 px-1.5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
                   {pendingEvents.length}
                 </span>
               )}

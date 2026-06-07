@@ -186,6 +186,16 @@ export async function fetchMe(): Promise<FacultyUser> {
   return res.data.user;
 }
 
+export async function updateProfile(data: {
+  name?: string;
+  phone_number?: string | null;
+  photo_url?: string;
+  about?: string | null;
+  signature?: unknown;
+}): Promise<void> {
+  await api.post("/user/p/update", data);
+}
+
 // ── Events ────────────────────────────────────────────────────────────────────
 
 export async function fetchEvents(): Promise<EventData[]> {

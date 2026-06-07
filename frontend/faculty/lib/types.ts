@@ -49,11 +49,14 @@ export interface EventData {
 }
 
 export interface FacultyUser {
-  id:         number;
-  name:       string;
-  email:      string;
-  photo_url?: string;
-  role:       "FACULTY" | "PRINCIPAL" | string;
+  id:           number;
+  name:         string;
+  email:        string;
+  photo_url?:   string;
+  phone_number?: string | null;
+  about?:       string | null;
+  signature?:   unknown;
+  role:         "FACULTY" | "PRINCIPAL" | string;
 }
 
 export interface StatsItem {

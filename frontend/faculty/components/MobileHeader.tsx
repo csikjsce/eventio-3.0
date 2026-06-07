@@ -12,7 +12,7 @@ export default function MobileHeader({ onMenuClick }: { onMenuClick: () => void 
       </button>
       <div className="flex items-center gap-2">
         <Image src="/EventioLogo.svg" alt="Eventio" width={24} height={24} />
-        <p className="text-sky-500 font-semibold text-lg leading-none">Eventio</p>
+        <p className="text-red-500 font-marcellus text-lg leading-none">Eventio</p>
       </div>
       <div className="w-9" />
     </header>
