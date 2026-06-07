@@ -209,6 +209,12 @@ export default function NewEventPage() {
   useEffect(() => { if (!teamEvent) { setValue("ma_ppt", 1); setValue("min_ppt", 1); } }, [teamEvent]);
   useEffect(() => { if (!femaleQuota) setValue("female_requirement", null); }, [femaleQuota]);
 
+  const wMinPpt = watch("min_ppt");
+  const wMaPpt = watch("ma_ppt");
+  useEffect(() => {
+    if (teamEvent) void trigger(["min_ppt", "ma_ppt"]);
+  }, [teamEvent, wMinPpt, wMaPpt, trigger]);
+
   type FormKey = Parameters<typeof trigger>[0];
   const STEP_FIELDS: Record<number, FormKey[]> = {
     1: ["name", "tag_line", "description", "long_description", "event_page_image_url", "banner_url"],

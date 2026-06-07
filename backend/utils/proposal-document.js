@@ -48,14 +48,21 @@ function allCouncilSignatoriesSigned(proposal) {
         ),
     );
 
-    return signatories.every((sig) =>
-        signedKeys.has(
+    return signatories.every((sig) => {
+        if (
+            sig.signatureUrl &&
+            String(sig.signatureUrl).trim()
+        ) {
+            return true;
+        }
+        return signedKeys.has(
             signatoryKey({
                 memberId: sig.memberId,
                 name: sig.name,
+                email: sig.email,
             }),
-        ),
-    );
+        );
+    });
 }
 
 function getSignaturePngUrl(signature) {

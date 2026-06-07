@@ -16,11 +16,12 @@ import {
   fetchEvent,
   type EventControlStats,
 } from "@/lib/api";
+import DeleteEventModal from "@/components/DeleteEventModal";
 import {
   ArrowLeft, Settings, Zap, Users, Ticket, CreditCard,
   BarChart2, Send, ClipboardList, Download, RefreshCcw,
   Eye, EyeOff, Play, Pause, Square, CheckCircle2, AlertCircle, Lock,
-  ChevronRight, Edit2,
+  ChevronRight, Edit2, Trash2,
 } from "lucide-react";
 import type { EventData } from "@/lib/dummy-data";
 import { useData } from "@/contexts/DataContext";
@@ -173,6 +174,7 @@ export default function EventControlsPage({ params }: { params: Promise<{ id: st
   const [saving, setSaving]         = useState(false);
   const [toast, setToast]           = useState<{ msg: string; ok: boolean } | null>(null);
   const [confirm, setConfirm]       = useState<{ msg: string; onConfirm: () => void } | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [transitioning, setTransitioning] = useState(false);
 
   // Local settings state
@@ -265,6 +267,10 @@ export default function EventControlsPage({ params }: { params: Promise<{ id: st
   }
 
   async function saveSettings() {
+    if (maPpt < minPpt) {
+      showToast("Max team size cannot be less than min team size.", false);
+      return;
+    }
     setSaving(true);
     try {
       await updateEventSettings(id, {
@@ -375,6 +381,19 @@ export default function EventControlsPage({ params }: { params: Promise<{ id: st
             </div>
           </div>
         </div>
+      )}
+
+      {showDeleteModal && (
+        <DeleteEventModal
+          eventId={id}
+          onClose={() => setShowDeleteModal(false)}
+          onDeleted={async () => {
+            setShowDeleteModal(false);
+            await refreshEvents();
+            showToast("Event deleted permanently.");
+            router.push("/");
+          }}
+        />
       )}
 
       {/* ── Header ── */}
@@ -499,6 +518,11 @@ export default function EventControlsPage({ params }: { params: Promise<{ id: st
               value={maPpt} onChange={(v) => setMaPpt(v ?? 1)} min={1} />
             <NumberInput label="Min team size" description="Minimum for submission"
               value={minPpt} onChange={(v) => setMinPpt(v ?? 1)} min={1} />
+            {maPpt < minPpt && (
+              <p className="text-red-500 text-xs font-fira -mt-2">
+                Max team size cannot be less than min team size.
+              </p>
+            )}
             <Toggle label="Somaiya Students Only" description="Restrict to @somaiya.edu"
               checked={somaiyaOnly} onChange={setSomaiyaOnly} />
             <Toggle label="More Details Form" description="Show custom fields during registration"
@@ -564,6 +588,22 @@ export default function EventControlsPage({ params }: { params: Promise<{ id: st
             {saving ? <RefreshCcw size={15} className="animate-spin" /> : <Settings size={15} />}
             {saving ? "Saving…" : "Save All Settings"}
           </button>
+
+          {/* Danger zone */}
+          <SectionCard title="Danger Zone" icon={<Trash2 size={16} className="text-red-500" />}>
+            <p className="text-muted-tx text-sm font-fira mb-4">
+              Permanently remove this event and all participant registrations,
+              attendance records, teams, documents, budget entries, and announcements.
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowDeleteModal(true)}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-red-500/40 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-sm font-fira font-semibold transition-colors"
+            >
+              <Trash2 size={15} />
+              Delete Event Permanently
+            </button>
+          </SectionCard>
 
         </div>
       </div>

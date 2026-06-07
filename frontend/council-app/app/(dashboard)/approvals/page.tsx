@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { getNextAction, PIPELINE_STAGES, type EventData } from "@/lib/dummy-data";
 import { transitionEventState, fetchCouncilProfile, type FacultyAdvisorRow } from "@/lib/api";
+import { submitProposal } from "@/lib/proposal";
 import FacultyReviewerSelect from "@/components/FacultyReviewerSelect";
 import { useData } from "@/contexts/DataContext";
 import {
@@ -313,13 +314,15 @@ export default function ApprovalsPage() {
     if (loadingId !== null) return;
     setLoadingId(event.id);
     try {
-      await transitionEventState(
-        event.id,
-        newState,
-        assignedFaculty?.length
-          ? { assigned_faculty_emails: assignedFaculty }
-          : undefined,
-      );
+      if (cta === "Submit Proposal" || cta === "Resubmit Proposal") {
+        if (!assignedFaculty?.length) {
+          showToast("Select at least one faculty advisor before submitting.");
+          return;
+        }
+        await submitProposal(event.id, assignedFaculty);
+      } else {
+        await transitionEventState(event.id, newState);
+      }
       await refreshEvents();
       const successMsg: Record<string, string> = {
         "Submit Proposal":   `Proposal for "${event.name}" submitted to selected faculty!`,
@@ -328,8 +331,11 @@ export default function ApprovalsPage() {
       };
       showToast(successMsg[cta]);
       setSubmitModal(null);
-    } catch {
-      showToast(`Failed to perform "${cta}" — please try again.`);
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message;
+      showToast(msg ?? `Failed to perform "${cta}" — please try again.`);
     } finally {
       setLoadingId(null);
     }

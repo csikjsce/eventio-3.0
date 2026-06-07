@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getNextAction, type EventData, type EventDocument, type ApprovalStep } from "@/lib/dummy-data";
 import { fetchEvent, fetchDocuments, addDocument, deleteDocument, transitionEventState, fetchCouncilProfile, mapStateToPipeline, type DocumentRow, type FacultyAdvisorRow } from "@/lib/api";
+import { submitProposal } from "@/lib/proposal";
 import FacultyReviewerSelect from "@/components/FacultyReviewerSelect";
 import { uploadFile, type UploadType } from "@/lib/upload";
 import { useData } from "@/contexts/DataContext";
@@ -424,13 +425,11 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
       }
       setActionLoading(true);
       try {
-        await transitionEventState(
-          id,
-          newState,
-          cta === "Submit Proposal" || cta === "Resubmit Proposal"
-            ? { assigned_faculty_emails: selectedFaculty }
-            : undefined,
-        );
+        if (cta === "Submit Proposal" || cta === "Resubmit Proposal") {
+          await submitProposal(id, selectedFaculty);
+        } else {
+          await transitionEventState(id, newState);
+        }
         // refresh local event + global list
         const updated = await fetchEvent(id);
         setEvent(updated);
@@ -441,8 +440,11 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
           cta === "Open Registration" ? "Registration is now open!" :
           "Updated successfully."
         );
-      } catch {
-        showToast("Action failed — please try again.");
+      } catch (err: unknown) {
+        const msg =
+          (err as { response?: { data?: { message?: string } } })?.response?.data
+            ?.message;
+        showToast(msg ?? "Action failed — please try again.");
       } finally {
         setActionLoading(false);
       }

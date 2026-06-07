@@ -54,8 +54,20 @@ export const newEventSchema = yup.object({
   ),
   is_ticket_feature_enabled: yup.boolean().default(true).notRequired(),
   ticket_count: yup.number().min(1).default(500).required(),
-  ma_ppt: yup.number().min(1).required(),
   min_ppt: yup.number().min(1).required(),
+  ma_ppt: yup
+    .number()
+    .min(1)
+    .required()
+    .test(
+      "max-gte-min",
+      "Max members cannot be less than min members",
+      function (value) {
+        const { min_ppt } = this.parent;
+        if (value == null || min_ppt == null) return true;
+        return value >= min_ppt;
+      },
+    ),
   urls: yup.object().shape({
     instagram: yup.string().url().optional(),
     facebook: yup.string().url().optional(),

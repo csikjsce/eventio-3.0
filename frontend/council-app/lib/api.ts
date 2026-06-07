@@ -647,3 +647,33 @@ export async function uncheckinParticipant(
     participant_id: participantId,
   });
 }
+
+export interface EventDeletePreview {
+  name: string;
+  participants: number;
+  teams: number;
+  attended: number;
+  documents: number;
+  budgetItems: number;
+  announcements: number;
+  childEvents: number;
+}
+
+/** Load counts of data that will be removed if the event is deleted */
+export async function fetchEventDeletePreview(
+  eventId: number | string,
+): Promise<EventDeletePreview> {
+  const res = await api.get(`/event/p/delete-preview/${eventId}`);
+  return res.data.preview;
+}
+
+/** Permanently delete an event and all related data */
+export async function deleteEvent(
+  eventId: number | string,
+  confirmName: string,
+): Promise<{ deleted_count: number }> {
+  const res = await api.post(`/event/p/delete/${eventId}`, {
+    confirm_name: confirmName,
+  });
+  return { deleted_count: res.data.deleted_count ?? 1 };
+}

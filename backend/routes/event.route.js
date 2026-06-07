@@ -10,7 +10,7 @@ const { sendTeamInviteEmail } = require("../utils/mailer");
 const fetch = require("node-fetch");
 const { get: cGet, set: cSet, del: cDel, keys: cKeys, TTL, invalidateEvent } = require("../utils/cache");
 const { validateMoreDetails, normalizeRegistrationFields } = require("../utils/registration-fields");
-const { pickEventUpdateData } = require("../utils/event-update");
+const { pickEventUpdateData, validateTeamSize } = require("../utils/event-update");
 const {
     normalizeAssignedFacultyEmails,
     getCouncilOrganizerIdsForFaculty,
@@ -1060,6 +1060,10 @@ router.post(protected + "/create", authCheck, (req, res) => {
     if (dates && dates.length) {
         dates = dates.map((d) => new Date(d));
     }
+    const teamCheck = validateTeamSize(min_ppt, ma_ppt);
+    if (!teamCheck.ok) {
+        return res.status(400).json({ error: true, message: teamCheck.message });
+    }
     const normalizedFields = normalizeRegistrationFields(registration_fields);
     prisma.events
         .create({
@@ -1181,6 +1185,19 @@ router.post(
             );
         }
 
+        if (field.ma_ppt !== undefined || field.min_ppt !== undefined) {
+            const teamCheck = validateTeamSize(
+                field.min_ppt ?? existingEvent.min_ppt,
+                field.ma_ppt ?? existingEvent.ma_ppt,
+            );
+            if (!teamCheck.ok) {
+                return res.status(400).json({
+                    error: true,
+                    message: teamCheck.message,
+                });
+            }
+        }
+
         if (req.user.role !== "COUNCIL") {
             delete field.assigned_faculty_emails;
         } else if (field.assigned_faculty_emails !== undefined) {
@@ -1292,6 +1309,25 @@ router.post(
                                 "Selected faculty must be configured in council settings.",
                         });
                     }
+
+                    const proposal = normalizeProposal(
+                        existingEvent.proposal_document,
+                    );
+                    if (!proposal.document) {
+                        return res.status(400).json({
+                            error: true,
+                            message:
+                                "Build and save a proposal document before submitting.",
+                        });
+                    }
+                    if (!allCouncilSignatoriesSigned(proposal)) {
+                        return res.status(400).json({
+                            error: true,
+                            message:
+                                "Every council signatory on the proposal must sign before submitting.",
+                        });
+                    }
+
                     field.assigned_faculty_emails = assigned;
                     field.comment = null;
                 }
@@ -2692,6 +2728,139 @@ router.get(protected + "/export-participants/:id", authCheck, async (req, res) =
     } catch (err) {
         logger.error(err);
         return res.status(500).json({ error: true, message: "Error exporting participants" });
+    }
+});
+
+/**
+ * GET /p/delete-preview/:id
+ * Counts of data that will be removed if the event is deleted.
+ */
+router.get(protected + "/delete-preview/:id", authCheck, async (req, res) => {
+    if (!req.user) return res.status(401).json({ error: true, message: "Unauthorized" });
+    const eventId = parseInt(req.params.id);
+    if (isNaN(eventId)) return res.status(400).json({ error: true, message: "Invalid id" });
+
+    const denied = await assertCouncilEventAccess(req.user, eventId);
+    if (denied) return res.status(denied.status).json({ error: true, message: denied.message });
+
+    try {
+        const event = await prisma.events.findUnique({
+            where: { id: eventId },
+            select: { name: true },
+        });
+        if (!event) {
+            return res.status(404).json({ error: true, message: "Event not found" });
+        }
+
+        const [
+            participants,
+            teams,
+            attended,
+            documents,
+            budgetItems,
+            announcements,
+            childEvents,
+        ] = await Promise.all([
+            prisma.participant.count({ where: { event_id: eventId } }),
+            prisma.team.count({ where: { event_id: eventId } }),
+            prisma.participant.count({
+                where: { event_id: eventId, attended: true },
+            }),
+            prisma.eventDocument.count({ where: { event_id: eventId } }),
+            prisma.budgetItem.count({ where: { event_id: eventId } }),
+            prisma.announcement.count({ where: { event_id: eventId } }),
+            prisma.events.count({ where: { parent_id: eventId } }),
+        ]);
+
+        return res.json({
+            error: false,
+            preview: {
+                name: event.name,
+                participants,
+                teams,
+                attended,
+                documents,
+                budgetItems,
+                announcements,
+                childEvents,
+            },
+        });
+    } catch (err) {
+        logger.error(err);
+        return res.status(500).json({
+            error: true,
+            message: "Error loading delete preview",
+        });
+    }
+});
+
+async function deleteEventTree(eventId, deletedIds = []) {
+    const children = await prisma.events.findMany({
+        where: { parent_id: eventId },
+        select: { id: true },
+    });
+    for (const child of children) {
+        await deleteEventTree(child.id, deletedIds);
+    }
+    await prisma.events.delete({ where: { id: eventId } });
+    deletedIds.push(eventId);
+    return deletedIds;
+}
+
+/**
+ * POST /p/delete/:id
+ * Permanently delete an event and all related data (participants, teams, etc.).
+ * Body: { confirm_name: string } must match the event name exactly.
+ */
+router.post(protected + "/delete/:id", authCheck, async (req, res) => {
+    if (!req.user) return res.status(401).json({ error: true, message: "Unauthorized" });
+    if (req.user.role !== "COUNCIL") {
+        return res.status(403).json({ error: true, message: "Forbidden" });
+    }
+
+    const eventId = parseInt(req.params.id);
+    if (isNaN(eventId)) return res.status(400).json({ error: true, message: "Invalid id" });
+
+    const denied = await assertCouncilEventAccess(req.user, eventId);
+    if (denied) return res.status(denied.status).json({ error: true, message: denied.message });
+
+    try {
+        const event = await prisma.events.findUnique({
+            where: { id: eventId },
+            select: { name: true },
+        });
+        if (!event) {
+            return res.status(404).json({ error: true, message: "Event not found" });
+        }
+
+        const confirmName =
+            req.body?.confirm_name != null
+                ? String(req.body.confirm_name).trim()
+                : "";
+        if (confirmName !== event.name) {
+            return res.status(400).json({
+                error: true,
+                message:
+                    "Type the exact event name to confirm permanent deletion.",
+            });
+        }
+
+        const deletedIds = await deleteEventTree(eventId);
+        for (const id of deletedIds) {
+            invalidateEvent(id, req.user.id);
+        }
+
+        return res.json({
+            error: false,
+            message: "Event deleted permanently.",
+            deleted_count: deletedIds.length,
+        });
+    } catch (err) {
+        logger.error(err);
+        return res.status(500).json({
+            error: true,
+            message: "Error deleting event",
+        });
     }
 });
 

@@ -55,4 +55,22 @@ function pickEventUpdateData(raw) {
     return data;
 }
 
-module.exports = { EVENT_UPDATE_KEYS, pickEventUpdateData };
+function validateTeamSize(min_ppt, ma_ppt) {
+    const min = Number(min_ppt);
+    const max = Number(ma_ppt);
+    if (!Number.isFinite(min) || !Number.isFinite(max)) {
+        return { ok: false, message: "Team size must be valid numbers." };
+    }
+    if (min < 1 || max < 1) {
+        return { ok: false, message: "Team size must be at least 1." };
+    }
+    if (max < min) {
+        return {
+            ok: false,
+            message: "Max team size cannot be less than min team size.",
+        };
+    }
+    return { ok: true };
+}
+
+module.exports = { EVENT_UPDATE_KEYS, pickEventUpdateData, validateTeamSize };
