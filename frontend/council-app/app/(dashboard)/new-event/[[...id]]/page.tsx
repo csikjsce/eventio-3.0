@@ -150,6 +150,7 @@ export default function NewEventPage() {
   const methods = useForm<NewEventSchema>({ resolver: yupResolver(newEventSchema) as any,
     defaultValues: {
       fee: 0, is_ticket_feature_enabled: true, ma_ppt: 1, min_ppt: 1,
+      state: "DRAFT",
       is_feedback_enabled: false, is_only_somaiya: true,
       registration_type: "ONPLATFORM", more_details_enabled: false,
       registration_fields: [] as RegistrationField[],
@@ -621,15 +622,6 @@ export default function NewEventPage() {
                     <FieldWrap label="Post-Event Report URL (optional)">
                       <input className={INPUT} {...register("report_url")} placeholder="https://drive.google.com/…" />
                     </FieldWrap>
-                    {existing && (
-                      <FieldWrap label="Event Status">
-                        <select className={INPUT} {...register("state")}>
-                          {["DRAFT","APPLIED_FOR_APPROVAL","UNLISTED","UPCOMING","REGISTRATION_OPEN","REGISTRATION_CLOSED","TICKET_OPEN","TICKET_CLOSED","ONGOING","COMPLETED","PRIVATE"].map(s => (
-                            <option key={s} value={s}>{s.replace(/_/g, " ")}</option>
-                          ))}
-                        </select>
-                      </FieldWrap>
-                    )}
                   </div>
                 )}
 

@@ -263,7 +263,7 @@ export async function createEvent(data: Record<string, unknown>): Promise<EventD
 /** Fields the backend accepts on POST /event/p/update/:id — excludes UI-only EventData props. */
 const EVENT_UPDATE_KEYS = [
   "name", "description", "long_description", "tag_line", "fee", "event_type",
-  "online_event_link", "dates", "venue", "ma_ppt", "min_ppt", "tags", "state",
+  "online_event_link", "dates", "venue", "ma_ppt", "min_ppt", "tags",
   "banner_url", "logo_image_url", "event_page_image_url", "parent_id",
   "is_feedback_enabled", "is_only_somaiya", "attendance_type", "registration_type",
   "external_registration_link", "is_ticket_feature_enabled", "in_event_activity",
