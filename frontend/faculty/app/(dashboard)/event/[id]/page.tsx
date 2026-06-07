@@ -13,12 +13,20 @@ import {
   fetchEvent, fetchDocuments, fetchBudget,
   returnEventToCouncil, approveEvent,
 } from "@/lib/api";
+import {
+  facultySignProposal,
+  fetchProposal,
+  userHasSignature,
+  type ProposalPackage,
+} from "@/lib/proposal";
+import ProposalDocumentView from "@/components/ProposalDocumentView";
+import { PenLine } from "lucide-react";
 import { ApprovalTimeline } from "@/components/EventCard";
 import type { EventData, EventDocument, BudgetItem } from "@/lib/types";
 import { STATE_BADGE, fmtDate, PENDING_STATE } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-type Tab = "overview" | "documents" | "budget" | "journey";
+type Tab = "overview" | "proposal" | "documents" | "budget" | "journey";
 
 export default function EventReviewPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -38,6 +46,7 @@ function EventReviewContent({ id }: { id: string }) {
   const [showReturnBox, setShowReturnBox] = useState(false);
   const [returnFeedback, setReturnFeedback] = useState("");
   const [sendToPrincipal, setSendToPrincipal] = useState(false);
+  const [proposal, setProposal] = useState<ProposalPackage | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -45,12 +54,14 @@ function EventReviewContent({ id }: { id: string }) {
       fetchEvent(id),
       fetchDocuments(id).catch(() => []),
       fetchBudget(id).catch(() => []),
+      fetchProposal(id).catch(() => null),
     ])
-      .then(([ev, d, b]) => {
+      .then(([ev, d, b, prop]) => {
         if (cancelled) return;
         setEvent(ev);
         setDocs(d);
         setBudget(b);
+        setProposal(prop);
       })
       .catch(() => { if (!cancelled) setEvent(null); })
       .finally(() => { if (!cancelled) setLoading(false); });
@@ -65,13 +76,39 @@ function EventReviewContent({ id }: { id: string }) {
     if (!event) return;
     setBusy(true);
     try {
-      await approveEvent(event.id, { sendToPrincipal, isPrincipal });
+      if (proposal?.document && !isPrincipal) {
+        await facultySignProposal(event.id, {
+          approve: true,
+          sendToPrincipal,
+        });
+      } else if (proposal?.document && isPrincipal) {
+        await facultySignProposal(event.id, { approve: true });
+      } else {
+        await approveEvent(event.id, { sendToPrincipal, isPrincipal });
+      }
       await refresh();
       router.push("/pending");
     } finally {
       setBusy(false);
     }
   }
+
+  async function signProposalOnly() {
+    if (!event) return;
+    setBusy(true);
+    try {
+      await facultySignProposal(event.id, { approve: false });
+      const updated = await fetchProposal(event.id);
+      setProposal(updated);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const alreadySigned = proposal?.facultySignatures?.some(
+    (s) => s.user_id === user?.id,
+  );
+  const hasSavedSignature = userHasSignature(user?.signature);
 
   async function returnToCouncil() {
     if (!event || !returnFeedback.trim()) return;
@@ -142,19 +179,31 @@ function EventReviewContent({ id }: { id: string }) {
               </label>
             )}
             <div className="flex items-center gap-2 flex-wrap justify-end">
+              {!hasSavedSignature && (
+                <Link href="/settings"
+                  className="text-xs text-amber-700 dark:text-amber-400 hover:underline">
+                  Add signature in Settings
+                </Link>
+              )}
+              {proposal?.document && !alreadySigned && hasSavedSignature && (
+                <button type="button" onClick={signProposalOnly} disabled={busy}
+                  className="px-4 py-2 rounded-lg border border-border text-sm hover:border-red-500/30 flex items-center gap-1.5">
+                  <PenLine size={14} /> Sign proposal
+                </button>
+              )}
               <button type="button" onClick={() => setShowReturnBox((v) => !v)} disabled={busy}
                 className="px-4 py-2 rounded-lg border border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 text-sm transition-all disabled:opacity-50 flex items-center gap-1.5">
                 <RotateCcw size={14} />
                 Return to Council
               </button>
-              <button type="button" onClick={approve} disabled={busy}
+              <button type="button" onClick={approve} disabled={busy || !hasSavedSignature}
                 className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-medium transition-all disabled:opacity-50 flex items-center gap-2">
                 {busy && <Loader2 size={14} className="animate-spin" />}
                 {isPrincipal
-                  ? "Approve Event"
+                  ? "Sign & Approve Event"
                   : sendToPrincipal
-                    ? "Forward to Principal"
-                    : "Approve Event"}
+                    ? "Sign & Forward to Principal"
+                    : "Sign & Approve Event"}
               </button>
             </div>
           </div>
@@ -229,6 +278,7 @@ function EventReviewContent({ id }: { id: string }) {
       <div className="flex gap-1 p-1 bg-muted rounded-xl w-fit mb-4 flex-wrap">
         {([
           ["overview",  "Overview"],
+          ["proposal",  "Proposal"],
           ["documents", `Documents (${docs.length})`],
           ["budget",    `Budget (${budget.length})`],
           ["journey",   "State History"],
@@ -276,6 +326,16 @@ function EventReviewContent({ id }: { id: string }) {
               ))}
             </div>
           </div>
+        )}
+
+        {tab === "proposal" && (
+          proposal?.document ? (
+            <ProposalDocumentView proposal={proposal} />
+          ) : (
+            <p className="text-muted-foreground text-sm text-center py-8">
+              The council has not submitted a proposal document for this event yet.
+            </p>
+          )
         )}
 
         {tab === "documents" && (

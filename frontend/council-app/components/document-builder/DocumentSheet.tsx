@@ -15,6 +15,7 @@ interface Props {
   permissionTemplate?: PermissionTemplateId;
   letterheadUrl?: string;
   signatories: DocumentSignatory[];
+  facultySignatures?: Array<{ name: string; png_url: string; role?: string }>;
   permission: PermissionLetterFields;
   report: ReportFields;
   sheetRef?: React.RefObject<HTMLElement | null>;
@@ -55,9 +56,21 @@ function SignatoryBlock({
       {closing && <p>{closing}</p>}
       <div className="mt-8 flex flex-wrap items-end gap-x-10 gap-y-3">
         {valid.map((s, i) => (
-          <div key={`${s.memberId ?? "custom"}-${i}`} className="shrink-0 text-left">
-            <p className="font-semibold whitespace-nowrap">{s.name}</p>
-            {s.role.trim() && <p className="whitespace-nowrap">{s.role}</p>}
+          <div key={`${s.memberId ?? "custom"}-${i}`} className="shrink-0 text-left min-w-[120px]">
+            {s.signatureUrl ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={s.signatureUrl}
+                alt={`Signature of ${s.name}`}
+                className="h-12 max-w-[140px] object-contain mb-1"
+              />
+            ) : (
+              <div className="h-12 mb-1 border-b border-zinc-400" />
+            )}
+            <p className="font-semibold whitespace-nowrap text-[13px]">{s.name}</p>
+            {s.role.trim() && (
+              <p className="whitespace-nowrap text-[12px] text-zinc-700">{s.role}</p>
+            )}
           </div>
         ))}
       </div>
@@ -216,6 +229,7 @@ export default function DocumentSheet({
   permissionTemplate = "event",
   letterheadUrl,
   signatories,
+  facultySignatures = [],
   permission,
   report,
   sheetRef,
@@ -231,6 +245,24 @@ export default function DocumentSheet({
         <PermissionBody p={permission} signatories={signatories} template={permissionTemplate} />
       ) : (
         <ReportBody r={report} signatories={signatories} />
+      )}
+
+      {facultySignatures.length > 0 && (
+        <div className="mt-10 pt-6 border-t border-zinc-200">
+          <p className="text-[12px] font-semibold font-fira text-zinc-700 mb-3 uppercase tracking-wide">
+            Faculty approval
+          </p>
+          <div className="flex flex-wrap items-end gap-x-10 gap-y-3">
+            {facultySignatures.map((s, i) => (
+              <div key={`${s.name}-${i}`} className="shrink-0 text-left min-w-[120px]">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={s.png_url} alt="" className="h-12 max-w-[140px] object-contain mb-1" />
+                <p className="font-semibold text-[13px]">{s.name}</p>
+                {s.role && <p className="text-[12px] text-zinc-700">{s.role}</p>}
+              </div>
+            ))}
+          </div>
+        </div>
       )}
     </article>
   );

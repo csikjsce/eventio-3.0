@@ -2,11 +2,28 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ExternalLink, FileText, Printer, RotateCcw, Upload } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { ExternalLink, FileText, Printer, RotateCcw, Save, Send, Upload } from "lucide-react";
 import DocumentSheet from "@/components/document-builder/DocumentSheet";
+import CouncilSignatorySigning from "@/components/document-builder/CouncilSignatorySigning";
+import FacultyReviewerSelect from "@/components/FacultyReviewerSelect";
 import Letterhead from "@/components/document-builder/Letterhead";
 import { useData } from "@/contexts/DataContext";
-import { fetchCouncilProfile, updateCouncilProfile, type CouncilMemberRow } from "@/lib/api";
+import {
+  fetchCouncilProfile,
+  updateCouncilProfile,
+  type CouncilMemberRow,
+  type FacultyAdvisorRow,
+} from "@/lib/api";
+import {
+  allCouncilSigned,
+  councilSignaturesFromDocument,
+  dataUrlToFile,
+  fetchProposal,
+  mergeCouncilSignatures,
+  saveProposal,
+  submitProposal,
+} from "@/lib/proposal";
 import {
   applyPermissionTemplate,
   buildDefaultState,
@@ -62,6 +79,8 @@ function Field({
 }
 
 export default function DocumentBuilderPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { events } = useData();
   const sheetRef = useRef<HTMLElement>(null);
   const profileLetterheadRef = useRef("");
@@ -69,7 +88,12 @@ export default function DocumentBuilderPage() {
   const [uploadingHead, setUploadingHead] = useState(false);
   const [savingHead, setSavingHead] = useState(false);
   const [attachEventId, setAttachEventId] = useState("");
+  const [eventState, setEventState] = useState<string | null>(null);
   const [members, setMembers] = useState<CouncilMemberRow[]>([]);
+  const [advisors, setAdvisors] = useState<FacultyAdvisorRow[]>([]);
+  const [selectedFaculty, setSelectedFaculty] = useState<string[]>([]);
+  const [savingProposal, setSavingProposal] = useState(false);
+  const [submittingProposal, setSubmittingProposal] = useState(false);
   const [toast, setToast] = useState("");
 
   const showToast = (msg: string) => {
@@ -111,9 +135,34 @@ export default function DocumentBuilderPage() {
         if (Array.isArray(profile.profile?.members)) {
           setMembers(profile.profile.members);
         }
+        if (Array.isArray(profile.profile?.faculty_advisors)) {
+          setAdvisors(profile.profile.faculty_advisors);
+        }
       })
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    const param = searchParams.get("eventId");
+    if (!param) return;
+    setAttachEventId(param);
+    fetchProposal(param)
+      .then(({ proposal, event_state, assigned_faculty_emails }) => {
+        setEventState(event_state);
+        setSelectedFaculty(assigned_faculty_emails ?? []);
+        if (proposal.document) {
+          setState(
+            mergeCouncilSignatures(
+              { ...proposal.document, eventId: param },
+              proposal.councilSignatures ?? [],
+            ),
+          );
+        } else {
+          applyEvent(param, true);
+        }
+      })
+      .catch(() => applyEvent(param, true));
+  }, [searchParams]);
 
   useEffect(() => {
     saveDraft(state);
@@ -137,7 +186,8 @@ export default function DocumentBuilderPage() {
   }
 
   const applyEvent = useCallback(
-    (eventId: string) => {
+    (eventId: string, preselectHeads = false) => {
+      setAttachEventId(eventId);
       setState((s) => ({ ...s, eventId }));
       const event = events.find((e) => String(e.id) === eventId);
       if (!event) return;
@@ -150,7 +200,7 @@ export default function DocumentBuilderPage() {
           eventDate,
           venue: event.venue ?? "",
         };
-        return {
+        const next: DocumentBuilderState = {
           ...s,
           eventId,
           permission:
@@ -167,9 +217,21 @@ export default function DocumentBuilderPage() {
               : s.report.attendance,
           },
         };
+
+        if (preselectHeads && next.signatories.length === 0) {
+          const heads = members.filter((m) => m.is_head);
+          if (heads.length > 0) {
+            next.signatories = heads.map((m) => ({
+              memberId: m.id,
+              name: m.name,
+              role: m.role,
+            }));
+          }
+        }
+        return next;
       });
     },
-    [events],
+    [events, members],
   );
 
   async function handleLetterheadUpload(file: File) {
@@ -259,6 +321,76 @@ export default function DocumentBuilderPage() {
     }));
   }
 
+  const canEditProposal = !eventState || eventState === "DRAFT";
+  const linkedEvent = attachEventId ? events.find((e) => String(e.id) === attachEventId) : null;
+
+  async function handleSignCouncilMember(index: number, dataUrl: string) {
+    const sig = state.signatories[index];
+    const file = dataUrlToFile(
+      dataUrl,
+      `council-sig-${sig.memberId ?? index}.png`,
+    );
+    const url = await uploadFile(file, "eventio-council-images");
+    setState((s) => ({
+      ...s,
+      signatories: s.signatories.map((x, i) =>
+        i === index
+          ? { ...x, signatureUrl: url, signedAt: new Date().toISOString() }
+          : x,
+      ),
+    }));
+    showToast(`${sig.name} signed.`);
+  }
+
+  async function handleSaveProposal() {
+    if (!attachEventId) {
+      showToast("Link this document to a draft event first.");
+      return;
+    }
+    setSavingProposal(true);
+    try {
+      const doc = { ...state, eventId: attachEventId };
+      await saveProposal(
+        attachEventId,
+        doc,
+        councilSignaturesFromDocument(doc),
+      );
+      showToast("Proposal saved to event.");
+    } catch {
+      showToast("Could not save proposal.");
+    } finally {
+      setSavingProposal(false);
+    }
+  }
+
+  async function handleSubmitProposal() {
+    if (!attachEventId) return;
+    if (!allCouncilSigned(state)) {
+      showToast("All council signatories must sign first.");
+      return;
+    }
+    if (selectedFaculty.length === 0) {
+      showToast("Select faculty reviewers before submitting.");
+      return;
+    }
+    setSubmittingProposal(true);
+    try {
+      const doc = { ...state, eventId: attachEventId };
+      await saveProposal(
+        attachEventId,
+        doc,
+        councilSignaturesFromDocument(doc),
+      );
+      await submitProposal(attachEventId, selectedFaculty);
+      showToast("Proposal submitted to faculty!");
+      router.push(`/event-details/${attachEventId}`);
+    } catch {
+      showToast("Submit failed — check signatures and faculty selection.");
+    } finally {
+      setSubmittingProposal(false);
+    }
+  }
+
   const p = state.permission;
   const r = state.report;
 
@@ -301,8 +433,28 @@ export default function DocumentBuilderPage() {
               href={`/event-details/${attachEventId}`}
               className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border-c bg-surface hover:border-red-500/30 text-tx text-sm font-fira"
             >
-              <ExternalLink size={15} /> Upload in event details
+              <ExternalLink size={15} /> Event details
             </Link>
+          )}
+          {attachEventId && canEditProposal && (
+            <>
+              <button
+                type="button"
+                onClick={handleSaveProposal}
+                disabled={savingProposal || submittingProposal}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border-c bg-surface hover:border-red-500/30 text-tx text-sm font-fira disabled:opacity-50"
+              >
+                <Save size={15} /> {savingProposal ? "Saving…" : "Save proposal"}
+              </button>
+              <button
+                type="button"
+                onClick={handleSubmitProposal}
+                disabled={savingProposal || submittingProposal}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white text-sm font-fira font-medium disabled:opacity-50"
+              >
+                <Send size={15} /> {submittingProposal ? "Submitting…" : "Submit to faculty"}
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -506,6 +658,24 @@ export default function DocumentBuilderPage() {
             </button>
           </div>
 
+          {canEditProposal && state.signatories.some((s) => s.name.trim()) && (
+            <CouncilSignatorySigning
+              signatories={state.signatories}
+              onSign={handleSignCouncilMember}
+              disabled={!attachEventId}
+            />
+          )}
+
+          {attachEventId && canEditProposal && (
+            <div className="bg-surface border border-border-c rounded-2xl p-5">
+              <FacultyReviewerSelect
+                advisors={advisors}
+                selected={selectedFaculty}
+                onChange={setSelectedFaculty}
+              />
+            </div>
+          )}
+
           {/* Fields */}
           <div className="bg-surface border border-border-c rounded-2xl p-5 space-y-4 max-h-[55vh] overflow-y-auto scrollbar-hide">
             {state.kind === "permission_letter" ? (
@@ -573,19 +743,51 @@ export default function DocumentBuilderPage() {
           </div>
 
           <div>
-            <label className={LABEL}>Attach to event (optional)</label>
+            <label className={LABEL}>Link to event (proposal)</label>
             <select
               value={attachEventId}
-              onChange={(e) => setAttachEventId(e.target.value)}
+              onChange={(e) => {
+                const id = e.target.value;
+                if (id) {
+                  applyEvent(id, true);
+                  router.replace(`/document-builder?eventId=${id}`);
+                  fetchProposal(id)
+                    .then(({ proposal, event_state, assigned_faculty_emails }) => {
+                      setEventState(event_state);
+                      setSelectedFaculty(assigned_faculty_emails ?? []);
+                      if (proposal.document) {
+                        setState(
+                          mergeCouncilSignatures(
+                            { ...proposal.document, eventId: id },
+                            proposal.councilSignatures ?? [],
+                          ),
+                        );
+                      }
+                    })
+                    .catch(() => {});
+                } else {
+                  setAttachEventId("");
+                  setEventState(null);
+                  router.replace("/document-builder");
+                }
+              }}
               className={INPUT}
+              disabled={!canEditProposal && !!attachEventId}
             >
               <option value="">— None —</option>
-              {events.map((e) => (
-                <option key={e.id} value={String(e.id)}>
-                  {e.name}
-                </option>
-              ))}
+              {events
+                .filter((e) => e.state === "DRAFT" || String(e.id) === attachEventId)
+                .map((e) => (
+                  <option key={e.id} value={String(e.id)}>
+                    {e.name} ({e.state})
+                  </option>
+                ))}
             </select>
+            {linkedEvent && eventState && eventState !== "DRAFT" && (
+              <p className="text-[11px] font-fira text-amber-600 mt-1.5">
+                This event is no longer in draft — proposal is read-only.
+              </p>
+            )}
           </div>
         </aside>
 

@@ -623,6 +623,13 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
             <div className="bg-surface border border-border-c rounded-2xl p-5">
               <p className="text-tx text-sm font-fira font-semibold mb-3">Quick Links</p>
               <div className="space-y-1">
+                {event.state === "DRAFT" && (
+                  <Link href={`/document-builder?eventId=${event.id}`}
+                    className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-fira text-red-600 dark:text-red-400 hover:bg-red-500/5 transition-all border border-red-500/20 mb-1">
+                    <FileText size={14} /> Build &amp; sign proposal
+                    <ChevronRight size={13} className="ml-auto" />
+                  </Link>
+                )}
                 {[
                   { label: "Event Controls",icon: <Settings size={14} />,   href: `/controls/${event.id}` },
                   { label: "Edit Event",   icon: <Edit2 size={14} />,       href: `/new-event/${event.id}` },

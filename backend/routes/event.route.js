@@ -18,6 +18,11 @@ const {
     facultyCanAccessEvent,
     filterEventsForFaculty,
 } = require("../utils/faculty-access");
+const {
+    normalizeProposal,
+    allCouncilSignatoriesSigned,
+    getSignaturePngUrl,
+} = require("../utils/proposal-document");
 
 let protected = "/p";
 
@@ -673,6 +678,7 @@ router.post(protected + "/get/:id", authCheck, async (req, res) => {
             report_url: event.report_url,
             state_history: event.state_history ?? [],
             assigned_faculty_emails: event.assigned_faculty_emails ?? [],
+            proposal_document: event.proposal_document ?? null,
         };
         res.json({ error: false, event: eventResponse });
     } catch (err) {
@@ -680,6 +686,336 @@ router.post(protected + "/get/:id", authCheck, async (req, res) => {
         return res.status(500).json({ error: true, message: "error fetching" });
     }
 });
+
+async function loadEventForProposal(eventId, user) {
+    const event = await prisma.events.findUnique({
+        where: { id: eventId },
+        select: {
+            id: true,
+            organizer_id: true,
+            state: true,
+            state_history: true,
+            comment: true,
+            assigned_faculty_emails: true,
+            proposal_document: true,
+        },
+    });
+    if (!event) return { error: { status: 404, message: "Event not found" } };
+
+    if (user.role === "COUNCIL") {
+        if (event.organizer_id !== user.id) {
+            return { error: { status: 403, message: "Not your event" } };
+        }
+        return { event };
+    }
+
+    if (user.role === "FACULTY" || user.role === "PRINCIPAL") {
+        if (user.role === "FACULTY") {
+            const allowed = await facultyCanAccessEvent(user, event);
+            if (!allowed) {
+                return {
+                    error: {
+                        status: 403,
+                        message: "You do not have access to this council event.",
+                    },
+                };
+            }
+        }
+        return { event };
+    }
+
+    return { error: { status: 403, message: "Forbidden" } };
+}
+
+// GET /event/p/proposal/:id — proposal document package for council / faculty review
+router.get(protected + "/proposal/:id", authCheck, async (req, res) => {
+    try {
+        const eventId = parseInt(req.params.id);
+        const loaded = await loadEventForProposal(eventId, req.user);
+        if (loaded.error) {
+            return res
+                .status(loaded.error.status)
+                .json({ error: true, message: loaded.error.message });
+        }
+
+        return res.json({
+            error: false,
+            proposal: normalizeProposal(loaded.event.proposal_document),
+            event_state: loaded.event.state,
+            assigned_faculty_emails: loaded.event.assigned_faculty_emails ?? [],
+        });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ error: true, message: "Internal Server Error" });
+    }
+});
+
+// PUT /event/p/proposal/:id — save builder document + council signatures (DRAFT only)
+router.put(protected + "/proposal/:id", authCheck, async (req, res) => {
+    if (req.user.role !== "COUNCIL") {
+        return res.status(403).json({ error: true, message: "Forbidden" });
+    }
+
+    try {
+        const eventId = parseInt(req.params.id);
+        const loaded = await loadEventForProposal(eventId, req.user);
+        if (loaded.error) {
+            return res
+                .status(loaded.error.status)
+                .json({ error: true, message: loaded.error.message });
+        }
+
+        const event = loaded.event;
+        if (event.state !== "DRAFT") {
+            return res.status(400).json({
+                error: true,
+                message: "Proposal can only be edited while the event is in draft.",
+            });
+        }
+
+        const { document, councilSignatures } = req.body ?? {};
+        if (!document || typeof document !== "object") {
+            return res.status(400).json({
+                error: true,
+                message: "document is required",
+            });
+        }
+
+        const existing = normalizeProposal(event.proposal_document);
+        const proposal = {
+            version: 1,
+            document,
+            councilSignatures: Array.isArray(councilSignatures)
+                ? councilSignatures
+                : existing.councilSignatures,
+            facultySignatures: existing.facultySignatures,
+            submittedAt: null,
+        };
+
+        await prisma.events.update({
+            where: { id: eventId },
+            data: { proposal_document: proposal },
+        });
+        invalidateEvent(eventId, req.user.id);
+
+        return res.json({ error: false, proposal: normalizeProposal(proposal) });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ error: true, message: "Internal Server Error" });
+    }
+});
+
+// POST /event/p/proposal/:id/submit — council signs complete → faculty review queue
+router.post(protected + "/proposal/:id/submit", authCheck, async (req, res) => {
+    if (req.user.role !== "COUNCIL") {
+        return res.status(403).json({ error: true, message: "Forbidden" });
+    }
+
+    try {
+        const eventId = parseInt(req.params.id);
+        const loaded = await loadEventForProposal(eventId, req.user);
+        if (loaded.error) {
+            return res
+                .status(loaded.error.status)
+                .json({ error: true, message: loaded.error.message });
+        }
+
+        const event = loaded.event;
+        if (event.state !== "DRAFT") {
+            return res.status(400).json({
+                error: true,
+                message: "Only draft events can be submitted.",
+            });
+        }
+
+        const proposal = normalizeProposal(event.proposal_document);
+        if (!proposal.document) {
+            return res.status(400).json({
+                error: true,
+                message: "Build and save a proposal document before submitting.",
+            });
+        }
+
+        if (!allCouncilSignatoriesSigned(proposal)) {
+            return res.status(400).json({
+                error: true,
+                message:
+                    "Every council signatory on the proposal must sign before submitting.",
+            });
+        }
+
+        const assigned = normalizeAssignedFacultyEmails(
+            req.body?.assigned_faculty_emails,
+        );
+        if (assigned.length === 0) {
+            return res.status(400).json({
+                error: true,
+                message: "Select at least one faculty advisor before submitting.",
+            });
+        }
+
+        const allowed = await getCouncilAdvisorEmails(req.user.id);
+        const invalid = assigned.filter((e) => !allowed.includes(e));
+        if (invalid.length) {
+            return res.status(400).json({
+                error: true,
+                message:
+                    "Selected faculty must be configured in council settings.",
+            });
+        }
+
+        const state_history = [...(event.state_history ?? []), "APPLIED_FOR_APPROVAL"];
+
+        const submittedProposal = {
+            ...proposal,
+            submittedAt: new Date().toISOString(),
+        };
+
+        await prisma.events.update({
+            where: { id: eventId },
+            data: {
+                state: "APPLIED_FOR_APPROVAL",
+                state_history,
+                comment: null,
+                assigned_faculty_emails: assigned,
+                proposal_document: submittedProposal,
+            },
+        });
+        invalidateEvent(eventId, req.user.id);
+
+        return res.json({
+            error: false,
+            message: "Proposal submitted to faculty for review.",
+        });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ error: true, message: "Internal Server Error" });
+    }
+});
+
+// POST /event/p/proposal/:id/faculty-sign — apply saved faculty signature; optional approve
+router.post(
+    protected + "/proposal/:id/faculty-sign",
+    authCheck,
+    async (req, res) => {
+        if (!["FACULTY", "PRINCIPAL"].includes(req.user.role)) {
+            return res.status(403).json({ error: true, message: "Forbidden" });
+        }
+
+        try {
+            const eventId = parseInt(req.params.id);
+            const loaded = await loadEventForProposal(eventId, req.user);
+            if (loaded.error) {
+                return res
+                    .status(loaded.error.status)
+                    .json({ error: true, message: loaded.error.message });
+            }
+
+            const event = loaded.event;
+            const pendingState =
+                req.user.role === "PRINCIPAL"
+                    ? "APPLIED_FOR_PRINCI_APPROVAL"
+                    : "APPLIED_FOR_APPROVAL";
+
+            if (event.state !== pendingState) {
+                return res.status(400).json({
+                    error: true,
+                    message: "This event is not awaiting your review.",
+                });
+            }
+
+            if (req.user.role === "FACULTY") {
+                const allowed = await facultyCanAccessEvent(req.user, event);
+                if (!allowed) {
+                    return res.status(403).json({
+                        error: true,
+                        message: "You do not have access to this council event.",
+                    });
+                }
+            }
+
+            const pngUrl = getSignaturePngUrl(req.user.signature);
+            if (!pngUrl) {
+                return res.status(400).json({
+                    error: true,
+                    message:
+                        "Add your digital signature in Settings before signing documents.",
+                });
+            }
+
+            const proposal = normalizeProposal(event.proposal_document);
+            if (!proposal.document) {
+                return res.status(400).json({
+                    error: true,
+                    message: "No proposal document found for this event.",
+                });
+            }
+
+            const facultySignatures = (proposal.facultySignatures ?? []).filter(
+                (s) => s.user_id !== req.user.id,
+            );
+            facultySignatures.push({
+                user_id: req.user.id,
+                name: req.user.name,
+                email: req.user.email,
+                png_url: pngUrl,
+                signed_at: new Date().toISOString(),
+            });
+
+            const approve = req.body?.approve === true;
+            const sendToPrincipal = req.body?.sendToPrincipal === true;
+
+            let newState = event.state;
+            let state_history = [...(event.state_history ?? [])];
+            let comment = event.comment;
+
+            if (approve) {
+                if (req.user.role === "PRINCIPAL") {
+                    newState = "UNLISTED";
+                } else {
+                    newState = sendToPrincipal
+                        ? "APPLIED_FOR_PRINCI_APPROVAL"
+                        : "UNLISTED";
+                }
+                state_history.push(newState);
+                comment = null;
+            }
+
+            await prisma.events.update({
+                where: { id: eventId },
+                data: {
+                    proposal_document: {
+                        ...proposal,
+                        facultySignatures,
+                    },
+                    ...(approve
+                        ? {
+                              state: newState,
+                              state_history,
+                              comment,
+                          }
+                        : {}),
+                },
+            });
+            invalidateEvent(eventId, req.user.id);
+
+            return res.json({
+                error: false,
+                message: approve
+                    ? "Proposal signed and event approved."
+                    : "Proposal signed.",
+                proposal: normalizeProposal({
+                    ...proposal,
+                    facultySignatures,
+                }),
+            });
+        } catch (err) {
+            console.error(err);
+            return res.status(500).json({ error: true, message: "Internal Server Error" });
+        }
+    },
+);
+
 router.post(protected + "/create", authCheck, (req, res) => {
     if (!req.user) {
         return res.status(401).json({ error: true, message: "Unauthorized" });

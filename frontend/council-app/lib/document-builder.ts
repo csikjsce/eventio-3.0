@@ -42,6 +42,8 @@ export interface DocumentSignatory {
   memberId?: number;
   name: string;
   role: string;
+  signatureUrl?: string;
+  signedAt?: string;
 }
 
 export interface PermissionLetterFields {

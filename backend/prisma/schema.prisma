@@ -45,6 +45,7 @@ model Events {
   start_in_event_activity    Boolean?
   comment                    String?
   assigned_faculty_emails    String[]          @default([])
+  proposal_document          Json?
   ticket_count               Int?
   female_requirement         Int?
   more_details_enabled       Boolean           @default(false)
