@@ -317,3 +317,8 @@ export function saveDraft(state: DocumentBuilderState): void {
   if (typeof window === "undefined") return;
   localStorage.setItem(DRAFT_KEY, JSON.stringify(state));
 }
+
+export function clearDraft(): void {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(DRAFT_KEY);
+}

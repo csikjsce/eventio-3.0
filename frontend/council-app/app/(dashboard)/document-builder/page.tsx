@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ExternalLink, FileText, Printer, Upload } from "lucide-react";
+import { ExternalLink, FileText, Printer, RotateCcw, Upload } from "lucide-react";
 import DocumentSheet from "@/components/document-builder/DocumentSheet";
 import Letterhead from "@/components/document-builder/Letterhead";
 import { useData } from "@/contexts/DataContext";
@@ -10,6 +10,7 @@ import { fetchCouncilProfile, updateCouncilProfile, type CouncilMemberRow } from
 import {
   applyPermissionTemplate,
   buildDefaultState,
+  clearDraft,
   loadDraft,
   PERMISSION_TEMPLATES,
   resolveLetterheadUrl,
@@ -63,6 +64,7 @@ function Field({
 export default function DocumentBuilderPage() {
   const { events } = useData();
   const sheetRef = useRef<HTMLElement>(null);
+  const profileLetterheadRef = useRef("");
   const [state, setState] = useState<DocumentBuilderState>(() => buildDefaultState());
   const [uploadingHead, setUploadingHead] = useState(false);
   const [savingHead, setSavingHead] = useState(false);
@@ -83,6 +85,11 @@ export default function DocumentBuilderPage() {
       .then((profile) => {
         const councilName = profile.name ?? "";
         const p = profile.profile ?? {};
+        profileLetterheadRef.current = resolveLetterheadUrl(
+          p.letterhead_logo,
+          profile.photo_url,
+          p.banner_url,
+        );
         setState((prev) => ({
           ...prev,
           letterheadUrl: resolveLetterheadUrl(
@@ -195,6 +202,25 @@ export default function DocumentBuilderPage() {
     window.print();
   }
 
+  function clearAll() {
+    if (
+      !window.confirm(
+        "Clear this document and start fresh? All fields, signatories, and event prefill will be reset.",
+      )
+    ) {
+      return;
+    }
+
+    clearDraft();
+    const councilName = state.permission.councilName || state.report.councilName || "";
+    const fresh = buildDefaultState(councilName);
+    fresh.letterheadUrl = profileLetterheadRef.current;
+    fresh.permission = applyPermissionTemplate("event", fresh.permission);
+    setState(fresh);
+    setAttachEventId("");
+    showToast("Document cleared — start fresh.");
+  }
+
   function isSignatorySelected(memberId: number) {
     return state.signatories.some((s) => s.memberId === memberId);
   }
@@ -256,6 +282,13 @@ export default function DocumentBuilderPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={clearAll}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border-c bg-surface hover:border-red-500/30 text-muted-tx hover:text-tx text-sm font-fira"
+          >
+            <RotateCcw size={15} /> Clear all
+          </button>
           <button
             type="button"
             onClick={handlePrint}
@@ -354,16 +387,10 @@ export default function DocumentBuilderPage() {
               <Link href="/settings" className="text-red-500 hover:underline">Settings → Letterhead Logo</Link>.
             </p>
             <Letterhead
+              variant="compact"
               councilLetterheadUrl={state.letterheadUrl}
-              onUpload={handleLetterheadUpload}
-              onRemove={() => {
-                setState((s) => ({ ...s, letterheadUrl: "" }));
-                showToast("Council logo removed from this document.");
-              }}
-              uploading={uploadingHead}
-              editable
             />
-            <div className="flex flex-wrap gap-3 pt-1">
+            <div className="flex flex-wrap gap-2 pt-1">
               <label className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border-c bg-surface2 hover:border-red-500/30 text-xs font-fira text-tx cursor-pointer">
                 <Upload size={13} className="text-red-500" />
                 {uploadingHead ? "Uploading…" : state.letterheadUrl ? "Replace logo" : "Upload logo"}

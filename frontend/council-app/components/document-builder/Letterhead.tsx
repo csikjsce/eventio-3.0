@@ -1,43 +1,57 @@
 "use client";
 
 import Image from "next/image";
-import { Upload, X } from "lucide-react";
 import { SOMAIYA_KJSCE_LOGO } from "@/lib/document-builder";
 
 interface Props {
   councilLetterheadUrl?: string;
-  onUpload?: (file: File) => void;
-  onRemove?: () => void;
-  uploading?: boolean;
-  editable?: boolean;
+  /** Full width for document preview; compact read-only strip for sidebar. */
+  variant?: "document" | "compact";
 }
 
 export default function Letterhead({
   councilLetterheadUrl,
-  onUpload,
-  onRemove,
-  uploading = false,
-  editable = false,
+  variant = "document",
 }: Props) {
-  const fileInput = (id: string) => (
-    <input
-      id={id}
-      type="file"
-      accept="image/*"
-      className="hidden"
-      disabled={uploading}
-      onChange={(e) => {
-        const file = e.target.files?.[0];
-        if (file && onUpload) onUpload(file);
-        e.target.value = "";
-      }}
-    />
-  );
+  if (variant === "compact") {
+    return (
+      <div className="rounded-xl border border-border-c bg-white overflow-hidden">
+        <div className="h-1 bg-gradient-to-r from-[#b61f2d] to-[#ee1d23]" />
+        <div className="flex items-center gap-2 px-3 py-2.5 min-w-0">
+          <Image
+            src="/EventioLogo.svg"
+            alt="Eventio"
+            width={28}
+            height={28}
+            className="h-7 w-7 shrink-0 object-contain"
+          />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={SOMAIYA_KJSCE_LOGO}
+            alt="Somaiya"
+            className="h-8 flex-1 min-w-0 max-w-[110px] mx-auto object-contain"
+          />
+          {councilLetterheadUrl ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={councilLetterheadUrl}
+              alt="Council logo"
+              className="h-8 w-auto max-w-[72px] shrink-0 object-contain"
+            />
+          ) : (
+            <div className="h-8 w-16 shrink-0 rounded border border-dashed border-zinc-300 bg-zinc-50 flex items-center justify-center">
+              <span className="text-[8px] font-fira text-zinc-400 leading-none text-center px-0.5">Your logo</span>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <header className="border-b border-zinc-300 pb-4 mb-6">
-      <div className="grid grid-cols-3 items-center gap-4 min-h-[72px]">
-        <div className="flex items-center justify-start">
+      <div className="flex items-center gap-3 min-h-[72px] min-w-0">
+        <div className="shrink-0 w-10 flex items-center justify-start">
           <Image
             src="/EventioLogo.svg"
             alt="Eventio"
@@ -48,64 +62,25 @@ export default function Letterhead({
           />
         </div>
 
-        <div className="flex items-center justify-center min-w-0">
+        <div className="flex-1 min-w-0 flex items-center justify-center px-1">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={SOMAIYA_KJSCE_LOGO}
             alt="Somaiya Vidyavihar University — K J Somaiya School of Engineering"
-            className="h-14 w-auto max-w-[240px] object-contain"
+            className="h-14 w-auto max-w-full object-contain"
           />
         </div>
 
-        <div className="flex flex-col items-end justify-center min-w-0 gap-2">
+        <div className="shrink-0 w-[88px] sm:w-[120px] flex items-center justify-end">
           {councilLetterheadUrl ? (
-            <>
-              <div className="relative max-h-16 flex items-center justify-end">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={councilLetterheadUrl}
-                  alt="Council letterhead"
-                  className="max-h-16 max-w-[180px] object-contain"
-                />
-              </div>
-              {editable && (
-                <div className="flex items-center gap-2">
-                  {fileInput("letterhead-replace-input")}
-                  <label
-                    htmlFor="letterhead-replace-input"
-                    className="cursor-pointer text-[10px] font-fira text-red-500 hover:underline"
-                  >
-                    {uploading ? "Uploading…" : "Replace"}
-                  </label>
-                  {onRemove && (
-                    <button
-                      type="button"
-                      onClick={onRemove}
-                      className="flex items-center gap-0.5 text-[10px] font-fira text-zinc-500 hover:text-red-500"
-                    >
-                      <X size={12} /> Remove
-                    </button>
-                  )}
-                </div>
-              )}
-            </>
-          ) : editable ? (
-            <>
-              {fileInput("letterhead-upload-input")}
-              <label
-                htmlFor="letterhead-upload-input"
-                className="cursor-pointer group w-full max-w-[140px]"
-              >
-                <div className="flex flex-col items-center justify-center gap-1.5 py-2 px-3 rounded-lg border border-dashed border-zinc-300 bg-zinc-50 text-zinc-500 group-hover:border-red-400 group-hover:text-red-600 transition-colors">
-                  <Upload size={16} />
-                  <span className="text-[10px] font-fira text-center leading-snug">
-                    {uploading ? "Uploading…" : "Upload council logo"}
-                  </span>
-                </div>
-              </label>
-            </>
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={councilLetterheadUrl}
+              alt="Council letterhead"
+              className="max-h-16 max-w-full object-contain object-right"
+            />
           ) : (
-            <div className="h-14 w-24 rounded border border-dashed border-zinc-200 bg-zinc-50" />
+            <div className="h-14 w-full max-w-[88px] rounded border border-dashed border-zinc-200 bg-zinc-50" />
           )}
         </div>
       </div>

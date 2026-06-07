@@ -226,7 +226,7 @@ export default function DocumentSheet({
       className="document-sheet mx-auto w-full max-w-[210mm] bg-white text-zinc-900 shadow-xl print:shadow-none"
       style={{ minHeight: "297mm", padding: "18mm 20mm" }}
     >
-      <Letterhead councilLetterheadUrl={letterheadUrl} editable={false} />
+      <Letterhead councilLetterheadUrl={letterheadUrl} />
       {kind === "permission_letter" ? (
         <PermissionBody p={permission} signatories={signatories} template={permissionTemplate} />
       ) : (
