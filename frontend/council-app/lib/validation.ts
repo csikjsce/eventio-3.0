@@ -9,8 +9,25 @@ function yesterday() {
 export const newEventSchema = yup.object({
   name: yup.string().trim().min(3).max(100).required("Event name is required"),
   description: yup.string().trim().min(10).max(1000).required("Description is required"),
-  long_description: yup.string().trim().min(50).max(5000).required("Long description is required"),
-  tag_line: yup.string().trim().max(255).required("Tagline is required"),
+  long_description: yup.string().trim().min(20).max(5000).required("Long description is required"),
+  tag_line: yup
+    .string()
+    .trim()
+    .max(255)
+    .required("Tagline is required")
+    .test(
+      "not-same-as-name",
+      "Tagline should be different from the event name",
+      function (value) {
+        const name = String(this.parent?.name ?? "").trim().toLowerCase();
+        const tag = String(value ?? "").trim().toLowerCase();
+        if (!name || !tag) return true;
+        // Block exact match or simple name-name concatenations
+        if (tag === name) return false;
+        if (tag === `${name}${name}`) return false;
+        return true;
+      },
+    ),
   fee: yup.number().min(0).required("Fee is required"),
   event_type: yup
     .string()

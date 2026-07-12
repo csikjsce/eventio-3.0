@@ -373,20 +373,32 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
   }, [event?.id, event?.assigned_faculty_emails]);
 
   useEffect(() => {
-    if (event) {
-      // also load real documents
-      fetchDocuments(id).then(d => setDocs(d)).catch(() => {});
-      return;
-    }
-    setLoading(true);
-    fetchEvent(id)
-      .then(ev => { setEvent(ev); setDocs(ev.documents ?? []); })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [id]);
+    let cancelled = false;
+    const hasCached = events.some((e) => String(e.id) === id);
+    if (!hasCached) setLoading(true);
 
-  useEffect(() => {
-    fetchDocuments(id).then(d => { if (d.length) setDocs(d); }).catch(() => {});
+    fetchEvent(id)
+      .then((ev) => {
+        if (cancelled) return;
+        setEvent(ev);
+        setDocs(ev.documents ?? []);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    fetchDocuments(id)
+      .then((d) => {
+        if (!cancelled && d.length) setDocs(d);
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+    // intentionally only re-fetch when route id changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   if (loading) return (
@@ -461,7 +473,7 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
   const hasProposalDoc = !!proposal?.document;
 
   return (
-    <div className="min-h-screen bg-bg">
+    <div className="min-h-screen bg-bg overflow-x-hidden">
       {/* Toast */}
       {toast && (
         <div className="fixed top-4 right-4 z-50 bg-surface border border-border-c shadow-xl rounded-xl px-4 py-3 text-tx text-sm font-fira flex items-center gap-2">
@@ -498,12 +510,14 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
           <div className="flex items-center gap-2 mb-1">
             <span className="text-[10px] font-fira uppercase tracking-widest bg-red-500/80 text-white px-2 py-0.5 rounded-md">{(event.event_type ?? "EVENT").replace(/_/g," ")}</span>
           </div>
-          <h1 className="text-white text-xl sm:text-3xl font-marcellus">{event.name}</h1>
-          <p className="text-white/70 text-sm font-fira mt-0.5">{event.tag_line}</p>
+          <h1 className="text-white text-xl sm:text-3xl font-marcellus break-words">{event.name}</h1>
+          {event.tag_line?.trim() && event.tag_line.trim() !== event.name.trim() && (
+            <p className="text-white/70 text-sm font-fira mt-0.5 break-words">{event.tag_line}</p>
+          )}
         </div>
       </div>
 
-      <div className="px-4 py-6 sm:px-8 sm:py-8 max-w-7xl mx-auto">
+      <div className="px-4 py-6 sm:px-8 sm:py-8 max-w-7xl mx-auto overflow-x-hidden">
         {/* Faculty / principal feedback when sent back for changes */}
         {event.comment && (
           <div className="mb-6 p-4 sm:p-5 bg-amber-50 dark:bg-amber-500/10 border border-amber-300 dark:border-amber-500/30 rounded-2xl flex gap-3">
@@ -512,7 +526,7 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
               <p className="text-amber-800 dark:text-amber-300 text-sm font-fira font-semibold mb-1">
                 Changes requested by {event.state === "DRAFT" ? "faculty / principal" : "reviewer"}
               </p>
-              <p className="text-muted-tx text-sm font-fira leading-relaxed italic">
+              <p className="text-muted-tx text-sm font-fira leading-relaxed italic break-words">
                 &ldquo;{event.comment}&rdquo;
               </p>
               {event.state === "DRAFT" && (
@@ -528,10 +542,16 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
 
           {/* ── Left: main content ── */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-6 min-w-0">
             {/* About card */}
             <div className="bg-surface border border-border-c rounded-2xl p-5 sm:p-6">
-              <p className="text-muted-tx text-sm font-fira leading-relaxed">{event.long_description}</p>
+              {event.long_description?.trim() ? (
+                <p className="text-muted-tx text-sm font-fira leading-relaxed break-words [overflow-wrap:anywhere]">
+                  {event.long_description}
+                </p>
+              ) : (
+                <p className="text-subtle-tx text-sm font-fira italic">No description added yet.</p>
+              )}
               <div className="flex flex-wrap gap-2 mt-4">
                 {[
                   event.fee === 0 ? "Free Entry" : `₹${event.fee} Registration`,
@@ -550,12 +570,18 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
               {[
                 { icon: <CalendarDays size={14} />, label: "Date", value: event.dates[0] ? fmtDate(event.dates[0]) : "TBD" },
                 { icon: <Clock size={14} />, label: "Time", value: event.dates[0] ? fmtTime(event.dates[0]) : "TBD" },
-                { icon: <MapPin size={14} />, label: "Venue", value: event.venue ?? "Online" },
+                {
+                  icon: <MapPin size={14} />,
+                  label: "Venue",
+                  value:
+                    event.venue?.trim() ||
+                    (event.event_type === "ONLINE" ? "Online" : "TBD"),
+                },
                 { icon: <Users size={14} />, label: "Team Size", value: event.min_ppt === event.ma_ppt ? `${event.min_ppt}` : `${event.min_ppt}–${event.ma_ppt}` },
               ].map(info => (
-                <div key={info.label} className="bg-surface border border-border-c rounded-xl p-3">
+                <div key={info.label} className="bg-surface border border-border-c rounded-xl p-3 min-w-0">
                   <div className="flex items-center gap-1.5 text-subtle-tx mb-1">{info.icon}<p className="text-[10px] font-fira uppercase tracking-wide">{info.label}</p></div>
-                  <p className="text-tx text-xs sm:text-sm font-fira font-semibold truncate">{info.value}</p>
+                  <p className="text-tx text-xs sm:text-sm font-fira font-semibold truncate" title={info.value}>{info.value}</p>
                 </div>
               ))}
             </div>

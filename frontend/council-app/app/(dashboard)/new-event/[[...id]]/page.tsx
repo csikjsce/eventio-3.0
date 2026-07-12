@@ -394,7 +394,7 @@ export default function NewEventPage() {
                       <FieldWrap label="Tagline *" error={errors.tag_line?.message}><input className={INPUT} {...register("tag_line")} placeholder="e.g. Code. Create. Conquer." /></FieldWrap>
                     </div>
                     <FieldWrap label="Short Description *" error={errors.description?.message}><textarea rows={3} className={`${INPUT} resize-none`} {...register("description")} placeholder="2–3 lines shown on event cards." /></FieldWrap>
-                    <FieldWrap label="Full Description *" error={errors.long_description?.message}><textarea rows={6} className={`${INPUT} resize-none`} {...register("long_description")} placeholder="Detailed overview of the event for the event page." /></FieldWrap>
+                    <FieldWrap label="Full Description *" error={errors.long_description?.message}><textarea rows={6} className={`${INPUT} resize-none`} {...register("long_description")} placeholder="Write a real overview students will read on the event page (not the event name repeated)." /></FieldWrap>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <FieldWrap label="Card / Banner Image (16:9) *" error={errors.banner_url?.message}>
                         <div className="flex gap-2">
