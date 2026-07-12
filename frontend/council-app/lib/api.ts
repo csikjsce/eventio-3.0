@@ -340,6 +340,7 @@ export interface ParticipantRow {
   ticket_collected: boolean;
   attended?: boolean;
   payment_status: string;
+  more_details?: Record<string, string> | null;
 }
 
 export interface TeamRow {

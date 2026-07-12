@@ -9,7 +9,7 @@ const router = express.Router();
 const { sendTeamInviteEmail } = require("../utils/mailer");
 const fetch = require("node-fetch");
 const { get: cGet, set: cSet, del: cDel, keys: cKeys, TTL, invalidateEvent } = require("../utils/cache");
-const { validateMoreDetails, normalizeRegistrationFields } = require("../utils/registration-fields");
+const { validateMoreDetails, sanitizeMoreDetails, normalizeRegistrationFields } = require("../utils/registration-fields");
 const { pickEventUpdateData, validateTeamSize } = require("../utils/event-update");
 const {
     normalizeAssignedFacultyEmails,
@@ -1845,6 +1845,7 @@ router.post(protected + "/register-for-event", authCheck, async (req, res) => {
                 message: detailsCheck.message,
             });
         }
+        const cleanedDetails = sanitizeMoreDetails(event, more_details);
         try {
             await prisma.participant.create({
                 data: {
@@ -1852,7 +1853,7 @@ router.post(protected + "/register-for-event", authCheck, async (req, res) => {
                     user_id: req.user.id,
                     amount: event.fee,
                     payment_status: event.fee == 0 ? "SUCCESS" : "PENDING",
-                    more_details: more_details,
+                    more_details: cleanedDetails,
                 },
             });
             res.json({
@@ -1928,6 +1929,7 @@ router.post(protected + "/create-team", authCheck, async (req, res) => {
             message: createTeamDetailsCheck.message,
         });
     }
+    const cleanedCreateTeamDetails = sanitizeMoreDetails(event, more_details);
     const maxRetries = 5;
     let retries = 0;
     let team = null;
@@ -1986,7 +1988,7 @@ router.post(protected + "/create-team", authCheck, async (req, res) => {
                 team_id: team.id,
                 amount: event.fee,
                 payment_status: event.fee == 0 ? "SUCCESS" : "PENDING",
-                more_details: more_details,
+                more_details: cleanedCreateTeamDetails,
             },
         });
     } catch (err) {
@@ -2076,6 +2078,7 @@ router.post(protected + "/join-team", authCheck, async (req, res) => {
             message: joinTeamDetailsCheck.message,
         });
     }
+    const cleanedJoinTeamDetails = sanitizeMoreDetails(event, more_details);
 
     let team = null;
     try {
@@ -2144,7 +2147,7 @@ router.post(protected + "/join-team", authCheck, async (req, res) => {
                 team_id: team.id,
                 amount: event.fee,
                 payment_status: event.fee == 0 ? "SUCCESS" : "PENDING",
-                more_details: more_details,
+                more_details: cleanedJoinTeamDetails,
             },
         });
         res.json({
@@ -2788,7 +2791,10 @@ router.get(protected + "/export-participants/:id", authCheck, async (req, res) =
 
     try {
         const [event, participants] = await Promise.all([
-            prisma.events.findUnique({ where: { id: eventId }, select: { name: true } }),
+            prisma.events.findUnique({
+                where: { id: eventId },
+                select: { name: true, registration_fields: true, more_details_enabled: true },
+            }),
             prisma.participant.findMany({
                 where: { event_id: eventId },
                 include: {
@@ -2799,9 +2805,31 @@ router.get(protected + "/export-participants/:id", authCheck, async (req, res) =
             }),
         ]);
 
-        const header = "Name,Email,Roll Number,Branch,Year,Gender,Phone,Team,Payment Status,Ticket Collected,Attended,Registered On";
+        const regFields = Array.isArray(event?.registration_fields)
+            ? event.registration_fields.filter((f) => f && f.id && f.label)
+            : [];
+        const detailHeaders = event?.more_details_enabled
+            ? regFields.map((f) => `"${String(f.label).replace(/"/g, '""')}"`)
+            : [];
+
+        const header = [
+            "Name", "Email", "Roll Number", "Branch", "Year", "Gender", "Phone",
+            "Team", "Payment Status", "Ticket Collected", "Attended", "Registered On",
+            ...detailHeaders,
+        ].join(",");
+
         const rows = participants.map((p) => {
             const u = p.user || {};
+            const details =
+                p.more_details && typeof p.more_details === "object" && !Array.isArray(p.more_details)
+                    ? p.more_details
+                    : {};
+            const detailCells = event?.more_details_enabled
+                ? regFields.map((f) => {
+                    const val = details[f.id];
+                    return `"${String(val ?? "").replace(/"/g, '""')}"`;
+                })
+                : [];
             return [
                 `"${u.name || ""}"`, `"${u.email || ""}"`, `"${u.roll_number || ""}"`,
                 `"${u.branch || ""}"`, u.year || "", `"${u.gender || ""}"`,
@@ -2809,6 +2837,7 @@ router.get(protected + "/export-participants/:id", authCheck, async (req, res) =
                 p.payment_status, p.ticket_collected ? "Yes" : "No",
                 p.attended ? "Yes" : "No",
                 new Date(p.registered_on).toLocaleDateString("en-IN"),
+                ...detailCells,
             ].join(",");
         });
 

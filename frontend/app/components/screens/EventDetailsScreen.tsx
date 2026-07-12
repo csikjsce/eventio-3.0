@@ -58,7 +58,7 @@ export default function EventDetailsScreen() {
       setButtonState({ text: "Registered ✓", loading: false, disabled: true, onClick: () => {} });
       setSnackbarVisible(true);
       setTimeout(() => setSnackbarVisible(false), 3000);
-    } catch {
+    } catch (err) {
       setButtonState({
         text: "Register Now",
         loading: false,
@@ -75,6 +75,7 @@ export default function EventDetailsScreen() {
           }
         },
       });
+      throw err;
     }
   }, [id]);
 

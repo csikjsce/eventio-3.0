@@ -41,8 +41,11 @@ export default function RegistrationDetailsModal({
     setLoading(true);
     try {
       await onSubmit(values);
-    } catch {
-      setError("Registration failed. Please try again.");
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message ?? "Registration failed. Please try again.";
+      setError(msg);
     } finally {
       setLoading(false);
     }

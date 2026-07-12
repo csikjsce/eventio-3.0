@@ -77,6 +77,39 @@ function validateMoreDetails(event, moreDetails) {
     return { ok: true };
 }
 
+/**
+ * Trim and keep only answers for known registration field ids.
+ * Returns null when additional details are not enabled / have no fields.
+ */
+function sanitizeMoreDetails(event, moreDetails) {
+    if (!event.more_details_enabled) {
+        return null;
+    }
+
+    const fields = Array.isArray(event.registration_fields)
+        ? event.registration_fields
+        : [];
+
+    if (fields.length === 0) {
+        return null;
+    }
+
+    const answers =
+        moreDetails && typeof moreDetails === "object" && !Array.isArray(moreDetails)
+            ? moreDetails
+            : {};
+
+    const cleaned = {};
+    for (const field of fields) {
+        const key = field.id;
+        if (!key) continue;
+        const raw = answers[key];
+        cleaned[key] =
+            raw === null || raw === undefined ? "" : String(raw).trim();
+    }
+    return cleaned;
+}
+
 function normalizeRegistrationFields(fields) {
     if (!Array.isArray(fields)) return [];
 
@@ -135,4 +168,8 @@ function normalizeRegistrationFields(fields) {
         .filter(Boolean);
 }
 
-module.exports = { validateMoreDetails, normalizeRegistrationFields };
+module.exports = {
+    validateMoreDetails,
+    sanitizeMoreDetails,
+    normalizeRegistrationFields,
+};

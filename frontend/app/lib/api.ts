@@ -125,7 +125,7 @@ export async function fetchMyEvents() {
 export async function registerForEvent(eventId: number, moreDetails?: unknown) {
   const { data } = await api.post("/event/p/register-for-event", {
     event_id: eventId,
-    ...(moreDetails ? { more_details: moreDetails } : {}),
+    ...(moreDetails !== undefined ? { more_details: moreDetails } : {}),
   });
   return data;
 }
@@ -156,7 +156,7 @@ export async function createTeam(
   const { data } = await api.post("/event/p/create-team", {
     event_id: eventId,
     team_name: teamName,
-    ...(moreDetails ? { more_details: moreDetails } : {}),
+    ...(moreDetails !== undefined ? { more_details: moreDetails } : {}),
   });
   return data;
 }
@@ -170,7 +170,7 @@ export async function joinTeam(
   const { data } = await api.post("/event/p/join-team", {
     event_id: eventId,
     invite_code: inviteCode,
-    ...(moreDetails ? { more_details: moreDetails } : {}),
+    ...(moreDetails !== undefined ? { more_details: moreDetails } : {}),
   });
   return data;
 }

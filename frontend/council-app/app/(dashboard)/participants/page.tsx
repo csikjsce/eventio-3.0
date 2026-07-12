@@ -15,6 +15,7 @@ interface FlatParticipant {
   phone: string;
   attended: boolean;
   teamName?: string;
+  moreDetails: Record<string, string>;
 }
 
 function flattenTeams(teams: TeamRow[]): FlatParticipant[] {
@@ -29,16 +30,34 @@ function flattenTeams(teams: TeamRow[]): FlatParticipant[] {
       phone: p.user?.phone_number ? String(p.user.phone_number) : "—",
       attended: p.ticket_collected,
       teamName: team.name,
+      moreDetails:
+        p.more_details && typeof p.more_details === "object" && !Array.isArray(p.more_details)
+          ? Object.fromEntries(
+              Object.entries(p.more_details).map(([k, v]) => [k, String(v ?? "")]),
+            )
+          : {},
     })),
   );
 }
 
-function exportCSV(participants: FlatParticipant[], name: string) {
-  const rows = [
-    ["Name", "Email", "Branch", "Year", "Gender", "Phone", "Attended"],
-    ...participants.map(p => [p.name, p.email, p.branch, p.year, p.gender, p.phone, p.attended ? "Yes" : "No"]),
+function exportCSV(
+  participants: FlatParticipant[],
+  name: string,
+  detailColumns: { id: string; label: string }[],
+) {
+  const headers = [
+    "Name", "Email", "Branch", "Year", "Gender", "Phone", "Attended",
+    ...detailColumns.map((c) => c.label),
   ];
-  const csv = rows.map(r => r.map(v => `"${v}"`).join(",")).join("\n");
+  const rows = [
+    headers,
+    ...participants.map(p => [
+      p.name, p.email, p.branch, p.year, p.gender, p.phone,
+      p.attended ? "Yes" : "No",
+      ...detailColumns.map((c) => p.moreDetails[c.id] ?? ""),
+    ]),
+  ];
+  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
   const a = Object.assign(document.createElement("a"), {
     href: URL.createObjectURL(new Blob([csv], { type: "text/csv" })),
     download: `${name}-participants.csv`,
@@ -73,6 +92,17 @@ export default function ParticipantsPage() {
   const raw = useMemo(() => flattenTeams(teams), [teams]);
   const branches      = useMemo(() => [...new Set(raw.map(p => p.branch).filter(b => b !== "—"))], [raw]);
   const attendedCount = raw.filter(p => p.attended).length;
+
+  const detailColumns = useMemo(() => {
+    const fields = selectedEvent?.registration_fields ?? [];
+    if (!selectedEvent?.more_details_enabled || !fields.length) {
+      // Fall back to keys present on participant answers
+      const keys = new Set<string>();
+      raw.forEach((p) => Object.keys(p.moreDetails).forEach((k) => keys.add(k)));
+      return [...keys].map((id) => ({ id, label: id }));
+    }
+    return fields.map((f) => ({ id: f.id, label: f.label }));
+  }, [selectedEvent, raw]);
 
   const loadParticipants = useCallback(async () => {
     if (!eventId) return;
@@ -118,20 +148,25 @@ export default function ParticipantsPage() {
               const date = ev.dates?.[0] ? new Date(ev.dates[0]).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "—";
               return (
                 <button key={ev.id} type="button" onClick={() => setEventId(ev.id)}
-                  className="bg-surface border border-border-c hover:border-red-500/30 rounded-2xl p-5 text-left transition-all group">
-                  <div className="flex items-start justify-between gap-2 mb-3">
-                    <span className="text-[10px] font-fira uppercase tracking-widest px-2 py-0.5 rounded-md bg-surface2 text-muted-tx">{ev.event_type.replace(/_/g, " ")}</span>
-                    <span className={`text-[10px] font-fira uppercase tracking-widest px-2 py-0.5 rounded-md ${STATE_BADGE[ev.state] ?? "bg-surface2 text-subtle-tx"}`}>{ev.state.replace(/_/g, " ")}</span>
+                  className="text-left bg-surface border border-border-c hover:border-red-500/30 rounded-2xl p-5 transition-all group">
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <p className="text-tx font-fira font-semibold text-sm leading-snug group-hover:text-red-500 transition-colors">{ev.name}</p>
+                    <ChevronRight size={14} className="text-subtle-tx group-hover:text-red-500 shrink-0 mt-0.5 transition-colors" />
                   </div>
-                  <h3 className="text-tx font-fira font-semibold text-sm leading-snug mb-1 group-hover:text-red-500 transition-colors">{ev.name}</h3>
-                  <p className="text-muted-tx text-xs font-fira mb-4 line-clamp-1">{ev.tag_line}</p>
-                  <div className="space-y-1.5 mb-4">
-                    <div className="flex items-center gap-2 text-subtle-tx text-xs font-fira"><CalendarDays size={11} />{date}</div>
-                    {ev.venue && <div className="flex items-center gap-2 text-subtle-tx text-xs font-fira"><MapPin size={11} />{ev.venue}</div>}
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    <span className={`text-[10px] font-fira font-semibold px-2 py-0.5 rounded-full ${STATE_BADGE[ev.state] ?? "bg-zinc-100 text-zinc-500"}`}>
+                      {ev.state.replace(/_/g, " ")}
+                    </span>
                   </div>
-                  <div className="flex items-center justify-between pt-3 border-t border-border-c">
-                    <div className="flex items-center gap-1.5 text-subtle-tx text-xs font-fira"><Users size={12} /> View Participants</div>
-                    <ChevronRight size={14} className="text-subtle-tx group-hover:text-red-500 transition-colors" />
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex items-center gap-1.5 text-subtle-tx text-xs font-fira">
+                      <CalendarDays size={11} /> {date}
+                    </div>
+                    {ev.venue && (
+                      <div className="flex items-center gap-1.5 text-subtle-tx text-xs font-fira">
+                        <MapPin size={11} /> {ev.venue}
+                      </div>
+                    )}
                   </div>
                 </button>
               );
@@ -142,10 +177,12 @@ export default function ParticipantsPage() {
     );
   }
 
-  // ── Detail view ────────────────────────────────────────────────────────────────
+  // ── Participant list view ──────────────────────────────────────────────────────
+  const colCount = 6 + detailColumns.length;
+
   return (
     <div className="px-4 py-6 sm:px-8 sm:py-8">
-      <div className="flex items-start justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 gap-3">
         <div className="flex items-center gap-3">
           <button type="button" onClick={() => { setEventId(null); setTeams([]); setSearch(""); }}
             className="w-8 h-8 rounded-lg bg-surface border border-border-c hover:border-red-500/20 flex items-center justify-center text-muted-tx hover:text-tx transition-all">
@@ -156,7 +193,7 @@ export default function ParticipantsPage() {
             <p className="text-muted-tx text-sm font-fira">Participant list</p>
           </div>
         </div>
-        <button type="button" onClick={() => exportCSV(filtered, selectedEvent?.name ?? "event")}
+        <button type="button" onClick={() => exportCSV(filtered, selectedEvent?.name ?? "event", detailColumns)}
           className="flex items-center gap-1.5 px-3 py-2 sm:px-4 bg-surface border border-border-c hover:border-red-500/20 text-muted-tx hover:text-tx text-sm font-fira rounded-lg transition-all">
           <Download size={14} /> <span className="hidden sm:inline">Export CSV</span>
         </button>
@@ -218,14 +255,14 @@ export default function ParticipantsPage() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border-c">
-                  {["Name", "Email", "Branch", "Year", "Gender", "Attended"].map(h => (
+                  {["Name", "Email", "Branch", "Year", "Gender", "Attended", ...detailColumns.map((c) => c.label)].map(h => (
                     <th key={h} className="text-left px-5 py-3 text-subtle-tx text-[11px] font-fira font-normal uppercase tracking-wide whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {filtered.length === 0 ? (
-                  <tr><td colSpan={6} className="text-center py-16 text-muted-tx font-fira text-sm">No participants match your filters.</td></tr>
+                  <tr><td colSpan={colCount} className="text-center py-16 text-muted-tx font-fira text-sm">No participants match your filters.</td></tr>
                 ) : filtered.map(p => (
                   <tr key={p.id} className="border-b border-border-c last:border-0 hover:bg-surface2 transition-colors">
                     <td className="px-5 py-3.5">
@@ -245,6 +282,11 @@ export default function ParticipantsPage() {
                         {p.attended ? "Present" : "Absent"}
                       </span>
                     </td>
+                    {detailColumns.map((c) => (
+                      <td key={c.id} className="px-5 py-3.5 text-muted-tx text-sm font-fira max-w-[14rem] truncate" title={p.moreDetails[c.id] ?? ""}>
+                        {p.moreDetails[c.id] || "—"}
+                      </td>
+                    ))}
                   </tr>
                 ))}
               </tbody>
