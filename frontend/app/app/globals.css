@@ -73,10 +73,12 @@
 
   html {
     @apply bg-background text-foreground;
+    overflow-x: hidden;
   }
 
   body {
     @apply bg-background text-foreground font-poppins min-h-full;
+    overflow-x: hidden;
   }
 
   /* Remove all browser-native select styling globally.

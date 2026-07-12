@@ -122,9 +122,9 @@ export function HomeScreenSkeleton() {
 /** Event detail page */
 export function EventDetailsSkeleton() {
   return (
-    <div className="bg-background min-h-screen">
+    <div className="bg-background min-h-dvh overflow-x-hidden">
       {/* Hero */}
-      <Sh className="w-full aspect-square" rounded="rounded-none" />
+      <Sh className="w-full h-[min(100vw,28rem)]" rounded="rounded-none" />
 
       <div className="px-5 pt-6 pb-32 flex flex-col gap-6">
         {/* Title */}

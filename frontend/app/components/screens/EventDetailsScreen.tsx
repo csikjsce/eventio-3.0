@@ -10,16 +10,15 @@ import {
   TickCircle,
   Profile2User,
 } from "iconsax-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import IconText from "@/components/IconText";
-import Loader from "@/components/Loader";
 import Passage from "@/components/Passage";
 import Spinner from "@/components/Spinner";
 import FeedbackModal from "@/components/FeedbackModal";
 import RegistrationDetailsModal from "@/components/RegistrationDetailsModal";
-import { fetchEvent, registerForEvent, claimTicket as apiClaimTicket, rateEvent } from "@/lib/api";
+import { fetchEvent, registerForEvent, claimTicket as apiClaimTicket } from "@/lib/api";
 import { EventDetailsSkeleton } from "@/components/Skeletons";
 import type { EventData } from "@/types/eventio";
 
@@ -46,6 +45,11 @@ export default function EventDetailsScreen() {
   const id = params.id as string;
   const router = useRouter();
 
+  // Keep latest event for callbacks without putting it in useCallback deps
+  // (avoids register → useEffect → setEvent → register infinite fetch loop)
+  const eventRef = useRef<EventData | null>(null);
+  eventRef.current = event;
+
   const register = useCallback(async (moreDetails?: Record<string, string>) => {
     setButtonState({ text: "Registering", loading: true, disabled: true, onClick: () => {} });
     try {
@@ -60,18 +64,19 @@ export default function EventDetailsScreen() {
         loading: false,
         disabled: false,
         onClick: () => {
+          const ev = eventRef.current;
           if (
-            event?.more_details_enabled &&
-            (event.registration_fields?.length ?? 0) > 0
+            ev?.more_details_enabled &&
+            (ev.registration_fields?.length ?? 0) > 0
           ) {
             setShowRegistrationForm(true);
           } else {
-            register();
+            void register();
           }
         },
       });
     }
-  }, [id, event]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [id]);
 
   const claimTicket = useCallback(async () => {
     setButtonState({ text: "RSVPing…", loading: true, disabled: true, onClick: () => {} });
@@ -86,9 +91,9 @@ export default function EventDetailsScreen() {
       setSnackbarVisible(true);
       setTimeout(() => setSnackbarVisible(false), 3000);
     } catch {
-      setButtonState({ text: "RSVP for this event", loading: false, disabled: false, onClick: claimTicket });
+      setButtonState({ text: "RSVP for this event", loading: false, disabled: false, onClick: () => { void claimTicket(); } });
     }
-  }, [id, router]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [id, router]);
 
   useEffect(() => {
     let cancelled = false;
@@ -99,7 +104,6 @@ export default function EventDetailsScreen() {
         if (!eventData || cancelled) { setLoading(false); return; }
         setEvent(eventData);
         setLoading(false);
-
 
         // Derive button state from event
         const s = eventData.state;
@@ -124,7 +128,7 @@ export default function EventDetailsScreen() {
               disabled: false,
               onClick: () => {
                 if (needsExtraFields) setShowRegistrationForm(true);
-                else register();
+                else void register();
               },
             });
           }
@@ -140,7 +144,7 @@ export default function EventDetailsScreen() {
             } else if ((eventData.tickets_sold ?? 0) >= (eventData.ticket_count ?? Infinity)) {
               setButtonState({ text: "Tickets Sold Out", loading: false, disabled: true, onClick: () => {} });
             } else {
-              setButtonState({ text: "RSVP for this event", loading: false, disabled: false, onClick: claimTicket });
+              setButtonState({ text: "RSVP for this event", loading: false, disabled: false, onClick: () => { void claimTicket(); } });
             }
           } else {
             setButtonState({ text: "Not registered", loading: false, disabled: true, onClick: () => {} });
@@ -171,24 +175,25 @@ export default function EventDetailsScreen() {
 
     load();
     return () => { cancelled = true; };
-  }, [id, router, register, claimTicket]);
+    // Only refetch when the event id changes — register/claimTicket are stable for a given id
+  }, [id, register, claimTicket, router]);
 
   if (loading) return <EventDetailsSkeleton />;
   if (!event) return (
-    <div className="flex items-center justify-center min-h-screen">
+    <div className="flex items-center justify-center min-h-screen bg-background">
       <p className="text-mute font-poppins">Event not found</p>
     </div>
   );
 
   return (
     <>
-      <div className="bg-background min-h-screen">
-        {/* Hero image */}
-        <div className="relative w-full aspect-square">
+      <div className="bg-background min-h-dvh overflow-x-hidden">
+        {/* Hero image — height capped so wide viewports don't create a huge empty scroll */}
+        <div className="relative w-full h-[min(100vw,28rem)] overflow-hidden bg-surface">
           <img
             src={event.event_page_image_url}
             alt={event.name}
-            className="w-full aspect-square object-cover"
+            className="absolute inset-0 w-full h-full object-cover"
           />
           {/* Gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-transparent" />
