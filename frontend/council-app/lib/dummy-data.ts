@@ -86,9 +86,11 @@ export const PIPELINE_STAGES: { id: PipelineStage; label: string; short: string 
   { id: "DIRECTOR_VP_PENDING", label: "Director / VP",       short: "Director"   },
   { id: "FULLY_APPROVED",      label: "Fully Approved",      short: "Approved ✓" },
   { id: "REGISTRATION_OPEN",   label: "Registration Open",   short: "Reg. Open"  },
+  { id: "REGISTRATION_CLOSED", label: "Registration Closed", short: "Reg. Closed"},
   { id: "ONGOING",             label: "Ongoing",             short: "Ongoing"    },
   { id: "COMPLETED",           label: "Completed",           short: "Done"       },
   { id: "REPORT_SUBMITTED",    label: "Report Submitted",    short: "Report ✓"   },
+  { id: "REJECTED",            label: "Changes Requested",   short: "Returned"   },
 ];
 
 // ─── Council user ─────────────────────────────────────────────────────────────

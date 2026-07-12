@@ -14,7 +14,7 @@ import { useData } from "@/contexts/DataContext";
 import {
   ArrowLeft, CalendarDays, MapPin, Users, Ticket, Edit2, ExternalLink,
   Upload, CheckCircle2, Clock, AlertCircle, XCircle, FileText,
-  ChevronRight, Share2, BarChart2, ClipboardList, Send, Settings,
+  ChevronRight, Share2, BarChart2, ClipboardList, Send, Settings, RotateCcw,
 } from "lucide-react";
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
@@ -36,6 +36,7 @@ const DOC_ICON: Record<string, string> = {
 // ─── Approval timeline ────────────────────────────────────────────────────────
 
 const STAGE_ICON: Record<string, React.ReactNode> = {
+  RETURNED:                    <RotateCcw      size={14} />,
   DRAFT:                       <FileText       size={14} />,
   APPLIED_FOR_APPROVAL:        <Send           size={14} />,
   APPLIED_FOR_PRINCI_APPROVAL: <CheckCircle2   size={14} />,

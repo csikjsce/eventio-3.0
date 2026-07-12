@@ -797,6 +797,7 @@ router.put(protected + "/proposal/:id", authCheck, async (req, res) => {
                 : existing.councilSignatures,
             facultySignatures: existing.facultySignatures,
             submittedAt: null,
+            returnHistory: existing.returnHistory ?? [],
         };
 
         await prisma.events.update({
@@ -1197,7 +1198,7 @@ router.post(
                     message: "Event not found",
                 });
             }
-            state_history = existingEvent.state_history;
+            state_history = [...(existingEvent.state_history ?? [])];
             state = existingEvent.state;
             if (
                 existingEvent.organizer_id != req.user.id &&
@@ -1300,10 +1301,36 @@ router.post(
                                 "Feedback is required when returning an event to council.",
                         });
                     }
+                    field.comment = feedback;
+
+                    // Persist return feedback so the timeline keeps it after resubmit
+                    const proposal = normalizeProposal(
+                        existingEvent.proposal_document,
+                    );
+                    const returnHistory = Array.isArray(proposal.returnHistory)
+                        ? [...proposal.returnHistory]
+                        : [];
+                    returnHistory.push({
+                        at: new Date().toISOString(),
+                        by: req.user.name ?? "Reviewer",
+                        by_id: req.user.id,
+                        role,
+                        note: feedback,
+                        from_state: state,
+                    });
+                    proposal.returnHistory = returnHistory;
+                    field.proposal_document = proposal;
                 }
 
                 // Faculty: direct approve (UNLISTED) or escalate to Principal
-                if (role === "FACULTY" && state === "APPLIED_FOR_APPROVAL") {
+                if (role === "FACULTY") {
+                    if (state !== "APPLIED_FOR_APPROVAL") {
+                        return res.status(400).json({
+                            error: true,
+                            message:
+                                "Faculty can only update state while a proposal is awaiting faculty review.",
+                        });
+                    }
                     if (
                         !["APPLIED_FOR_PRINCI_APPROVAL", "UNLISTED", "DRAFT"].includes(
                             newState,
@@ -1341,10 +1368,14 @@ router.post(
                 }
 
                 // Principal: final approve or return to council
-                if (
-                    role === "PRINCIPAL" &&
-                    state === "APPLIED_FOR_PRINCI_APPROVAL"
-                ) {
+                if (role === "PRINCIPAL") {
+                    if (state !== "APPLIED_FOR_PRINCI_APPROVAL") {
+                        return res.status(400).json({
+                            error: true,
+                            message:
+                                "Principal can only update state while a proposal is awaiting principal review.",
+                        });
+                    }
                     if (!["UNLISTED", "DRAFT"].includes(newState)) {
                         return res.status(400).json({
                             error: true,

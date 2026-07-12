@@ -82,21 +82,27 @@ interface StateMeta {
   actor:       string;
 }
 
-/** Human-readable labels + actors for each backend STATE enum value. */
+/** Human-readable labels + actors for each backend STATE enum value.
+ *  `actor` is who *caused* this transition (not who acts next). */
 const STATE_META: Record<string, StateMeta> = {
-  DRAFT:                       { label: "Event Created",         actor: "You (Council)"   },
-  APPLIED_FOR_APPROVAL:        { label: "Proposal Submitted",    actor: "Faculty Advisor" },
-  APPLIED_FOR_PRINCI_APPROVAL: { label: "Faculty Cleared",       actor: "Principal"       },
-  UNLISTED:                    { label: "Principal Approved",    actor: "You (Council)"   },
-  UPCOMING:                    { label: "Event Listed",          reopenLabel: "Event Re-listed",           actor: "You (Council)" },
-  REGISTRATION_OPEN:           { label: "Registration Opened",   reopenLabel: "Registration Reopened",   actor: "You (Council)" },
-  REGISTRATION_CLOSED:         { label: "Registration Closed",   reopenLabel: "Registration Paused",       actor: "You (Council)" },
-  TICKET_OPEN:                 { label: "Tickets Live",          reopenLabel: "Tickets Reopened",          actor: "You (Council)" },
-  TICKET_CLOSED:               { label: "Ticket Sales Closed",   reopenLabel: "Ticket Sales Stopped",      actor: "You (Council)" },
-  ONGOING:                     { label: "Event Started",         actor: "You (Council)"   },
-  COMPLETED:                   { label: "Event Completed",       actor: "You (Council)"   },
-  PRIVATE:                     { label: "Set to Private",        reopenLabel: "Set to Private Again",      actor: "You (Council)" },
+  DRAFT:                       { label: "Event Created",         reopenLabel: "Back in Draft",           actor: "You (Council)" },
+  APPLIED_FOR_APPROVAL:        { label: "Proposal Submitted",    reopenLabel: "Proposal Resubmitted",    actor: "You (Council)" },
+  APPLIED_FOR_PRINCI_APPROVAL: { label: "Sent to Principal",     actor: "Faculty Advisor" },
+  UNLISTED:                    { label: "Approved",              actor: "Faculty / Principal" },
+  UPCOMING:                    { label: "Event Listed",          reopenLabel: "Event Re-listed",         actor: "You (Council)" },
+  REGISTRATION_OPEN:           { label: "Registration Opened",   reopenLabel: "Registration Reopened", actor: "You (Council)" },
+  REGISTRATION_CLOSED:         { label: "Registration Closed",   reopenLabel: "Registration Paused",     actor: "You (Council)" },
+  TICKET_OPEN:                 { label: "Tickets Live",          reopenLabel: "Tickets Reopened",        actor: "You (Council)" },
+  TICKET_CLOSED:               { label: "Ticket Sales Closed",   reopenLabel: "Ticket Sales Stopped",    actor: "You (Council)" },
+  ONGOING:                     { label: "Event Started",         actor: "You (Council)" },
+  COMPLETED:                   { label: "Event Completed",       actor: "You (Council)" },
+  PRIVATE:                     { label: "Set to Private",        reopenLabel: "Set to Private Again",    actor: "You (Council)" },
 };
+
+const APPROVAL_STATES = new Set([
+  "APPLIED_FOR_APPROVAL",
+  "APPLIED_FOR_PRINCI_APPROVAL",
+]);
 
 function getStateMeta(stage: string): StateMeta {
   if (STATE_META[stage]) return STATE_META[stage];
@@ -116,50 +122,137 @@ function normalizeStateHistory(currentState: string, stateHistory?: string[]): s
   return history;
 }
 
+type ReturnNote = {
+  note?: string;
+  by?: string;
+  role?: string;
+  at?: string;
+  from_state?: string;
+};
+
+function extractReturnHistory(proposalDocument: unknown): ReturnNote[] {
+  if (!proposalDocument || typeof proposalDocument !== "object" || Array.isArray(proposalDocument)) {
+    return [];
+  }
+  const history = (proposalDocument as { returnHistory?: unknown }).returnHistory;
+  return Array.isArray(history) ? (history as ReturnNote[]) : [];
+}
+
 /**
  * Build the approval timeline from the event's state_history array.
- * Each state transition becomes one node — repeats (e.g. reopening registration)
- * appear as separate steps so the full journey is preserved.
+ * Inserts "Returned for Changes" whenever history moves from an approval
+ * state back to DRAFT. Notes come from live `comment` and persisted returnHistory.
  */
 function buildApprovalChain(
   currentState: string,
   stateHistory: string[],
   comment?: string | null,
+  proposalDocument?: unknown,
 ): ApprovalStep[] {
-  const history    = normalizeStateHistory(currentState, stateHistory);
+  const history = normalizeStateHistory(currentState, stateHistory);
+  const returnNotes = extractReturnHistory(proposalDocument);
+  let returnNoteIdx = 0;
   const visitCount: Record<string, number> = {};
+  const chain: ApprovalStep[] = [];
 
-  const chain: ApprovalStep[] = history.map((stage, index) => {
+  for (let index = 0; index < history.length; index++) {
+    const stage = history[index];
+    const prev = index > 0 ? history[index - 1] : null;
     visitCount[stage] = (visitCount[stage] ?? 0) + 1;
-    const meta     = getStateMeta(stage);
-    const isLast   = index === history.length - 1;
+    const meta = getStateMeta(stage);
+    const isLast = index === history.length - 1;
     const isRepeat = visitCount[stage] > 1;
 
-    const label = isRepeat && meta.reopenLabel
+    // Approval → DRAFT means faculty/principal sent it back
+    if (stage === "DRAFT" && prev && APPROVAL_STATES.has(prev)) {
+      const persisted = returnNotes[returnNoteIdx++];
+      const liveNote =
+        isLast && currentState === "DRAFT" && comment?.trim()
+          ? comment.trim()
+          : null;
+      const note = liveNote || persisted?.note?.trim() || undefined;
+      const actor =
+        persisted?.by?.trim() ||
+        (persisted?.role === "PRINCIPAL"
+          ? "Principal"
+          : persisted?.role === "FACULTY"
+            ? "Faculty Advisor"
+            : prev === "APPLIED_FOR_PRINCI_APPROVAL"
+              ? "Principal"
+              : "Faculty Advisor");
+
+      chain.push({
+        stage: "RETURNED",
+        label: "Returned for Changes",
+        status: "rejected",
+        actor,
+        note,
+        date: persisted?.at,
+      });
+    }
+
+    let label = isRepeat && meta.reopenLabel
       ? meta.reopenLabel
       : isRepeat
         ? `${meta.label} (again)`
         : meta.label;
 
-    return {
+    let actor = meta.actor;
+
+    // More precise UNLISTED actor/label based on previous state
+    if (stage === "UNLISTED") {
+      if (prev === "APPLIED_FOR_APPROVAL") {
+        label = "Faculty Approved";
+        actor = "Faculty Advisor";
+      } else if (prev === "APPLIED_FOR_PRINCI_APPROVAL") {
+        label = "Principal Approved";
+        actor = "Principal";
+      }
+    }
+
+    // After a return, the trailing DRAFT means "awaiting council resubmit"
+    if (
+      stage === "DRAFT" &&
+      prev &&
+      APPROVAL_STATES.has(prev) &&
+      isLast &&
+      currentState === "DRAFT"
+    ) {
+      label = comment?.trim()
+        ? "Awaiting Resubmit"
+        : "Back in Draft";
+      actor = "You (Council)";
+    }
+
+    chain.push({
       stage,
       label,
       status: (isLast ? "active" : "done") as ApprovalStep["status"],
-      actor:  meta.actor,
-    };
-  });
+      actor,
+    });
+  }
 
-  // Show return-for-changes when faculty/principal sent the event back to draft
-  if (currentState === "DRAFT" && comment?.trim() && chain.length > 1) {
+  // Legacy: DRAFT + comment but history never recorded the approval→draft hop
+  if (
+    currentState === "DRAFT" &&
+    comment?.trim() &&
+    !chain.some((s) => s.stage === "RETURNED")
+  ) {
     const lastIdx = chain.length - 1;
-    if (chain[lastIdx]?.stage === "DRAFT" && chain[lastIdx]?.status === "active") {
-      chain.splice(lastIdx, 0, {
-        stage: "RETURNED",
-        label: "Returned for Changes",
-        status: "rejected",
-        actor: "Faculty / Principal",
-        note: comment.trim(),
-      });
+    chain.splice(Math.max(lastIdx, 0), 0, {
+      stage: "RETURNED",
+      label: "Returned for Changes",
+      status: "rejected",
+      actor: "Faculty / Principal",
+      note: comment.trim(),
+    });
+    if (chain[chain.length - 1]?.stage === "DRAFT") {
+      chain[chain.length - 1] = {
+        ...chain[chain.length - 1],
+        label: "Awaiting Resubmit",
+        status: "active",
+        actor: "You (Council)",
+      };
     }
   }
 
@@ -168,7 +261,12 @@ function buildApprovalChain(
 
 // ── State ↔ PipelineStage mapping ─────────────────────────────────────────────
 
-export function mapStateToPipeline(state: string): PipelineStage {
+export function mapStateToPipeline(
+  state: string,
+  comment?: string | null,
+): PipelineStage {
+  if (state === "DRAFT" && comment?.trim()) return "REJECTED";
+
   const map: Record<string, PipelineStage> = {
     DRAFT:                        "DRAFT",
     APPLIED_FOR_APPROVAL:         "PROPOSAL_SUBMITTED",
@@ -190,14 +288,15 @@ export function mapStateToPipeline(state: string): PipelineStage {
 export function transformEvent(e: any): EventData {
   const state         = e.state ?? "DRAFT";
   const state_history = normalizeStateHistory(state, e.state_history ?? []);
+  const comment       = e.comment ?? null;
 
   return {
     ...e,
     state,
     state_history,
-    pipeline_stage:        mapStateToPipeline(state),
-    approval_chain:        buildApprovalChain(state, state_history, e.comment),
-    comment:               e.comment ?? null,
+    pipeline_stage:        mapStateToPipeline(state, comment),
+    approval_chain:        buildApprovalChain(state, state_history, comment, e.proposal_document),
+    comment,
     documents:             e.documents             ?? [],
     children:              e.children              ?? [],
     tags:                  e.tags                  ?? [],

@@ -101,6 +101,11 @@ export function ApprovalTimeline({ chain }: { chain: EventData["approval_chain"]
             <div className={cn("flex-1 min-w-0", isLast ? "pb-0" : "pb-4")}>
               <p className="text-sm font-semibold">{step.label}</p>
               <p className="text-muted-foreground text-xs mt-0.5">{step.actor}</p>
+              {step.note && (
+                <div className="mt-2 px-3 py-2 bg-muted/60 border border-border rounded-lg">
+                  <p className="text-muted-foreground text-xs italic">&ldquo;{step.note}&rdquo;</p>
+                </div>
+              )}
             </div>
           </div>
         );

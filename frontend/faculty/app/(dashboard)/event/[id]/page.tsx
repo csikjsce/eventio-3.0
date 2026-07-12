@@ -132,22 +132,15 @@ function EventReviewContent({ id }: { id: string }) {
   function ReviewActions() {
     if (!canApprove) return null;
 
-    if (!hasProposalDoc) {
-      return (
-        <div className="mt-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/25 text-sm text-amber-800 dark:text-amber-300">
-          The council has not submitted a proposal letter for this event yet. You
-          cannot approve until they do.
-        </div>
-      );
-    }
-
     return (
       <div className="mt-6 pt-6 border-t border-border space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-sm font-semibold">Your review</p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Read the proposal above, sign it, then approve or return to council.
+              {hasProposalDoc
+                ? "Read the proposal above, sign it, then approve or return to council."
+                : "No proposal letter yet — you can still return this to council with feedback."}
             </p>
           </div>
           {alreadySigned && (
@@ -157,7 +150,13 @@ function EventReviewContent({ id }: { id: string }) {
           )}
         </div>
 
-        {!hasSavedSignature && (
+        {!hasProposalDoc && (
+          <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/25 text-sm text-amber-800 dark:text-amber-300">
+            The council has not submitted a proposal letter yet. Approve is blocked until they do — return with feedback if they need to fix something first.
+          </div>
+        )}
+
+        {!hasSavedSignature && hasProposalDoc && (
           <p className="text-sm text-amber-700 dark:text-amber-400">
             <Link href="/settings" className="underline font-medium">
               Add your digital signature in Settings
@@ -166,7 +165,7 @@ function EventReviewContent({ id }: { id: string }) {
           </p>
         )}
 
-        {!isPrincipal && (
+        {!isPrincipal && hasProposalDoc && (
           <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer select-none">
             <input
               type="checkbox"
@@ -179,7 +178,7 @@ function EventReviewContent({ id }: { id: string }) {
         )}
 
         <div className="flex flex-wrap gap-2">
-          {!alreadySigned && hasSavedSignature && (
+          {hasProposalDoc && !alreadySigned && hasSavedSignature && (
             <button
               type="button"
               onClick={signProposalOnly}
@@ -199,20 +198,22 @@ function EventReviewContent({ id }: { id: string }) {
             <RotateCcw size={14} />
             Return to Council
           </button>
-          <button
-            type="button"
-            onClick={approve}
-            disabled={busy || !hasSavedSignature || !alreadySigned}
-            className="px-4 py-2.5 rounded-lg border border-border bg-muted/50 hover:bg-muted text-sm font-medium disabled:opacity-40 flex items-center gap-2"
-            title={!alreadySigned ? "Sign the proposal first" : undefined}
-          >
-            {busy && <Loader2 size={14} className="animate-spin" />}
-            {isPrincipal
-              ? "Approve event"
-              : sendToPrincipal
-                ? "Forward to Principal"
-                : "Approve event"}
-          </button>
+          {hasProposalDoc && (
+            <button
+              type="button"
+              onClick={approve}
+              disabled={busy || !hasSavedSignature || !alreadySigned}
+              className="px-4 py-2.5 rounded-lg border border-border bg-muted/50 hover:bg-muted text-sm font-medium disabled:opacity-40 flex items-center gap-2"
+              title={!alreadySigned ? "Sign the proposal first" : undefined}
+            >
+              {busy && <Loader2 size={14} className="animate-spin" />}
+              {isPrincipal
+                ? "Approve event"
+                : sendToPrincipal
+                  ? "Forward to Principal"
+                  : "Approve event"}
+            </button>
+          )}
         </div>
       </div>
     );
@@ -225,6 +226,11 @@ function EventReviewContent({ id }: { id: string }) {
       await returnEventToCouncil(event.id, returnFeedback.trim());
       await refresh();
       router.push("/pending");
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message;
+      alert(msg ?? "Could not return event to council. Please try again.");
     } finally {
       setBusy(false);
     }

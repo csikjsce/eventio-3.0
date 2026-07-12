@@ -24,6 +24,8 @@ function normalizeProposal(raw) {
             ? raw.facultySignatures
             : [],
         submittedAt: raw.submittedAt ?? null,
+        // Keep reviewer return notes across normalize/save cycles
+        returnHistory: Array.isArray(raw.returnHistory) ? raw.returnHistory : [],
     };
 }
 
