@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle2, PenLine } from "lucide-react";
+import { CheckCircle2, PenLine, Upload } from "lucide-react";
 import SignaturePad from "@/components/SignaturePad";
 import type { DocumentSignatory } from "@/lib/document-builder";
 
@@ -13,8 +13,38 @@ function SignPanel({
   busy: boolean;
 }) {
   const [draft, setDraft] = useState<string | null>(null);
+
+  async function handleUpload(file: File) {
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => reject(new Error("Failed to read file"));
+      reader.readAsDataURL(file);
+    });
+    setDraft(dataUrl);
+  }
+
   return (
     <div className="pt-2 border-t border-border-c mt-2 space-y-2">
+      <label className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-border text-xs text-muted-foreground hover:border-red-500/30 cursor-pointer">
+        <Upload size={14} className="text-red-500" />
+        Upload signature PNG
+        <input
+          type="file"
+          accept="image/png,image/webp,image/jpeg"
+          className="hidden"
+          disabled={busy}
+          onChange={async (e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            try {
+              await handleUpload(file);
+            } finally {
+              e.target.value = "";
+            }
+          }}
+        />
+      </label>
       <SignaturePad onChange={setDraft} />
       <button
         type="button"
