@@ -1,5 +1,11 @@
 # Eventio 3.0 Docker Setup
 
+> ⚠️ **This document may be out of date.** It references the old Vite portals
+> (`frontend/student`, `frontend/council`, `frontend/dean`), which are **deprecated**. The active
+> apps are the Next.js apps `frontend/app`, `frontend/council-app`, `frontend/faculty`. For the
+> current folder map, ports, and run commands see [`README.md`](README.md) and [`SETUP.md`](SETUP.md);
+> verify the Docker build against those before relying on the steps below.
+
 This Docker setup builds and serves all three frontend portals (Student, Council, Dean) with nginx, and proxies the backend API.
 
 ## Architecture

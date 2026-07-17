@@ -1,32 +1,36 @@
 # Eventio 3.0
 
-![Node.js](https://img.shields.io/badge/Node.js-18-339933?logo=node.js&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-18+-339933?logo=node.js&logoColor=white)
 ![Express](https://img.shields.io/badge/Express-4-000000?logo=express&logoColor=white)
+![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white)
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
-![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)
-![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3-06B6D4?logo=tailwindcss&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white)
 ![Prisma](https://img.shields.io/badge/Prisma-5-2D3748?logo=prisma&logoColor=white)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-4169E1?logo=postgresql&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon%20%2F%20Azure-4169E1?logo=postgresql&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
 ![Nginx](https://img.shields.io/badge/Nginx-reverse--proxy-009639?logo=nginx&logoColor=white)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow)
 
 > Full-stack college event management platform with role-based access for students, councils, faculty, and the principal.
 
+**New here or coming back after a break? Read [`SETUP.md`](SETUP.md) for the step-by-step local + deployed run guide.**
+**AI agents / Claude Code: read [`AGENTS.md`](AGENTS.md) first** for the repo map and hard rules (e.g. which frontends are dead code).
+
 ---
 
 ## Table of Contents
 
 - [What is this Project?](#what-is-this-project)
+- [Active vs Deprecated Folders](#active-vs-deprecated-folders)
 - [Architecture Overview](#architecture-overview)
-- [Core Flow](#core-flow)
 - [Tech Stack](#tech-stack)
 - [Project Structure](#project-structure)
 - [Quick Start](#quick-start)
-- [API Reference Summary](#api-reference-summary)
+- [Ports](#ports)
 - [Environment Variables](#environment-variables)
-- [Development Tools](#development-tools)
+- [Auth Flow](#auth-flow)
+- [API Reference Summary](#api-reference-summary)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -34,9 +38,26 @@
 
 ## What is this Project?
 
-Eventio 3.0 is a college event management system built for Somaiya University. It lets student councils create and manage events (competitions, workshops, speaker sessions, fests), handle team-based or solo registrations, collect fees, mark attendance via tickets or BLE, and generate PDF attendance reports. Faculty and the Principal can review and approve events through a dedicated dean portal. Students discover and register for events through a PWA-enabled student portal.
+Eventio 3.0 is a college event management system built for Somaiya University. Student councils create and manage events (competitions, workshops, speaker sessions, fests), handle team-based or solo registrations, collect fees, mark attendance, and generate PDF attendance reports. Faculty and the Principal review and approve events through a dedicated portal. Students discover and register for events through a PWA-enabled student portal.
 
-Authentication is exclusively Google OAuth 2.0, with domain-restriction to `somaiya.edu` in production. Five distinct roles (USER, COUNCIL, FACULTY, PRINCIPAL, ADMIN) drive fine-grained access control across all three frontends.
+Authentication is exclusively **Google OAuth 2.0**, domain-restricted to `somaiya.edu` in production. Five roles (`USER`, `COUNCIL`, `FACULTY`, `PRINCIPAL`, `ADMIN`) drive access control across the three frontends.
+
+---
+
+## Active vs Deprecated Folders
+
+> ⚠️ The `frontend/` directory contains **6** apps. Only **3 are active**. The other 3 are
+> obsolete Vite SPAs kept for reference only — **do not run, edit, or copy from them.**
+
+| Folder | Status | Role | Stack |
+|---|---|---|---|
+| `backend/` | ✅ active | REST API, auth, Prisma, PDF, email | Express 4 (Node 18+) |
+| `frontend/app/` | ✅ active | **Student** portal (PWA) | Next.js 16 App Router |
+| `frontend/council-app/` | ✅ active | **Council** management portal | Next.js 16 App Router |
+| `frontend/faculty/` | ✅ active | **Faculty / Principal** portal | Next.js 16 App Router |
+| `frontend/student/` | ❌ deprecated | old student SPA | Vite (dead) |
+| `frontend/council/` | ❌ deprecated | old council SPA | Vite (dead) |
+| `frontend/dean/` | ❌ deprecated | old dean SPA | Vite (dead) |
 
 ---
 
@@ -45,77 +66,28 @@ Authentication is exclusively Google OAuth 2.0, with domain-restriction to `soma
 ```mermaid
 graph TB
     subgraph Clients
-        S[Student SPA<br/>React 18 / Vite<br/>port 5173]
-        C[Council SPA<br/>React 18 / Vite<br/>port 5174]
-        D[Dean SPA<br/>React 18 / Vite<br/>port 5175]
+        S[Student app<br/>Next.js 16<br/>port 3000]
+        C[Council council-app<br/>Next.js 16<br/>port 3001]
+        F[Faculty faculty<br/>Next.js 16<br/>port 3002]
     end
 
-    subgraph Docker Host
-        subgraph frontend-container["Frontend Container (port 80)"]
-            N[Nginx<br/>reverse proxy]
-        end
-        subgraph backend-container["Backend Container (port 8000)"]
-            E[Express API<br/>Node.js 18<br/>port 8000]
-        end
-        W[Watchtower<br/>auto-deploy]
+    subgraph Server
+        E[Express API<br/>Node.js 18+<br/>port 8000]
     end
 
     subgraph External
         G[Google OAuth 2.0]
-        DB[(PostgreSQL<br/>Neon serverless)]
-        GHCR[GHCR<br/>container registry]
+        DB[(PostgreSQL<br/>Neon = dev · Azure = prod)]
         SMTP[SMTP<br/>Nodemailer]
     end
 
-    S -->|/api/v1/*| N
-    C -->|/api/v1/*| N
-    D -->|/api/v1/*| N
-    N -->|proxy_pass :8000| E
+    S -->|/api/v1/*| E
+    C -->|/api/v1/*| E
+    F -->|/api/v1/*| E
     E -->|Prisma| DB
-    E -->|OAuth| G
+    E -->|OAuth redirect flow| G
     E -->|sendMail| SMTP
-    W -->|poll GHCR| GHCR
-    GHCR -->|pull & restart| frontend-container
-    GHCR -->|pull & restart| backend-container
 ```
-
----
-
-## Core Flow
-
-### Event Registration (Happy Path)
-
-```mermaid
-sequenceDiagram
-    participant Student
-    participant API as Express API
-    participant DB as PostgreSQL
-
-    Student->>API: POST /api/v1/auth/googleToken {code}
-    API->>DB: upsert User
-    DB-->>API: user record + role
-    API-->>Student: {accessToken, refreshToken, user}
-
-    Student->>API: POST /api/v1/event/p/get (Bearer AT)
-    API->>DB: findMany Events (state = REGISTRATION_OPEN)
-    DB-->>API: events[]
-    API-->>Student: {events}
-
-    Student->>API: POST /api/v1/event/p/register-for-event (Bearer AT)
-    API->>DB: create Participant (solo) or create Team + Participant
-    DB-->>API: participant record
-    API-->>Student: {ticket, participantId}
-```
-
-### Failure / Compensation
-
-| Failure Point | Compensating Event | Compensating Action |
-|---|---|---|
-| Google token invalid | 401 Unauthorized | Client discards tokens, redirects to login |
-| Access token expired | 401 from `authCheck` | Client calls `POST /auth/refresh-token` with refresh token |
-| Refresh token expired | 401 from refresh route | Client forces full re-login |
-| Event registration fails (DB error) | 500 Internal Server Error | Participant record is not created; client shows error |
-| Team invite code collision | DB unique constraint violation | Server retries code generation |
 
 ---
 
@@ -123,26 +95,28 @@ sequenceDiagram
 
 ### Services
 
-| Service | Language | Runtime | Framework | Database | Role | Port |
-|---|---|---|---|---|---|---|
-| backend | JavaScript | Node.js 18 | Express 4 | PostgreSQL (Neon via Prisma) | REST API, Auth, PDF, Email | 8000 |
-| frontend/student | TypeScript | Browser | React 18 + Vite | — | Student portal (PWA) | 5173 |
-| frontend/council | TypeScript | Browser | React 18 + Vite | — | Council management portal | 5174 |
-| frontend/dean | TypeScript | Browser | React 18 + Vite | — | Faculty / Principal portal | 5175 |
+| Service | Language | Runtime | Framework | Role | Dev Port |
+|---|---|---|---|---|---|
+| `backend` | JavaScript | Node.js 18+ | Express 4 | REST API, Auth, PDF, Email | 8000 |
+| `frontend/app` | TypeScript | Browser | Next.js 16 + React 19 | Student portal (PWA) | 3000 |
+| `frontend/council-app` | TypeScript | Browser | Next.js 16 + React 19 | Council portal | 3001 |
+| `frontend/faculty` | TypeScript | Browser | Next.js 16 + React 19 | Faculty / Principal portal | 3002 |
 
 ### Infrastructure
 
 | Component | Technology | Purpose |
 |---|---|---|
-| Database | PostgreSQL (Neon serverless) | Primary data store via `@neondatabase/serverless` + Prisma |
-| Reverse proxy | Nginx (alpine) | Serves all three SPAs, proxies `/api/` to backend |
-| Container orchestration | Docker Compose | Local and production deployment |
-| Auto-deploy | Watchtower | Polls GHCR every 300 s, pulls new images, restarts containers |
-| Container registry | GitHub Container Registry (GHCR) | Hosts `eventio-backend` and `eventio-frontend` images |
+| Dev database | PostgreSQL — **Neon** serverless | Local / test data (Neon adapter, WebSocket) |
+| Prod database | PostgreSQL — **Azure** | Deployed data (`pg` adapter over TCP) |
+| ORM | Prisma 5 (driver adapters) | Auto-selects Neon vs `pg` from `DATABASE_URL` |
+| Auth | Google OAuth 2.0 (Passport, redirect flow) | Login for all three apps |
+| Reverse proxy (prod) | Nginx | Serves SPAs + proxies `/api/` (see `DOCKER_README.md`) |
 | Email | Nodemailer (SMTP) | Transactional emails |
-| PDF generation | PDFKit | Attendance reports |
-| WebSocket | `ws` | Real-time event activity |
-| Logging | Bunyan + bunyan-middleware | Structured JSON request/app logging |
+| PDF | PDFKit | Attendance reports |
+| Logging | Bunyan | Structured JSON logs |
+
+> The Prisma client (`backend/utils/prisma_client.js`) inspects `DATABASE_URL`: a `neon.tech`
+> host uses the Neon serverless adapter; any other host uses plain `pg`. Swap the URL to swap DBs.
 
 ---
 
@@ -150,105 +124,130 @@ sequenceDiagram
 
 ```
 eventio-3.0/
-├── backend/                     # Express API
-│   ├── main.js                  # App entry point, Passport setup, route mounting
-│   ├── dockerfile               # Backend container image
+├── backend/                     # Express API (the only backend)
+│   ├── main.js                  # Entry point, Passport/OAuth, route mounting, CORS, rate limits
 │   ├── prisma/
-│   │   ├── schema.prisma        # Data models: Events, User, Participant, Team, Admins
+│   │   ├── schema.prisma        # Data models & enums (datasource uses DATABASE_URL only)
 │   │   └── migrations/          # Prisma migration history
-│   ├── routes/
-│   │   ├── auth.route.js        # Google OAuth, token exchange, refresh
-│   │   ├── event.route.js       # Event CRUD, registration, teams, attendance
-│   │   ├── user.route.js        # Profile read/update
-│   │   ├── council.route.js     # List council members
-│   │   └── mailer.route.js      # Send transactional email
-│   ├── middleware/
-│   │   ├── auth.middleware.js   # JWT verification, attaches req.user
-│   │   └── field-validator.middlware.js  # Event update field allowlist
-│   └── utils/
-│       ├── prisma_client.js     # Prisma client singleton (Neon adapter)
-│       ├── logger.js            # Bunyan logger instance
-│       ├── logger_middleware.js # HTTP request logging middleware
-│       ├── mailer.js            # Nodemailer transport
-│       └── nmail.js             # Email helper wrapper
+│   ├── routes/                  # auth, user, event, council, mailer, document, budget, announcement
+│   ├── middleware/              # auth.middleware.js (JWT), field-validator.middlware.js
+│   └── utils/                   # prisma_client.js, logger, mailer, faculty-access
 ├── frontend/
-│   ├── student/                 # Student-facing SPA (React 18, PWA)
-│   ├── council/                 # Council management SPA (React 18)
-│   └── dean/                    # Faculty / Principal SPA (React 18)
-├── Dockerfile                   # Multi-stage: builds all 3 SPAs → Nginx image
-├── docker-compose.yml           # backend + frontend + watchtower services
-├── nginx.conf                   # Nginx config: SPA routing, API proxy, rate limiting
-├── example.env                  # Environment variable template
-└── ssl/                         # TLS certificate mount point
+│   ├── app/                     # ✅ Student portal      (Next.js 16, PWA)   → :3000
+│   ├── council-app/             # ✅ Council portal       (Next.js 16)        → :3001
+│   ├── faculty/                 # ✅ Faculty/Principal     (Next.js 16)       → :3002
+│   ├── student/  council/  dean/  # ❌ deprecated Vite SPAs — ignore
+├── AGENTS.md / CLAUDE.md        # Context & rules for AI agents
+├── SETUP.md                     # Full local + deployed run guide
+├── DEPLOY.md / DOCKER_README.md # Production deploy notes (Docker/Nginx)
+├── docker-compose.yml
+└── example.env                  # Backend env template (see also backend/.env.example)
 ```
 
 ---
 
 ## Quick Start
 
-### Prerequisites
+Prerequisites: **Node.js 18+** and npm. See [`SETUP.md`](SETUP.md) for the full walkthrough,
+the Google OAuth Console step, and Playwright/automation notes.
 
-| Tool | Min Version | Install |
+### 1. Backend
+
+```bash
+cd backend
+cp .env.example .env         # then fill in values (DATABASE_URL, Google creds, secrets)
+npm install
+npx prisma generate          # required — schema uses the driverAdapters preview
+npx prisma migrate deploy    # apply migrations (point DATABASE_URL at the Neon dev DB)
+node main.js                 # http://localhost:8000
+```
+
+Health check: <http://localhost:8000/api/v1/health>
+
+### 2. Frontends (each in its own terminal)
+
+Each app needs a `.env.local` (copy from its `.env.example`). ⚠️ `app` and `faculty` **fall back
+to the production API** if `NEXT_PUBLIC_SERVER_ADDRESS` is unset — always set it locally.
+
+```bash
+# Student
+cd frontend/app         && cp .env.example .env.local && npm install && npm run dev -- -p 3000
+# Council
+cd frontend/council-app && cp .env.example .env.local && npm install && npm run dev -- -p 3001
+# Faculty
+cd frontend/faculty     && cp .env.example .env.local && npm install && npm run dev -- -p 3002
+```
+
+---
+
+## Ports
+
+| App | URL | Backend env that must point here |
 |---|---|---|
-| Docker | 24 | https://docs.docker.com/get-docker/ |
-| Docker Compose | 2.x | Bundled with Docker Desktop |
-| Node.js | 18 | https://nodejs.org/ (dev only) |
+| Backend API | http://localhost:8000 | `SERVER_URL` |
+| Student (`app`) | http://localhost:3000 | `CLIENT_URL` |
+| Council (`council-app`) | http://localhost:3001 | `COUNCIL_CLIENT_URL` |
+| Faculty (`faculty`) | http://localhost:3002 | `FACULTY_CLIENT_URL` (+ `DEAN_CLIENT_URL`) |
 
-### Production (Docker Compose)
+The backend redirects post-login **by role** to these URLs and uses the same three as its CORS
+allowlist — so the ports here must match `backend/.env` exactly. See [Auth Flow](#auth-flow).
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/csikjsce/eventio-3.0.git
-   cd eventio-3.0
-   ```
+---
 
-2. Copy the environment template and fill in all required values:
-   ```bash
-   cp example.env .env
-   ```
+## Environment Variables
 
-3. Pull and start all containers:
-   ```bash
-   docker compose pull
-   docker compose up -d
-   ```
+### Backend (`backend/.env`) — see `backend/.env.example`
 
-4. Verify the stack is healthy:
-   ```bash
-   curl http://localhost/api/v1/health
-   ```
+| Variable | Description | Required |
+|---|---|---|
+| `DATABASE_URL` | PostgreSQL connection string. Neon host → Neon adapter; else `pg`. | Yes |
+| `NODE_ENV` | `production` enables the `somaiya.edu` domain lock. Leave unset locally. | No |
+| `PORT` | Backend listen port (default `8000`). | No |
+| `LOG_LEVEL` | Bunyan level (`trace`…`error`). | No |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google OAuth 2.0 credentials. | Yes |
+| `GOOGLE_CALLBACK_URL` | Callback path appended to `SERVER_URL` (`/api/v1/auth/google/callback`). | No |
+| `FRONTEND_REDIRECT_PATH` | Path appended on post-login redirect (`/login`). | No |
+| `JWT_SECRET` | Signs access + refresh tokens. | Yes |
+| `SESSION_SECRET` | Express session secret. | Yes |
+| `AT_EXPIRATION` / `RT_EXPIRATION` | Token lifetimes (`5h` / `7d`). | No |
+| `CLIENT_URL` | Student app origin — default post-login redirect + CORS. | Yes |
+| `COUNCIL_CLIENT_URL` | Council app origin — `COUNCIL` redirect + CORS. | Yes |
+| `FACULTY_CLIENT_URL` | Faculty app origin — `FACULTY`/`PRINCIPAL` redirect + CORS. | Yes |
+| `DEAN_CLIENT_URL` | Legacy fallback for `FACULTY_CLIENT_URL`. | No |
+| `SERVER_URL` | Public backend URL (builds the OAuth callback). | Yes |
+| `EMAIL_USER` / `EMAIL_PASS` | SMTP creds for Nodemailer. | Email features only |
 
-### Local Development
+> `DIRECT_URL` is **not** used — `schema.prisma`'s datasource reads only `DATABASE_URL`.
 
-1. **Backend**:
-   ```bash
-   cd backend
-   cp ../example.env .env   # add your values
-   npm install
-   npx prisma migrate deploy
-   node main.js
-   ```
+### Frontends (`frontend/<app>/.env.local`) — see each `.env.example`
 
-2. **Student frontend**:
-   ```bash
-   cd frontend/student
-   npm install
-   npm run dev              # http://localhost:5173
-   ```
+| Variable | Description | Apps |
+|---|---|---|
+| `NEXT_PUBLIC_SERVER_ADDRESS` | Backend base URL (client calls `${it}/api/v1`). | all three |
+| `NEXT_PUBLIC_APP_URL` | Public URL of the student app (metadata/absolute links). | `app` only |
 
-3. **Council frontend**:
-   ```bash
-   cd frontend/council
-   npm install
-   npm run dev              # http://localhost:5174
-   ```
+---
 
-4. **Dean frontend**:
-   ```bash
-   cd frontend/dean
-   npm install
-   npm run dev              # http://localhost:5175
-   ```
+## Auth Flow
+
+1. A frontend sends the browser to `${NEXT_PUBLIC_SERVER_ADDRESS}/api/v1/auth/google`.
+2. The **backend** runs the Google handshake. Google's redirect URI is
+   `SERVER_URL + /api/v1/auth/google/callback` — the callback lands on the **backend**.
+3. The backend redirects back **by the user's role**, appending `/login?accessToken=…&refreshToken=…`:
+   - `USER` (default) → `CLIENT_URL`
+   - `COUNCIL` → `COUNCIL_CLIENT_URL`
+   - `FACULTY` / `PRINCIPAL` → `FACULTY_CLIENT_URL`
+4. Each app stores tokens in `localStorage` under **app-specific keys**:
+
+| App | Access token key | Refresh token key |
+|---|---|---|
+| `app` | `accessToken` | `refreshToken` |
+| `council-app` | `council_accessToken` | `council_refreshToken` |
+| `faculty` | `faculty_accessToken` | `faculty_refreshToken` |
+
+The `somaiya.edu` domain restriction applies **only** when `NODE_ENV=production`, so a plain Google
+account works locally. To add localhost login, add `http://localhost:8000/api/v1/auth/google/callback`
+as an authorized redirect URI on the Google OAuth client (details in [`SETUP.md`](SETUP.md)).
 
 ---
 
@@ -256,83 +255,31 @@ eventio-3.0/
 
 All routes are prefixed `/api/v1`. Routes containing `/p/` require a `Bearer <accessToken>` header.
 
-| Service | Method | Path | Auth | Description |
-|---|---|---|---|---|
-| health | GET | `/health` | None | Liveness probe |
-| auth | GET | `/auth/google` | None | Initiate Google OAuth redirect |
-| auth | GET | `/auth/google/callback` | None | OAuth callback; redirects with tokens |
-| auth | POST | `/auth/googleToken` | None | Exchange Google one-tap code for JWT tokens |
-| auth | POST | `/auth/refresh-token` | None (refresh token in body) | Rotate access + refresh tokens |
-| user | POST | `/user/p/me` | JWT | Get authenticated user profile |
-| user | POST | `/user/p/update` | JWT | Update user profile fields |
-| event | POST | `/event/p/get` | JWT | List events (filtered by role/state) |
-| event | POST | `/event/p/get/me` | JWT | List events created by current user |
-| event | POST | `/event/p/get/:id` | JWT | Get single event by ID |
-| event | POST | `/event/p/create` | JWT (COUNCIL) | Create a new event |
-| event | POST | `/event/p/update/:id` | JWT (COUNCIL/FACULTY/PRINCIPAL) | Update event fields |
-| event | GET | `/event/p/search/` | JWT | Search events |
-| event | GET | `/event/p/stats` | JWT | Event statistics |
-| event | POST | `/event/p/register-for-event` | JWT | Register for an event (solo or team) |
-| event | POST | `/event/p/create-team` | JWT | Create a new team |
-| event | POST | `/event/p/join-team` | JWT | Join a team via invite code |
-| event | POST | `/event/p/delete-team` | JWT | Delete a team |
-| event | POST | `/event/p/remove-from-team` | JWT | Remove a member from a team |
-| event | POST | `/event/p/team-submission` | JWT | Submit team deliverable |
-| event | POST | `/event/p/rate` | JWT | Rate an event |
-| event | POST | `/event/p/claim-ticket` | JWT | Claim event ticket |
-| event | GET | `/event/get-event-participants/:id` | None | Get participant list for an event |
-| event | POST | `/event/checkin` | None | Check in a participant |
-| event | GET | `/event/p/attendance-report/:id` | JWT (COUNCIL/FACULTY/PRINCIPAL) | Download PDF attendance report |
-| council | POST | `/council/p/get` | JWT | List all council members |
-| mailer | POST | `/mailer/send-email` | None | Send a transactional email |
-
----
-
-## Environment Variables
-
-| Variable | Description | Default | Required |
-|---|---|---|---|
-| `DATABASE_URL` | Neon / PostgreSQL connection string (pooled) | — | Yes |
-| `DIRECT_URL` | Direct (non-pooled) PostgreSQL URL for Prisma migrations | — | Yes |
-| `PORT` | Backend listen port | `8000` | No |
-| `NODE_ENV` | Runtime environment (`production` / `development`) | — | Yes |
-| `LOG_LEVEL` | Bunyan log level (`trace` `debug` `info` `warn` `error`) | `warn` | No |
-| `GOOGLE_CLIENT_ID` | Google OAuth 2.0 client ID | — | Yes |
-| `GOOGLE_CLIENT_SECRET` | Google OAuth 2.0 client secret | — | Yes |
-| `GOOGLE_CALLBACK_URL` | OAuth callback path (appended to `SERVER_URL`) | `/api/v1/auth/google/callback` | No |
-| `JWT_SECRET` | Secret for signing access + refresh tokens | — | Yes |
-| `SESSION_SECRET` | Secret for Express session | — | Yes |
-| `AT_EXPIRATION` | Access token lifetime | `5h` | No |
-| `RT_EXPIRATION` | Refresh token lifetime | `7d` | No |
-| `FRONTEND_REDIRECT_PATH` | Path appended after auth redirect | `/login` | No |
-| `CLIENT_URL` | Student frontend base URL | — | Yes |
-| `COUNCIL_CLIENT_URL` | Council frontend base URL (CORS allowlist) | — | Yes |
-| `FACULTY_CLIENT_URL` | Dean frontend base URL (CORS allowlist) | — | Yes |
-| `SERVER_URL` | Public URL of the backend (used to build OAuth callback) | — | Yes |
-| `EMAIL_USER` | SMTP user for Nodemailer | — | Yes |
-| `EMAIL_PASS` | SMTP password for Nodemailer | — | Yes |
-| `VITE_APP_SERVER_ADDRESS` | API base URL baked into frontend builds at build time | — | Yes (build) |
-
----
-
-## Development Tools
-
-| Tool | URL | Description |
+| Route group | Base | Purpose |
 |---|---|---|
-| Student portal | http://localhost:5173 | Student SPA dev server |
-| Council portal | http://localhost:5174 | Council management SPA dev server |
-| Dean portal | http://localhost:5175 | Faculty/Principal SPA dev server |
-| Backend API | http://localhost:8000/api/v1/health | Health check endpoint |
-| Nginx (prod) | http://localhost | Serves all SPAs + proxies `/api/` |
+| health | `/health` | Liveness probe |
+| auth | `/auth` | Google OAuth (`/google`, `/google/callback`), token exchange & refresh |
+| user | `/user` | Profile read/update |
+| event | `/event` | Event CRUD, registration, teams, attendance, tickets, reports, state changes |
+| council | `/council` | List council members |
+| mailer | `/mailer` | Send transactional email |
+| document | `/document` | Council/event document management |
+| budget | `/budget` | Event budget management |
+| announcement | `/announcement` | Announcements |
+
+> Rate limits (`backend/main.js`): global 300 req/min per IP; auth endpoints 30 per 15 min.
 
 ---
 
 ## Contributing
 
-1. Fork the repository and create a feature branch: `git checkout -b feat/your-feature`.
-2. Backend: follow the existing route/middleware pattern; no unused variables; log errors with the Bunyan logger.
-3. Frontend: TypeScript strict mode; Prettier + ESLint must pass (`npm run lint`); Tailwind utility classes only.
-4. Open a pull request against `main` with a clear description of the change.
+1. Branch off `main`: `git checkout -b feat/your-feature`.
+2. Work **only** in the active apps (`backend/`, `frontend/app`, `frontend/council-app`, `frontend/faculty`).
+   The deprecated Vite folders are off-limits.
+3. Backend: follow the existing route/middleware pattern; log errors with the Bunyan logger.
+4. Frontend: TypeScript strict; Prettier + ESLint (`npm run lint`); Tailwind utilities. These apps
+   run **Next.js 16** — check `frontend/<app>/AGENTS.md`; APIs differ from older Next.js.
+5. Do not commit secrets. Open a PR against `main`.
 
 ---
 
