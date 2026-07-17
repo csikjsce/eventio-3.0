@@ -30,6 +30,26 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   return config;
 });
 
+// ── Session cleanup + safe login redirect ─────────────────────────────────────
+
+/**
+ * Clear the stored session and send the user to /login.
+ *
+ * Always clears the tokens first — a leftover accessToken is what caused the
+ * infinite loop: an invalid token kept re-triggering this 401 handler on every
+ * render, nesting ?next= forever. Also refuses to redirect when the request
+ * already originated on /login, so we never build a /login?next=/login chain.
+ */
+function redirectToLogin() {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem("accessToken");
+  localStorage.removeItem("refreshToken");
+  localStorage.removeItem("eventio-onboarded");
+  if (window.location.pathname === "/login") return;
+  const next = window.location.pathname + window.location.search;
+  window.location.replace("/login?next=" + encodeURIComponent(next));
+}
+
 // ── Response interceptor — silent refresh on 401 ─────────────────────────────
 
 type RetryableConfig = InternalAxiosRequestConfig & { _retry?: boolean };
@@ -59,20 +79,11 @@ api.interceptors.response.use(
           return api.request(config);
         } catch {
           // Refresh failed — clear session and go to login
-          if (typeof window !== "undefined") {
-            localStorage.removeItem("accessToken");
-            localStorage.removeItem("refreshToken");
-            localStorage.removeItem("eventio-onboarded");
-            const next = window.location.pathname + window.location.search;
-            window.location.replace("/login?next=" + encodeURIComponent(next));
-          }
+          redirectToLogin();
         }
       } else {
-        // No refresh token at all — redirect to login, preserving current URL
-        if (typeof window !== "undefined") {
-          const next = window.location.pathname + window.location.search;
-          window.location.replace("/login?next=" + encodeURIComponent(next));
-        }
+        // No refresh token at all — clear session and go to login
+        redirectToLogin();
       }
     }
 
