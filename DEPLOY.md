@@ -1,5 +1,9 @@
 # Eventio deployment
 
+> ℹ️ For the current folder map (active vs deprecated apps), ports, and env vars, see
+> [`README.md`](README.md) and [`SETUP.md`](SETUP.md) — those are the source of truth. This file
+> covers the production deploy pipeline only; confirm folder/port details there before relying on them.
+
 Production runs on the SWDC server behind **Nginx Proxy Manager**. Deployments are triggered by a **server-side git poll** — no GitHub SSH secrets required.
 
 ## What gets deployed
