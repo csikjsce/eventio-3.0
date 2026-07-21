@@ -18,7 +18,7 @@ const INTEREST_SUGGESTIONS = [
 const GENDER_OPTIONS = [
   { value: "MALE",   label: "Male" },
   { value: "FEMALE", label: "Female" },
-  { value: "OTHER",  label: "Prefer not to say" },
+  { value: "PREFER_NOT_TO_SAY", label: "Prefer not to say" },
 ];
 const DEGREE_OPTIONS = ["B.Tech", "M.Tech", "MCA", "MBA", "B.Sc"];
 

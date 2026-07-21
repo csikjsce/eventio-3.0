@@ -2159,7 +2159,8 @@ router.post(protected + "/join-team", authCheck, async (req, res) => {
     ).length;
 
     if (
-        req.user.gender === "MALE" &&
+        (req.user.gender === "MALE" ||
+            req.user.gender === "PREFER_NOT_TO_SAY") &&
         femaleParticipants < event.female_requirement &&
         teamMembers + 1 >= event.ma_ppt
     ) {
