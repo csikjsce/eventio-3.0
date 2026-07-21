@@ -155,7 +155,7 @@ export default function CalendarScreen() {
       </div>
 
       {/* Day labels — Mon first */}
-      <div className="grid grid-cols-7 mb-2">
+      <div className="grid grid-cols-7 rounded-2xl bg-surface/80 mb-2">
         {DAY_LABELS.map((d) => (
           <p key={d} className="text-xs text-center text-mute font-poppins font-medium py-1 select-none">
             {d}
@@ -164,13 +164,13 @@ export default function CalendarScreen() {
       </div>
 
       {/* Date grid */}
-      <div className="grid grid-cols-7 gap-y-1 mb-6">
+      <div className="grid grid-cols-7 rounded-2xl bg-surface/80 gap-y-1 mb-6">
         {monFirstDates.map(({ date, currentMonth, today: isToday }, idx) => {
           const isSelected = selectDate.isSame(date, "day");
           const hasEvents = getEventsForDate(date).length > 0;
 
           return (
-            <div key={idx} className="flex flex-col items-center gap-0.5 py-0.5">
+            <div key={idx} className="flex flex-col items-center gap-0.5  py-0.5">
               <button
                 onClick={() => setSelectDate(date)}
                 className={`h-9 w-9 rounded-full grid place-content-center text-sm font-poppins font-medium select-none transition-all ${

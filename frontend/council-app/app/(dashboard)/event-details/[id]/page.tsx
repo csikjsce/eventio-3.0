@@ -487,7 +487,7 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
         <img src={event.banner_url} alt={event.name} className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
         {/* Back */}
-        <button type="button" onClick={() => router.back()}
+        <button type="button" onClick={() => router.push("/")}
           className="absolute top-4 left-4 flex items-center gap-1.5 px-3 py-1.5 bg-black/50 backdrop-blur-sm text-white text-xs font-fira rounded-lg hover:bg-black/70 transition-all">
           <ArrowLeft size={13} /> Back
         </button>

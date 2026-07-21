@@ -16,7 +16,7 @@ export default function FooterNav() {
 
   return (
     <div className="fixed bottom-0 left-0 right-0 px-4 pb-6 pointer-events-none z-20">
-      <div className="bg-card rounded-2xl flex items-center justify-around p-2 shadow-2xl pointer-events-auto border border-border">
+      <div className="bg-card/80 rounded-2xl flex items-center justify-around p-2 shadow-2xl pointer-events-auto border border-border">
         {tabs.map(({ Icon, text, to }) => {
           const isActive = to === "/" ? pathname === "/" : pathname.startsWith(to);
           return (
