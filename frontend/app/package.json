@@ -15,6 +15,7 @@
     "dayjs": "^1.11.20",
     "iconsax-react": "^0.0.8",
     "lucide-react": "^1.16.0",
+    "marked": "^18.0.6",
     "next": "16.2.6",
     "radix-ui": "^1.4.3",
     "react": "19.2.4",

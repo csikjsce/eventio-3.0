@@ -10,6 +10,7 @@ import ProposalApprovalCard from "@/components/ProposalApprovalCard";
 import { proposalBuilderPath } from "@/lib/proposal-routes";
 import ProposalDocumentView from "@/components/ProposalDocumentView";
 import { uploadFile, type UploadType } from "@/lib/upload";
+import { markdownToHtml, looksLikeMarkdown } from "@/lib/email-body";
 import { useData } from "@/contexts/DataContext";
 import {
   ArrowLeft, CalendarDays, MapPin, Users, Ticket, Edit2, ExternalLink,
@@ -547,9 +548,16 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
             {/* About card */}
             <div className="bg-surface border border-border-c rounded-2xl p-5 sm:p-6">
               {event.long_description?.trim() ? (
-                <p className="text-muted-tx text-sm font-fira leading-relaxed break-words [overflow-wrap:anywhere]">
-                  {event.long_description}
-                </p>
+                looksLikeMarkdown(event.long_description) ? (
+                  <div
+                    className="text-muted-tx text-sm font-fira leading-relaxed break-words [overflow-wrap:anywhere] [&_h1]:text-lg [&_h1]:font-semibold [&_h1]:text-tx [&_h1]:mt-2 [&_h2]:text-base [&_h2]:font-semibold [&_h2]:text-tx [&_h2]:mt-2 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:text-tx [&_p]:my-1.5 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-red-500 [&_a]:underline [&_code]:bg-surface2 [&_code]:px-1 [&_code]:rounded [&_blockquote]:border-l-2 [&_blockquote]:border-red-500/40 [&_blockquote]:pl-3 [&_strong]:text-tx"
+                    dangerouslySetInnerHTML={{ __html: markdownToHtml(event.long_description) }}
+                  />
+                ) : (
+                  <p className="text-muted-tx text-sm font-fira leading-relaxed break-words [overflow-wrap:anywhere]">
+                    {event.long_description}
+                  </p>
+                )
               ) : (
                 <p className="text-subtle-tx text-sm font-fira italic">No description added yet.</p>
               )}

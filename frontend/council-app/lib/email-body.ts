@@ -20,6 +20,14 @@ export function markdownToHtml(markdown: string): string {
   return sanitizeEmailHtml(typeof raw === "string" ? raw : "");
 }
 
+const MD_PATTERN =
+  /^#{1,6}\s|\*\*[^*]+\*\*|__[^_]+__|\[[^\]]+\]\([^)]+\)|^[-*+]\s|^>\s|`[^`]+`/m;
+
+/** Heuristic: does this text contain markdown syntax worth rendering? */
+export function looksLikeMarkdown(s?: string | null): boolean {
+  return !!s && MD_PATTERN.test(s);
+}
+
 /** HTML for the message body slot (header logos stay outside this in EmailPreview / template). */
 export function renderEmailBodyHtml(body: string, format: EmailBodyFormat = "plain"): string {
   const trimmed = body.trim();
