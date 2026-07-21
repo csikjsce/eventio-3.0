@@ -10,6 +10,7 @@ import RegistrationFieldsEditor from "@/components/RegistrationFieldsEditor";
 import type { RegistrationField } from "@/lib/registration-fields";
 import { normalizeRegistrationFields } from "@/lib/registration-fields";
 import { useData } from "@/contexts/DataContext";
+import { markdownToHtml, looksLikeMarkdown } from "@/lib/email-body";
 import { createEvent, updateEvent, toEventUpdatePayload } from "@/lib/api";
 import { uploadFile } from "@/lib/upload";
 import {
@@ -18,6 +19,8 @@ import {
 } from "lucide-react";
 
 /* ─── helpers ─── */
+type DescFormat = "plaintext" | "markdown";
+
 function dateToString(d: Date) {
   return d.toLocaleString("en-CA", {
     year: "numeric", month: "2-digit", day: "2-digit",
@@ -48,6 +51,27 @@ function Toggle({ on, onToggle, label, sub }: { on: boolean; onToggle(): void; l
         <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${on ? "translate-x-6" : "translate-x-1"}`} />
       </div>
     </div>
+  );
+}
+
+function FormatToggle({ format, onChange }: { format: DescFormat; onChange(f: DescFormat): void }) {
+  const md = format === "markdown";
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={md}
+      aria-label="Toggle between plaintext and markdown"
+      onClick={() => onChange(md ? "plaintext" : "markdown")}
+      className="relative grid grid-cols-2 items-center shrink-0 bg-surface2 border border-border-c rounded-lg p-0.5 text-[11px] font-fira font-medium cursor-pointer select-none"
+    >
+      <span
+        aria-hidden
+        className={`absolute top-0.5 bottom-0.5 left-0.5 w-[calc(50%-2px)] rounded-md bg-red-500 shadow transition-transform duration-200 ${md ? "translate-x-full" : ""}`}
+      />
+      <span className={`relative z-10 px-3 py-1 text-center transition-colors ${!md ? "text-white" : "text-muted-tx"}`}>Plaintext</span>
+      <span className={`relative z-10 px-3 py-1 text-center transition-colors ${md ? "text-white" : "text-muted-tx"}`}>Markdown</span>
+    </button>
   );
 }
 
@@ -143,6 +167,7 @@ export default function NewEventPage() {
   const [toast, setToast]             = useState<{ msg: string; ok: boolean } | null>(null);
   const [uploadingBanner, setUploadingBanner]   = useState(false);
   const [uploadingDetail, setUploadingDetail]   = useState(false);
+  const [descFormat, setDescFormat] = useState<DescFormat>("plaintext");
   const bannerFileRef = useRef<HTMLInputElement>(null);
   const detailFileRef = useRef<HTMLInputElement>(null);
 
@@ -185,6 +210,7 @@ export default function NewEventPage() {
         }
       }
       if (existing.ma_ppt > 1) setTeamEvent(true);
+      if (looksLikeMarkdown(existing.long_description)) setDescFormat("markdown");
     }
   }, []);
 
@@ -211,6 +237,8 @@ export default function NewEventPage() {
 
   const wMinPpt = watch("min_ppt");
   const wMaPpt = watch("ma_ppt");
+  const wLongDesc = watch("long_description");
+  const wLongDescHtml = descFormat === "markdown" ? markdownToHtml(wLongDesc || "") : "";
   useEffect(() => {
     if (teamEvent) void trigger(["min_ppt", "ma_ppt"]);
   }, [teamEvent, wMinPpt, wMaPpt, trigger]);
@@ -394,7 +422,34 @@ export default function NewEventPage() {
                       <FieldWrap label="Tagline *" error={errors.tag_line?.message}><input className={INPUT} {...register("tag_line")} placeholder="e.g. Code. Create. Conquer." /></FieldWrap>
                     </div>
                     <FieldWrap label="Short Description *" error={errors.description?.message}><textarea rows={3} className={`${INPUT} resize-none`} {...register("description")} placeholder="2–3 lines shown on event cards." /></FieldWrap>
-                    <FieldWrap label="Full Description *" error={errors.long_description?.message}><textarea rows={6} className={`${INPUT} resize-none`} {...register("long_description")} placeholder="Write a real overview students will read on the event page (not the event name repeated)." /></FieldWrap>
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center justify-between gap-3">
+                        <label className={LABEL}>Full Description *</label>
+                        <FormatToggle format={descFormat} onChange={setDescFormat} />
+                      </div>
+                      <textarea
+                        rows={descFormat === "markdown" ? 8 : 6}
+                        className={`${INPUT} resize-none ${descFormat === "markdown" ? "font-mono text-[13px] leading-relaxed" : ""}`}
+                        {...register("long_description")}
+                        placeholder={descFormat === "markdown"
+                          ? "# Heading\n**bold**, *italic*, [link](https://…), - list item"
+                          : "Write a real overview students will read on the event page (not the event name repeated)."}
+                      />
+                      {errors.long_description?.message && <p className={ERR}>{errors.long_description.message}</p>}
+                      {descFormat === "markdown" && (
+                        <div className="mt-1">
+                          <p className={LABEL}>Preview</p>
+                          {wLongDescHtml ? (
+                            <div
+                              className="bg-surface2 border border-border-c rounded-lg px-4 py-3 text-tx text-sm font-fira leading-relaxed [&_h1]:text-lg [&_h1]:font-semibold [&_h1]:mt-2 [&_h2]:text-base [&_h2]:font-semibold [&_h2]:mt-2 [&_h3]:text-sm [&_h3]:font-semibold [&_p]:my-1.5 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-red-500 [&_a]:underline [&_code]:bg-surface [&_code]:px-1 [&_code]:rounded [&_blockquote]:border-l-2 [&_blockquote]:border-red-500/40 [&_blockquote]:pl-3 [&_blockquote]:text-muted-tx"
+                              dangerouslySetInnerHTML={{ __html: wLongDescHtml }}
+                            />
+                          ) : (
+                            <p className="bg-surface2 border border-border-c rounded-lg px-4 py-3 text-subtle-tx text-xs font-fira italic">Nothing to preview yet.</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <FieldWrap label="Card / Banner Image (16:9) *" error={errors.banner_url?.message}>
                         <div className="flex gap-2">

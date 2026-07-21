@@ -15,6 +15,8 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import IconText from "@/components/IconText";
 import Passage from "@/components/Passage";
+import MarkdownContent from "@/components/MarkdownContent";
+import { looksLikeMarkdown } from "@/lib/markdown";
 import Spinner from "@/components/Spinner";
 import FeedbackModal from "@/components/FeedbackModal";
 import RegistrationDetailsModal from "@/components/RegistrationDetailsModal";
@@ -287,7 +289,16 @@ export default function EventDetailsScreen() {
           </div>
 
           {/* About */}
-          <Passage title="About the Event" content={event.long_description || event.description} />
+          <Passage
+            title="About the Event"
+            content={
+              looksLikeMarkdown(event.long_description || event.description) ? (
+                <MarkdownContent content={event.long_description || event.description} />
+              ) : (
+                event.long_description || event.description
+              )
+            }
+          />
 
           {/* Fee */}
           <div className="bg-card rounded-2xl p-4 border border-border flex items-center justify-between">

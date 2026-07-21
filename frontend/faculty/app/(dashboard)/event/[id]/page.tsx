@@ -9,6 +9,7 @@ import {
   AlertCircle, RotateCcw,
 } from "lucide-react";
 import { useData } from "@/contexts/DataContext";
+import { markdownToHtml } from "@/lib/markdown";
 import {
   fetchEvent, fetchDocuments, fetchBudget,
   returnEventToCouncil,
@@ -384,8 +385,8 @@ function EventReviewContent({ id }: { id: string }) {
             {event.long_description && (
               <div>
                 <h3 className="text-sm font-semibold mb-2">Detailed Description</h3>
-                <div className="text-sm text-muted-foreground prose prose-sm dark:prose-invert max-w-none"
-                  dangerouslySetInnerHTML={{ __html: event.long_description }} />
+                <div className="text-sm text-muted-foreground leading-relaxed break-words [overflow-wrap:anywhere] [&_h1]:text-base [&_h1]:font-semibold [&_h1]:text-foreground [&_h1]:mt-2 [&_h2]:text-sm [&_h2]:font-semibold [&_h2]:text-foreground [&_h2]:mt-2 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:text-foreground [&_p]:my-1.5 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:underline [&_code]:bg-muted [&_code]:px-1 [&_code]:rounded [&_blockquote]:border-l-2 [&_blockquote]:pl-3 [&_strong]:text-foreground"
+                  dangerouslySetInnerHTML={{ __html: markdownToHtml(event.long_description) }} />
               </div>
             )}
             <div className="grid grid-cols-2 gap-3 pt-2">
