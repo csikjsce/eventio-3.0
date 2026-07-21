@@ -8,7 +8,7 @@
     "@neondatabase/serverless": "^0.9.4",
     "@prisma/adapter-neon": "^5.18.0",
     "@prisma/adapter-pg": "^5.18.0",
-    "@prisma/client": "^5.18.0",
+    "@prisma/client": "5.18.0",
     "bunyan": "^1.8.15",
     "bunyan-middleware": "^1.0.2",
     "cors": "^2.8.5",
@@ -29,6 +29,6 @@
     "ws": "^8.18.0"
   },
   "devDependencies": {
-    "prisma": "^5.18.0"
+    "prisma": "5.18.0"
   }
 }

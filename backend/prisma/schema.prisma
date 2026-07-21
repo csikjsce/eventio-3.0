@@ -247,6 +247,7 @@ enum REGISTRATION_TYPE {
 
 enum BRANCH {
   Artificial_Intelligence_And_Data_Science
+  Civil_Engineering
   Computer_Engineering
   Computer_And_Communication
   Computer_Science_And_Business_Systems
@@ -257,11 +258,13 @@ enum BRANCH {
   Mechanical
   Robotics_And_Artificial_Intelligence
   Electronics_VLSI
+  Other
 }
 
 enum GENDER {
   MALE
   FEMALE
+  PREFER_NOT_TO_SAY
 }
 
 enum ROLE {

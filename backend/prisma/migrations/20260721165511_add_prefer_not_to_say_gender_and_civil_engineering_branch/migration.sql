@@ -1,0 +1,5 @@
+-- AlterEnum
+ALTER TYPE "BRANCH" ADD VALUE 'Civil_Engineering';
+
+-- AlterEnum
+ALTER TYPE "GENDER" ADD VALUE 'PREFER_NOT_TO_SAY';
