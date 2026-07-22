@@ -11,6 +11,7 @@ const branchOptions: Record<string, string[]> = {
   "2027": ["Computer Engineering", "Computer And Communication", "Information Technology", "Artificial Intelligence And Data Science", "Mechanical", "Electronics And Telecommunications", "Electronics And Computers", "Robotics And Artificial Intelligence"],
   "2028": ["Computer Engineering", "Computer And Communication", "Computer Science And Business Systems", "Information Technology", "Artificial Intelligence And Data Science", "Mechanical", "Electronics And Telecommunications", "Electronics And Computers", "Electronics VLSI", "Robotics And Artificial Intelligence"],
   "2029": ["Computer Engineering", "Computer And Communication", "Computer Science And Business Systems", "Information Technology", "Artificial Intelligence And Data Science", "Mechanical", "Electronics And Telecommunications", "Electronics And Computers", "Electronics VLSI", "Robotics And Artificial Intelligence", "Other"],
+  "2030": ["Computer Engineering", "Computer And Communication", "Computer Science And Business Systems", "Information Technology", "Artificial Intelligence And Data Science", "Civil Engineering", "Mechanical", "Electronics And Telecommunications", "Electronics And Computers", "Electronics VLSI", "Robotics And Artificial Intelligence", "Other"],
 };
 
 const interestChips = [
@@ -122,7 +123,7 @@ function PersonalDetails({
                 <option value="" disabled>Select Gender</option>
                 <option value="MALE">Male</option>
                 <option value="FEMALE">Female</option>
-                <option value="OTHER">Prefer not to say</option>
+                <option value="PREFER_NOT_TO_SAY">Prefer not to say</option>
               </select>
             </SelectWrapper>
           </Field>
@@ -183,7 +184,7 @@ function EducationalDetails({
                 }}
               >
                 <option value="" disabled>Select Graduation Year</option>
-                {["2025", "2026", "2027", "2028", "2029"].map((y) => (
+                {["2025", "2026", "2027", "2028", "2029", "2030"].map((y) => (
                   <option key={y} value={y}>{y}</option>
                 ))}
               </select>
