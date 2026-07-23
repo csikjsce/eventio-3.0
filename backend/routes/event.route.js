@@ -192,7 +192,7 @@ router.post(protected + "/get", authCheck, async (req, res) => {
                 events = await prisma.events.findMany({
                     where: {
                         state: {
-                            in: ["APPLIED_FOR_PRINCI_APPROVAL"],
+                            in: ["APPLIED_FOR_PRINCI_APPROVAL", "UNLISTED"],
                         },
                     },
                     relationLoadStrategy: "join",
@@ -287,6 +287,7 @@ router.post(protected + "/get", authCheck, async (req, res) => {
                                 "ONGOING",
                                 "COMPLETED",
                                 "APPLIED_FOR_PRINCI_APPROVAL",
+                                "UNLISTED",
                             ],
                         },
                     },
@@ -1273,7 +1274,10 @@ router.post(
                 const role = req.user.role;
                 const newState = field.state;
 
-                if (role === "FACULTY" && state === "APPLIED_FOR_APPROVAL") {
+                if (
+                    role === "FACULTY" &&
+                    (state === "APPLIED_FOR_APPROVAL" || state === "UNLISTED")
+                ) {
                     const allowed = await facultyCanAccessEvent(
                         req.user,
                         existingEvent,
@@ -1324,11 +1328,11 @@ router.post(
 
                 // Faculty: direct approve (UNLISTED) or escalate to Principal
                 if (role === "FACULTY") {
-                    if (state !== "APPLIED_FOR_APPROVAL") {
+                    if (state !== "APPLIED_FOR_APPROVAL" && state !== "UNLISTED") {
                         return res.status(400).json({
                             error: true,
                             message:
-                                "Faculty can only update state while a proposal is awaiting faculty review.",
+                                "Faculty can only update an event awaiting review or an approved event.",
                         });
                     }
                     if (
@@ -1369,11 +1373,14 @@ router.post(
 
                 // Principal: final approve or return to council
                 if (role === "PRINCIPAL") {
-                    if (state !== "APPLIED_FOR_PRINCI_APPROVAL") {
+                    if (
+                        state !== "APPLIED_FOR_PRINCI_APPROVAL" &&
+                        state !== "UNLISTED"
+                    ) {
                         return res.status(400).json({
                             error: true,
                             message:
-                                "Principal can only update state while a proposal is awaiting principal review.",
+                                "Principal can only update an event awaiting review or an approved event.",
                         });
                     }
                     if (!["UNLISTED", "DRAFT"].includes(newState)) {
@@ -2159,7 +2166,7 @@ router.post(protected + "/join-team", authCheck, async (req, res) => {
     ).length;
 
     if (
-        req.user.gender === "MALE" &&
+        (req.user.gender === "MALE" || req.user.gender === "PREFER_NOT_TO_SAY") &&
         femaleParticipants < event.female_requirement &&
         teamMembers + 1 >= event.ma_ppt
     ) {

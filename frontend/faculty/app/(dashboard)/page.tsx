@@ -13,9 +13,10 @@ export default function DashboardPage() {
   ).length;
 
   const completedCount = events.filter((e) => e.state === "COMPLETED").length;
+  const approvedEvents = events.filter((e) => e.state === "UNLISTED");
 
   const recentLive = events
-    .filter((e) => !["DRAFT", "APPLIED_FOR_APPROVAL", "APPLIED_FOR_PRINCI_APPROVAL"].includes(e.state))
+    .filter((e) => !["DRAFT", "APPLIED_FOR_APPROVAL", "APPLIED_FOR_PRINCI_APPROVAL", "UNLISTED"].includes(e.state))
     .slice(0, 5);
 
   if (loading) {
@@ -119,6 +120,26 @@ export default function DashboardPage() {
           </div>
         )}
       </section>
+
+      {/* Approved events */}
+      {approvedEvents.length > 0 && (
+        <section className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <CheckCircle2 size={18} className="text-emerald-500" />
+              Approved Events
+            </h2>
+            <Link href="/events" className="text-red-600 dark:text-red-400 text-sm hover:underline">
+              View all
+            </Link>
+          </div>
+          <div className="space-y-3">
+            {approvedEvents.slice(0, 5).map((e) => (
+              <EventCard key={e.id} event={e} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Recent active events */}
       {recentLive.length > 0 && (

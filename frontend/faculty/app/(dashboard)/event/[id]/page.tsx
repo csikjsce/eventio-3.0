@@ -75,6 +75,11 @@ function EventReviewContent({ id }: { id: string }) {
 
   const pendingState = user?.role ? PENDING_STATE[user.role] : null;
   const canApprove   = !!(event && pendingState && event.state === pendingState);
+  const canUnapprove = !!(
+    event &&
+    (user?.role === "FACULTY" || user?.role === "PRINCIPAL") &&
+    event.state === "UNLISTED"
+  );
   const isPrincipal  = user?.role === "PRINCIPAL";
 
   const alreadySigned = proposal?.facultySignatures?.some(
@@ -129,34 +134,38 @@ function EventReviewContent({ id }: { id: string }) {
     }
   }
 
-  function ReviewActions() {
-    if (!canApprove) return null;
+  function renderReviewActions() {
+    if (!canApprove && !canUnapprove) return null;
 
     return (
       <div className="mt-6 pt-6 border-t border-border space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-sm font-semibold">Your review</p>
+            <p className="text-sm font-semibold">
+              {canUnapprove ? "Approved event actions" : "Your review"}
+            </p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {hasProposalDoc
+              {canUnapprove
+                ? "If this event needs changes, unapprove it and send it back to council with a reason."
+                : hasProposalDoc
                 ? "Read the proposal above, sign it, then approve or return to council."
                 : "No proposal letter yet — you can still return this to council with feedback."}
             </p>
           </div>
-          {alreadySigned && (
+          {canApprove && alreadySigned && (
             <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
               ✓ You have signed this proposal
             </span>
           )}
         </div>
 
-        {!hasProposalDoc && (
+        {canApprove && !hasProposalDoc && (
           <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/25 text-sm text-amber-800 dark:text-amber-300">
             The council has not submitted a proposal letter yet. Approve is blocked until they do — return with feedback if they need to fix something first.
           </div>
         )}
 
-        {!hasSavedSignature && hasProposalDoc && (
+        {canApprove && !hasSavedSignature && hasProposalDoc && (
           <p className="text-sm text-amber-700 dark:text-amber-400">
             <Link href="/settings" className="underline font-medium">
               Add your digital signature in Settings
@@ -165,7 +174,7 @@ function EventReviewContent({ id }: { id: string }) {
           </p>
         )}
 
-        {!isPrincipal && hasProposalDoc && (
+        {canApprove && !isPrincipal && hasProposalDoc && (
           <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer select-none">
             <input
               type="checkbox"
@@ -178,7 +187,7 @@ function EventReviewContent({ id }: { id: string }) {
         )}
 
         <div className="flex flex-wrap gap-2">
-          {hasProposalDoc && !alreadySigned && hasSavedSignature && (
+          {canApprove && hasProposalDoc && !alreadySigned && hasSavedSignature && (
             <button
               type="button"
               onClick={signProposalOnly}
@@ -196,9 +205,9 @@ function EventReviewContent({ id }: { id: string }) {
             className="px-4 py-2.5 rounded-lg border border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 text-sm disabled:opacity-50 flex items-center gap-1.5"
           >
             <RotateCcw size={14} />
-            Return to Council
+            {canUnapprove ? "Unapprove and Return to Council" : "Return Proposal to Council"}
           </button>
-          {hasProposalDoc && (
+          {canApprove && hasProposalDoc && (
             <button
               type="button"
               onClick={approve}
@@ -219,10 +228,12 @@ function EventReviewContent({ id }: { id: string }) {
         {showReturnBox && (
           <div className="p-4 bg-amber-500/5 border border-amber-500/25 rounded-xl">
             <p className="text-amber-800 dark:text-amber-300 text-sm font-medium mb-1">
-              Send back for changes
+              {canUnapprove ? "Unapprove event" : "Send back for changes"}
             </p>
             <p className="text-muted-foreground text-xs mb-3">
-              The event will return to the council as a draft. They&apos;ll see your feedback and can edit and resubmit.
+              {canUnapprove
+                ? "The event will return to the council as a draft. They&apos;ll see your reason and can edit and resubmit."
+                : "The event will return to the council as a draft. They&apos;ll see your feedback and can edit and resubmit."}
             </p>
             <textarea
               value={returnFeedback}
@@ -234,7 +245,7 @@ function EventReviewContent({ id }: { id: string }) {
             <div className="flex gap-2">
               <button type="button" onClick={returnToCouncil} disabled={busy || !returnFeedback.trim()}
                 className="px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-sm disabled:opacity-50">
-                Send Back to Council
+                {canUnapprove ? "Unapprove and Send Back" : "Send Back to Council"}
               </button>
               <button type="button" onClick={() => { setShowReturnBox(false); setReturnFeedback(""); }}
                 className="px-4 py-2 rounded-lg border border-border text-sm text-muted-foreground hover:bg-muted">
@@ -415,7 +426,7 @@ function EventReviewContent({ id }: { id: string }) {
                 The council has not submitted a proposal document for this event yet.
               </p>
             )}
-            <ReviewActions />
+            {renderReviewActions()}
           </>
         )}
 

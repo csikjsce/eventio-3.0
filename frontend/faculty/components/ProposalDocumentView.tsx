@@ -2,6 +2,7 @@
 
 import type { ProposalPackage, AssignedFacultyReviewer } from "@/lib/proposal";
 import { mergeProposalSignatories } from "@/lib/proposal";
+import { Printer } from "lucide-react";
 
 function formatDate(iso: string) {
   if (!iso) return "—";
@@ -35,7 +36,18 @@ export default function ProposalDocumentView({
   const signatories = doc.signatories.filter((s) => s.name.trim());
 
   return (
-    <div className="rounded-xl border border-border bg-white text-zinc-900 p-6 sm:p-8 text-sm leading-relaxed overflow-x-auto">
+    <div>
+      <div className="flex justify-end mb-3 print:hidden">
+        <button
+          type="button"
+          onClick={() => window.print()}
+          className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
+        >
+          <Printer size={14} />
+          Print proposal letter
+        </button>
+      </div>
+      <div className="rounded-xl border border-border bg-white text-zinc-900 p-6 sm:p-8 text-sm leading-relaxed overflow-x-auto">
       {doc.letterheadUrl && (
         /* eslint-disable-next-line @next/next/no-img-element */
         <img src={doc.letterheadUrl} alt="" className="h-14 object-contain mb-6" />
@@ -75,6 +87,7 @@ export default function ProposalDocumentView({
           ))}
         </div>
         {p.councilName && <p className="mt-4">{p.councilName}</p>}
+      </div>
       </div>
     </div>
   );

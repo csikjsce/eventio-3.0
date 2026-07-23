@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 
 const FILTER_STATES = [
   "ALL", "APPLIED_FOR_APPROVAL", "APPLIED_FOR_PRINCI_APPROVAL",
+  "UNLISTED",
   "UPCOMING", "REGISTRATION_OPEN", "ONGOING", "COMPLETED",
 ];
 
