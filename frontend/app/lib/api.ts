@@ -261,10 +261,11 @@ export async function submitOnboarding(payload: {
   branch: string;
   degree: string;
   college: string;
-  roll_number: string;
+  roll_number?: string;
   interests: string[];
   signature?: unknown;
 }) {
+  const rollNumber = payload.roll_number?.trim();
   const { data } = await api.post("/user/p/update", {
     phone_number: payload.phone_number.trim() || null,
     gender: payload.gender,
@@ -272,7 +273,7 @@ export async function submitOnboarding(payload: {
     branch: payload.branch,
     degree: payload.degree,
     college: payload.college,
-    roll_number: payload.roll_number,
+    ...(rollNumber ? { roll_number: rollNumber } : {}),
     interests: payload.interests,
     signature: payload.signature ?? {},
   });

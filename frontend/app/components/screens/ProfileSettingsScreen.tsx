@@ -1,12 +1,11 @@
 "use client";
 
-import { useContext, useState, useRef } from "react";
+import { useContext, useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Camera, TickCircle } from "iconsax-react";
 import { UserDataContext } from "@/contexts/userContext";
 import { updateProfile } from "@/lib/api";
 import { uploadFile } from "@/lib/upload";
-import NumberInput from "@/components/NumberInput";
 import type { User } from "@/types/eventio";
 
 const INTEREST_SUGGESTIONS = [
@@ -21,6 +20,36 @@ const GENDER_OPTIONS = [
   { value: "PREFER_NOT_TO_SAY",  label: "Prefer not to say" },
 ];
 const DEGREE_OPTIONS = ["B.Tech", "M.Tech", "MCA", "MBA", "B.Sc"];
+const GRAD_YEAR_OPTIONS = ["2025", "2026", "2027", "2028", "2029", "2030"];
+
+const BRANCH_OPTIONS: Record<string, string[]> = {
+  "2025": ["Computer Engineering", "Information Technology", "Electronics", "Mechanical", "Electronics And Telecommunications"],
+  "2026": ["Computer Engineering", "Information Technology", "Mechanical", "Electronics And Telecommunications", "Electronics And Computers"],
+  "2027": ["Computer Engineering", "Computer And Communication", "Information Technology", "Artificial Intelligence And Data Science", "Mechanical", "Electronics And Telecommunications", "Electronics And Computers", "Robotics And Artificial Intelligence"],
+  "2028": ["Computer Engineering", "Computer And Communication", "Computer Science And Business Systems", "Information Technology", "Artificial Intelligence And Data Science", "Mechanical", "Electronics And Telecommunications", "Electronics And Computers", "Electronics VLSI", "Robotics And Artificial Intelligence"],
+  "2029": ["Computer Engineering", "Computer And Communication", "Computer Science And Business Systems", "Information Technology", "Artificial Intelligence And Data Science", "Mechanical", "Electronics And Telecommunications", "Electronics And Computers", "Electronics VLSI", "Robotics And Artificial Intelligence", "Other"],
+  "2030": ["Computer Engineering", "Computer And Communication", "Computer Science And Business Systems", "Information Technology", "Artificial Intelligence And Data Science", "Civil Engineering", "Mechanical", "Electronics And Telecommunications", "Electronics And Computers", "Electronics VLSI", "Robotics And Artificial Intelligence", "Other"],
+};
+
+function normalizeBranch(branch?: string | null) {
+  return branch?.replace(/_/g, " ") ?? "";
+}
+
+function buildFormFromUser(user: User): Partial<User> {
+  return {
+    name:         user.name         ?? "",
+    phone_number: user.phone_number ? String(user.phone_number) : "",
+    roll_number:  user.roll_number  ?? "",
+    branch:       normalizeBranch(user.branch),
+    degree:       user.degree       ?? "",
+    year:         user.year         ?? "",
+    gender:       user.gender       ?? "",
+    college:      user.college      ?? "",
+    about:        user.about        ?? "",
+    interests:    user.interests    ?? [],
+    photo_url:    user.photo_url    ?? "",
+  };
+}
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -76,19 +105,11 @@ export default function ProfileSettingsScreen() {
   const customRef  = useRef<HTMLInputElement>(null);
   const photoRef   = useRef<HTMLInputElement>(null);
 
-  const [form, setForm] = useState<Partial<User>>({
-    name:         userData?.name         ?? "",
-    phone_number: userData?.phone_number ? String(userData.phone_number) : "",
-    roll_number:  userData?.roll_number  ?? "",
-    branch:       userData?.branch       ?? "",
-    degree:       userData?.degree       ?? "",
-    year:         userData?.year         ?? new Date().getFullYear(),
-    gender:       userData?.gender       ?? "",
-    college:      userData?.college      ?? "",
-    about:        userData?.about        ?? "",
-    interests:    userData?.interests    ?? [],
-    photo_url:    userData?.photo_url    ?? "",
-  });
+  const [form, setForm] = useState<Partial<User>>(() => userData ? buildFormFromUser(userData) : {});
+
+  useEffect(() => {
+    if (userData) setForm(buildFormFromUser(userData));
+  }, [userData]);
 
   const set = (key: keyof User, value: unknown) =>
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -137,7 +158,7 @@ export default function ProfileSettingsScreen() {
       const payload: Parameters<typeof updateProfile>[0] = {};
       if (form.name?.toString().trim())         payload.name         = form.name as string;
       if (form.about?.toString().trim())        payload.about        = form.about as string;
-      if (form.branch?.toString().trim())       payload.branch       = form.branch as string;
+      if (form.branch?.toString().trim())       payload.branch       = normalizeBranch(form.branch as string);
       if (form.degree?.toString().trim())       payload.degree       = form.degree as string;
       if (form.college?.toString().trim())      payload.college      = form.college as string;
       if (form.gender?.toString().trim())       payload.gender       = form.gender as string;
@@ -151,7 +172,7 @@ export default function ProfileSettingsScreen() {
 
       await updateProfile(payload);
       // Update local context so UI reflects all saved changes instantly
-      setUserData({ ...userData, ...form } as User);
+      setUserData({ ...userData, ...form, branch: normalizeBranch(form.branch as string) } as User);
       setSaved(true);
       setTimeout(() => { setSaved(false); router.back(); }, 1500);
     } catch (err: unknown) {
@@ -166,6 +187,12 @@ export default function ProfileSettingsScreen() {
   };
 
   const interests = (form.interests as string[]) ?? [];
+  const selectedYear = form.year ? String(form.year) : "";
+  const selectedBranch = normalizeBranch(form.branch as string);
+  const branchOptions = BRANCH_OPTIONS[selectedYear] ?? [];
+  const visibleBranchOptions = selectedBranch && !branchOptions.includes(selectedBranch)
+    ? [...branchOptions, selectedBranch]
+    : branchOptions;
 
   return (
     <div className="bg-background min-h-screen pb-32">
@@ -281,24 +308,38 @@ export default function ProfileSettingsScreen() {
             </div>
             <div className="flex-1">
               <Field label="Grad Year">
-                <NumberInput
-                  value={(form.year as number) || ""}
-                  onChange={(val) => set("year", val)}
-                  min={2020}
-                  max={2035}
-                  placeholder="e.g. 2027"
-                  className="w-full"
-                />
+                <SelectWrapper>
+                  <select
+                    className={selectCls}
+                    value={selectedYear}
+                    onChange={(e) => {
+                      set("year", Number(e.target.value));
+                      set("branch", "");
+                    }}
+                  >
+                    <option value="" disabled>Year</option>
+                    {GRAD_YEAR_OPTIONS.map((year) => (
+                      <option key={year} value={year}>{year}</option>
+                    ))}
+                  </select>
+                </SelectWrapper>
               </Field>
             </div>
           </div>
           <Field label="Branch">
-            <input
-              className={inputCls}
-              value={form.branch as string}
-              onChange={(e) => set("branch", e.target.value)}
-              placeholder="e.g. Computer Engineering"
-            />
+            <SelectWrapper>
+              <select
+                className={selectCls}
+                value={selectedBranch}
+                disabled={!selectedYear}
+                onChange={(e) => set("branch", e.target.value)}
+              >
+                <option value="" disabled>Select Branch</option>
+                {visibleBranchOptions.map((branch) => (
+                  <option key={branch} value={branch}>{branch}</option>
+                ))}
+              </select>
+            </SelectWrapper>
           </Field>
           <Field label="Roll Number">
             <input

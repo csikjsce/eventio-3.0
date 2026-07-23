@@ -20,6 +20,8 @@ const interestChips = [
   "WEB3", "Networking", "App Development", "Robotics",
 ];
 
+const degreeOptions = ["B.Tech", "M.Tech", "MCA", "MBA", "B.Sc"];
+
 /* ─── Shared field wrapper ─── */
 function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
   return (
@@ -149,7 +151,7 @@ function PersonalDetails({
 function EducationalDetails({
   data, onChange, onNext, onBack,
 }: {
-  data: { year: string; branch: string };
+  data: { year: string; branch: string; degree: string; rollNumber: string };
   onChange: (k: string, v: string) => void;
   onNext: () => void;
   onBack: () => void;
@@ -160,6 +162,7 @@ function EducationalDetails({
   const validate = () => {
     const e: Record<string, string> = {};
     if (!data.year) e.year = "Please select a graduation year";
+    if (!data.degree) e.degree = "Please select a degree";
     if (!data.branch) e.branch = "Please select a branch";
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -173,6 +176,21 @@ function EducationalDetails({
         <p className="mb-8 text-base font-fira text-mute">Fill out your educational details</p>
 
         <div className="flex flex-col gap-5">
+          <Field label="Degree" error={errors.degree}>
+            <SelectWrapper>
+              <select
+                className={selectCls}
+                value={data.degree}
+                onChange={(e) => onChange("degree", e.target.value)}
+              >
+                <option value="" disabled>Select Degree</option>
+                {degreeOptions.map((degree) => (
+                  <option key={degree} value={degree}>{degree}</option>
+                ))}
+              </select>
+            </SelectWrapper>
+          </Field>
+
           <Field label="Graduation Year" error={errors.year}>
             <SelectWrapper>
               <select
@@ -201,10 +219,20 @@ function EducationalDetails({
               >
                 <option value="" disabled>Select Branch</option>
                 {branches.map((b) => (
-                  <option key={b} value={b.replace(/ /g, "_")}>{b}</option>
+                  <option key={b} value={b}>{b}</option>
                 ))}
               </select>
             </SelectWrapper>
+          </Field>
+
+          <Field label="Roll Number (Optional)">
+            <input
+              className={inputCls}
+              value={data.rollNumber}
+              onChange={(e) => onChange("rollNumber", e.target.value.trim().toUpperCase())}
+              placeholder="e.g. 21CE001"
+              autoCapitalize="characters"
+            />
           </Field>
         </div>
       </div>
@@ -328,7 +356,7 @@ export default function OnboardingScreen() {
   const [loading, setLoading] = useState(false);
 
   const [personal, setPersonal] = useState({ phone: "", gender: "" });
-  const [education, setEducation] = useState({ year: "", branch: "" });
+  const [education, setEducation] = useState({ year: "", branch: "", degree: "", rollNumber: "" });
   const [interests, setInterests] = useState<string[]>([]);
 
   const updatePersonal = (k: string, v: string) => setPersonal((p) => ({ ...p, [k]: v }));
@@ -347,9 +375,9 @@ export default function OnboardingScreen() {
         gender: personal.gender,
         year: education.year,
         branch: education.branch,
-        degree: "B.E.",
+        degree: education.degree,
         college: "KJSCE",
-        roll_number: "",
+        roll_number: education.rollNumber,
         interests,
       });
     } catch {

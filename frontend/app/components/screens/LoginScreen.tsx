@@ -1,14 +1,24 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect } from "react";
+import { useContext, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { UserDataContext } from "@/contexts/userContext";
+import { fetchMe } from "@/lib/api";
+
+function isProfileComplete(user: { degree?: unknown; college?: unknown } | null) {
+  return !!(user?.degree && user?.college);
+}
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { userData, setUserData } = useContext(UserDataContext);
 
   // Parse OAuth callback tokens that land on /login?accessToken=...&refreshToken=...
   useEffect(() => {
+    let cancelled = false;
+
+    async function handleOAuthCallback() {
     const params = new URLSearchParams(window.location.search);
     const accessToken = params.get("accessToken");
     const refreshToken = params.get("refreshToken");
@@ -25,17 +35,37 @@ export default function LoginScreen() {
       // Clean the URL
       window.history.replaceState(null, "", window.location.pathname);
 
-      const onboarded = localStorage.getItem("eventio-onboarded");
       const redirect = sessionStorage.getItem("login_redirect");
       sessionStorage.removeItem("login_redirect");
 
       if (redirect) {
         router.replace(redirect);
+        return;
+      }
+
+      const user = userData ?? (await fetchMe());
+      if (cancelled) return;
+
+      setUserData?.(user);
+
+      if (isProfileComplete(user)) {
+        localStorage.setItem("eventio-onboarded", "true");
+        router.replace("/");
       } else {
-        router.replace(onboarded ? "/" : "/onboarding");
+        localStorage.removeItem("eventio-onboarded");
+        router.replace("/onboarding");
       }
     }
-  }, [router]);
+    }
+
+    handleOAuthCallback().catch(() => {
+      if (!cancelled) router.replace("/onboarding");
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [router, setUserData, userData]);
 
   const handleGoogleLogin = () => {
     const server = process.env.NEXT_PUBLIC_SERVER_ADDRESS;
