@@ -31,16 +31,12 @@ const BRANCH_OPTIONS: Record<string, string[]> = {
   "2030": ["Computer Engineering", "Computer And Communication", "Computer Science And Business Systems", "Information Technology", "Artificial Intelligence And Data Science", "Civil Engineering", "Mechanical", "Electronics And Telecommunications", "Electronics And Computers", "Electronics VLSI", "Robotics And Artificial Intelligence", "Other"],
 };
 
-function normalizeBranch(branch?: string | null) {
-  return branch?.replace(/_/g, " ") ?? "";
-}
-
 function buildFormFromUser(user: User): Partial<User> {
   return {
     name:         user.name         ?? "",
     phone_number: user.phone_number ? String(user.phone_number) : "",
     roll_number:  user.roll_number  ?? "",
-    branch:       normalizeBranch(user.branch),
+    branch:       user.branch       ?? "",
     degree:       user.degree       ?? "",
     year:         user.year         ?? "",
     gender:       user.gender       ?? "",
@@ -158,7 +154,7 @@ export default function ProfileSettingsScreen() {
       const payload: Parameters<typeof updateProfile>[0] = {};
       if (form.name?.toString().trim())         payload.name         = form.name as string;
       if (form.about?.toString().trim())        payload.about        = form.about as string;
-      if (form.branch?.toString().trim())       payload.branch       = normalizeBranch(form.branch as string);
+      if (form.branch?.toString().trim())       payload.branch       = form.branch as string;
       if (form.degree?.toString().trim())       payload.degree       = form.degree as string;
       if (form.college?.toString().trim())      payload.college      = form.college as string;
       if (form.gender?.toString().trim())       payload.gender       = form.gender as string;
@@ -172,7 +168,7 @@ export default function ProfileSettingsScreen() {
 
       await updateProfile(payload);
       // Update local context so UI reflects all saved changes instantly
-      setUserData({ ...userData, ...form, branch: normalizeBranch(form.branch as string) } as User);
+      setUserData({ ...userData, ...form } as User);
       setSaved(true);
       setTimeout(() => { setSaved(false); router.back(); }, 1500);
     } catch (err: unknown) {
@@ -188,10 +184,9 @@ export default function ProfileSettingsScreen() {
 
   const interests = (form.interests as string[]) ?? [];
   const selectedYear = form.year ? String(form.year) : "";
-  const selectedBranch = normalizeBranch(form.branch as string);
   const branchOptions = BRANCH_OPTIONS[selectedYear] ?? [];
-  const visibleBranchOptions = selectedBranch && !branchOptions.includes(selectedBranch)
-    ? [...branchOptions, selectedBranch]
+  const visibleBranchOptions = form.branch && !branchOptions.includes(form.branch as string)
+    ? [...branchOptions, form.branch as string]
     : branchOptions;
 
   return (
@@ -327,10 +322,10 @@ export default function ProfileSettingsScreen() {
             </div>
           </div>
           <Field label="Branch">
-            <SelectWrapper>
+                <SelectWrapper>
               <select
                 className={selectCls}
-                value={selectedBranch}
+                value={form.branch as string}
                 disabled={!selectedYear}
                 onChange={(e) => set("branch", e.target.value)}
               >

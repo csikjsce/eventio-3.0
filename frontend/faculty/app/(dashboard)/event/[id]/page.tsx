@@ -215,6 +215,34 @@ function EventReviewContent({ id }: { id: string }) {
             </button>
           )}
         </div>
+
+        {showReturnBox && (
+          <div className="p-4 bg-amber-500/5 border border-amber-500/25 rounded-xl">
+            <p className="text-amber-800 dark:text-amber-300 text-sm font-medium mb-1">
+              Send back for changes
+            </p>
+            <p className="text-muted-foreground text-xs mb-3">
+              The event will return to the council as a draft. They&apos;ll see your feedback and can edit and resubmit.
+            </p>
+            <textarea
+              value={returnFeedback}
+              onChange={(e) => setReturnFeedback(e.target.value)}
+              rows={4}
+              placeholder="Describe what needs to be changed (e.g. update budget, fix venue details, upload revised proposal…)"
+              className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-amber-500/50 resize-none mb-3"
+            />
+            <div className="flex gap-2">
+              <button type="button" onClick={returnToCouncil} disabled={busy || !returnFeedback.trim()}
+                className="px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-sm disabled:opacity-50">
+                Send Back to Council
+              </button>
+              <button type="button" onClick={() => { setShowReturnBox(false); setReturnFeedback(""); }}
+                className="px-4 py-2 rounded-lg border border-border text-sm text-muted-foreground hover:bg-muted">
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -285,35 +313,6 @@ function EventReviewContent({ id }: { id: string }) {
           </p>
         )}
       </div>
-
-      {/* Return-to-council feedback box */}
-      {showReturnBox && canApprove && (
-        <div className="mb-5 p-4 bg-amber-500/5 border border-amber-500/25 rounded-xl">
-          <p className="text-amber-800 dark:text-amber-300 text-sm font-medium mb-1">
-            Send back for changes
-          </p>
-          <p className="text-muted-foreground text-xs mb-3">
-            The event will return to the council as a draft. They&apos;ll see your feedback and can edit and resubmit.
-          </p>
-          <textarea
-            value={returnFeedback}
-            onChange={(e) => setReturnFeedback(e.target.value)}
-            rows={4}
-            placeholder="Describe what needs to be changed (e.g. update budget, fix venue details, upload revised proposal…)"
-            className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-amber-500/50 resize-none mb-3"
-          />
-          <div className="flex gap-2">
-            <button type="button" onClick={returnToCouncil} disabled={busy || !returnFeedback.trim()}
-              className="px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-sm disabled:opacity-50">
-              Send Back to Council
-            </button>
-            <button type="button" onClick={() => { setShowReturnBox(false); setReturnFeedback(""); }}
-              className="px-4 py-2 rounded-lg border border-border text-sm text-muted-foreground hover:bg-muted">
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Previous return feedback */}
       {event.comment && (
