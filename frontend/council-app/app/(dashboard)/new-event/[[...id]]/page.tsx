@@ -535,7 +535,7 @@ export default function NewEventPage() {
 
                     <Toggle on={femaleQuota} onToggle={() => setFemaleQuota(!femaleQuota)} label="Female Seat Reservation" sub="Reserve a number of seats exclusively for female participants." />
                     {femaleQuota && (
-                      <FieldWrap label="Reserved Female Seats" error={undefined}>
+                      <FieldWrap label="Reserved Female Seats" error={errors.female_requirement?.message}>
                         <NumberInput min={0} className="w-full" {...register("female_requirement")} placeholder="e.g. 50" />
                       </FieldWrap>
                     )}

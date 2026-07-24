@@ -217,11 +217,20 @@ export const newEventSchema = yup.object({
     })
     .optional(),
 
-  female_requirement: yup
+    female_requirement: yup
     .number()
     .min(0, 'Cannot be negative')
     .nullable()
-    .notRequired(),
+    .notRequired()
+    .test(
+      'is-less-than-total',
+      'Reserved female seats cannot exceed the total ticket count',
+      (value: number | null | undefined, context: yup.TestContext) => {
+        const { ticket_count } = context.parent as { ticket_count: number };
+        if (value === undefined || value === null) return true;
+        return value <= ticket_count;
+      }
+    ),
 
   more_details_enabled: yup.boolean().default(false).notRequired(),
 
