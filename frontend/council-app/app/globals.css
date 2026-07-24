@@ -5,46 +5,51 @@
 
 /* semantic tokens → Tailwind utilities */
 @theme inline {
-  --font-fira:      var(--font-family-fira), sans-serif;
+  --font-fira: var(--font-family-fira), sans-serif;
   --font-marcellus: var(--font-family-marcellus), serif;
 
-  --color-bg:        var(--c-bg);
-  --color-surface:   var(--c-surface);
-  --color-surface2:  var(--c-surface2);
-  --color-tx:        var(--c-tx);
-  --color-muted-tx:  var(--c-muted);
+  --color-bg: var(--c-bg);
+  --color-surface: var(--c-surface);
+  --color-surface2: var(--c-surface2);
+  --color-tx: var(--c-tx);
+  --color-muted-tx: var(--c-muted);
   --color-subtle-tx: var(--c-subtle);
 
   /* named border colour — avoids rgba() inside Tailwind arbitrary values */
-  --color-border-c:  var(--c-border);
+  --color-border-c: var(--c-border);
 }
 
 /* ── light ── */
 :root {
-  --c-bg:       #f5f5f7;
-  --c-surface:  #ffffff;
+  --c-bg: #f5f5f7;
+  --c-surface: #ffffff;
   --c-surface2: #ebebed;
-  --c-tx:       #18181b;
-  --c-muted:    #52525b;
-  --c-subtle:   #71717a;
-  --c-border:   #e4e4e7;   /* zinc-200 */
+  --c-tx: #18181b;
+  --c-muted: #52525b;
+  --c-subtle: #71717a;
+  --c-border: #e4e4e7;
+  /* zinc-200 */
 }
 
 /* ── dark ── */
 html.dark {
-  --c-bg:       #121214;
-  --c-surface:  #1c1c1e;
+  --c-bg: #121214;
+  --c-surface: #1c1c1e;
   --c-surface2: #252527;
-  --c-tx:       #f4f4f5;
-  --c-muted:    #a1a1aa;
-  --c-subtle:   #71717a;
-  --c-border:   #2f2f32;   /* custom dark border */
+  --c-tx: #f4f4f5;
+  --c-muted: #a1a1aa;
+  --c-subtle: #71717a;
+  --c-border: #2f2f32;
+  /* custom dark border */
 }
 
 @utility scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
-  &::-webkit-scrollbar { display: none; }
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 /* Document builder — preview fits column; print uses the browser's Letter default. */
@@ -59,88 +64,45 @@ html.dark {
 }
 
 .document-sheet {
-  min-height: 297mm;
+  /* min-height: 297mm; */
   padding: 18mm 20mm;
   box-sizing: border-box;
 }
 
 @media print {
+
   @page {
-    size: letter;
+    size: A4;
     margin: 0;
   }
 
   html,
   body {
-    margin: 0 !important;
-    padding: 0 !important;
-    background: #fff !important;
+    margin: 0;
+    padding: 0;
+    background: white;
   }
 
-  body * {
-    visibility: hidden;
-  }
-
-  .proposal-document-view,
-  .proposal-document-view * {
-    visibility: visible;
-  }
-
-  .proposal-document-view {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 8.5in !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    overflow: visible !important;
-    background: #fff !important;
-  }
-
-  .proposal-document-view .document-sheet {
-    width: 8.5in !important;
-    height: 11in !important;
-    min-height: 11in !important;
-    max-width: none !important;
-    margin: 0 !important;
-    padding: 12mm 16mm !important;
-    box-sizing: border-box !important;
+  .document-sheet {
+    width: 210mm;
+    min-height: 297mm;
+    margin: 0;
+    padding: 18mm 20mm;
+    box-sizing: border-box;
     box-shadow: none !important;
-  }
-
-  .document-builder-preview .document-sheet {
-    width: 8.5in !important;
-    height: 11in !important;
-    min-height: 11in !important;
-    max-width: none !important;
-    padding: 12mm 16mm !important;
-  }
-
-  .document-signatory-row {
-    display: grid !important;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px !important;
-    align-items: end;
   }
 
   .proposal-document-submitted {
     display: none !important;
   }
 
-  .document-builder-chrome {
-    display: none !important;
-  }
-
-  .document-builder-preview {
-    background: transparent !important;
-    padding: 0 !important;
-    overflow: visible !important;
-  }
-
 }
 
 @layer base {
-  * { box-sizing: border-box; }
+  * {
+    box-sizing: border-box;
+  }
+
   body {
     background: var(--c-bg);
     color: var(--c-tx);
@@ -153,6 +115,7 @@ html.dark {
     -webkit-appearance: none;
     margin: 0;
   }
+
   input[type="number"] {
     -moz-appearance: textfield;
   }

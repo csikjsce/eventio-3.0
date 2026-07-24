@@ -132,3 +132,36 @@
     font-family: var(--font-marcellus), Georgia, serif;
   }
 }
+
+@media print {
+  @page {
+    size: letter;
+    margin: 0;
+  }
+
+  html,
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+
+  .faculty-print-root {
+    width: 8.5in !important;
+    height: 11in !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+
+  .faculty-print-root .document-sheet {
+    width: 8.5in !important;
+    height: 11in !important;
+    min-height: 11in !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 12mm 16mm !important;
+    box-sizing: border-box !important;
+    box-shadow: none !important;
+  }
+}

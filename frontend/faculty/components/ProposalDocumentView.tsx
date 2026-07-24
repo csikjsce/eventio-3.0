@@ -1,9 +1,11 @@
 "use client";
 
+import { useRef } from "react";
 import DocumentSheet from "@/components/document-builder/DocumentSheet";
 import type { ProposalPackage, AssignedFacultyReviewer } from "@/lib/proposal";
 import { mergeProposalSignatories } from "@/lib/proposal";
 import { Printer } from "lucide-react";
+import { useReactToPrint } from "react-to-print";
 
 export default function ProposalDocumentView({
   proposal,
@@ -12,7 +14,13 @@ export default function ProposalDocumentView({
   proposal: ProposalPackage;
   facultyReviewers?: AssignedFacultyReviewer[];
 }) {
+  const contentRef = useRef<HTMLDivElement>(null);
   const doc = mergeProposalSignatories(proposal, facultyReviewers);
+
+  const printDocument = useReactToPrint({
+    contentRef,
+    documentTitle: "Eventio Proposal Letter",
+  });
 
   if (!doc) {
     return (
@@ -27,14 +35,16 @@ export default function ProposalDocumentView({
       <div className="flex justify-end mb-3 print:hidden">
         <button
           type="button"
-          onClick={() => window.print()}
+          onClick={() => printDocument()}
           className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
         >
           <Printer size={14} />
           Print / Save PDF
         </button>
       </div>
-      <DocumentSheet doc={doc} />
+      <div ref={contentRef} className="faculty-print-root">
+        <DocumentSheet doc={doc} />
+      </div>
     </div>
   );
 }

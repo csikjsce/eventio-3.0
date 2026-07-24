@@ -1,10 +1,12 @@
 "use client";
 
+import { useRef } from "react";
 import DocumentSheet from "@/components/document-builder/DocumentSheet";
 import type { AssignedFacultyReviewer } from "@/lib/document-builder";
 import type { ProposalPackage } from "@/lib/proposal";
 import { mergeProposalSignatories } from "@/lib/proposal";
 import { Printer } from "lucide-react";
+import { useReactToPrint } from "react-to-print";
 
 export default function ProposalDocumentView({
   proposal,
@@ -15,7 +17,13 @@ export default function ProposalDocumentView({
   compact?: boolean;
   facultyReviewers?: AssignedFacultyReviewer[];
 }) {
+  const contentRef = useRef<HTMLDivElement>(null);
   const doc = mergeProposalSignatories(proposal, facultyReviewers);
+  
+  const printDocument = useReactToPrint({
+    contentRef,
+    documentTitle: "Eventio Proposal Letter",
+  });
 
   if (!doc) {
     return (
@@ -37,7 +45,7 @@ export default function ProposalDocumentView({
         <div className="flex justify-end mb-3 print:hidden">
           <button
             type="button"
-            onClick={() => window.print()}
+            onClick={() => printDocument()}
             className="flex items-center gap-2 rounded-lg border border-border-c bg-surface px-3 py-2 text-xs font-fira text-muted-tx hover:text-tx"
           >
             <Printer size={14} />
@@ -45,14 +53,16 @@ export default function ProposalDocumentView({
           </button>
         </div>
       )}
-      <DocumentSheet
-        kind={doc.kind}
-        permissionTemplate={doc.permissionTemplate}
-        letterheadUrl={doc.letterheadUrl}
-        signatories={doc.signatories}
-        permission={doc.permission}
-        report={doc.report}
-      />
+      <div ref={contentRef} className="faculty-print-root">
+        <DocumentSheet
+          kind={doc.kind}
+          permissionTemplate={doc.permissionTemplate}
+          letterheadUrl={doc.letterheadUrl}
+          signatories={doc.signatories}
+          permission={doc.permission}
+          report={doc.report}
+        />
+      </div>
       {proposal.submittedAt && (
         <p className="proposal-document-submitted text-subtle-tx text-xs font-fira mt-3 text-center">
           Submitted to faculty on{" "}
