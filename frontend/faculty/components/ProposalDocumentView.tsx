@@ -1,19 +1,11 @@
 "use client";
 
+import { useRef } from "react";
+import DocumentSheet from "@/components/document-builder/DocumentSheet";
 import type { ProposalPackage, AssignedFacultyReviewer } from "@/lib/proposal";
 import { mergeProposalSignatories } from "@/lib/proposal";
 import { Printer } from "lucide-react";
-
-function formatDate(iso: string) {
-  if (!iso) return "—";
-  const d = new Date(iso.includes("T") ? iso : `${iso}T12:00:00`);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
+import { useReactToPrint } from "react-to-print";
 
 export default function ProposalDocumentView({
   proposal,
@@ -22,7 +14,13 @@ export default function ProposalDocumentView({
   proposal: ProposalPackage;
   facultyReviewers?: AssignedFacultyReviewer[];
 }) {
+  const contentRef = useRef<HTMLDivElement>(null);
   const doc = mergeProposalSignatories(proposal, facultyReviewers);
+
+  const printDocument = useReactToPrint({
+    contentRef,
+    documentTitle: "Eventio Proposal Letter",
+  });
 
   if (!doc) {
     return (
@@ -32,62 +30,20 @@ export default function ProposalDocumentView({
     );
   }
 
-  const p = doc.permission;
-  const signatories = doc.signatories.filter((s) => s.name.trim());
-
   return (
-    <div>
+    <div className="rounded-xl border border-border overflow-x-auto bg-zinc-100/80 dark:bg-zinc-900/40 p-4 sm:p-6">
       <div className="flex justify-end mb-3 print:hidden">
         <button
           type="button"
-          onClick={() => window.print()}
+          onClick={() => printDocument()}
           className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
         >
           <Printer size={14} />
-          Print proposal letter
+          Print / Save PDF
         </button>
       </div>
-      <div className="rounded-xl border border-border bg-white text-zinc-900 p-6 sm:p-8 text-sm leading-relaxed overflow-x-auto">
-      {doc.letterheadUrl && (
-        /* eslint-disable-next-line @next/next/no-img-element */
-        <img src={doc.letterheadUrl} alt="" className="h-14 object-contain mb-6" />
-      )}
-
-      <div className="flex flex-wrap justify-between gap-4 text-xs mb-4">
-        {p.refNo && <p><span className="font-semibold">Ref:</span> {p.refNo}</p>}
-        <p><span className="font-semibold">Date:</span> {formatDate(p.date)}</p>
-      </div>
-
-      <div className="mb-4">
-        <p className="font-semibold mb-1">To,</p>
-        <p className="whitespace-pre-wrap">{p.recipient}</p>
-      </div>
-
-      <p className="mb-4">
-        <span className="font-semibold">Subject: </span>
-        {p.subject || `Permission for conducting ${p.eventName || "the event"}`}
-      </p>
-
-      <p className="whitespace-pre-wrap mb-6">{p.body}</p>
-
-      <div className="mt-8">
-        <p className="mb-2">Thanking you,</p>
-        <div className="flex flex-wrap items-end gap-x-10 gap-y-4 mt-6">
-          {signatories.map((s, i) => (
-            <div key={`${s.email ?? s.memberId ?? i}`} className="min-w-[120px]">
-              {s.signatureUrl ? (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img src={s.signatureUrl} alt="" className="h-12 object-contain mb-1" />
-              ) : (
-                <div className="h-12 border-b border-zinc-400 mb-1" />
-              )}
-              <p className="font-semibold">{s.name}</p>
-              {s.role && <p className="text-zinc-600 text-xs">{s.role}</p>}
-            </div>
-          ))}
-        </div>
-        {p.councilName && <p className="mt-4">{p.councilName}</p>}
-      </div>
+      <div ref={contentRef} className="faculty-print-root">
+        <DocumentSheet doc={doc} />
       </div>
     </div>
   );

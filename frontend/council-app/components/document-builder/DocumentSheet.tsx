@@ -54,7 +54,7 @@ function SignatoryBlock({
   return (
     <div className="pt-6">
       {closing && <p>{closing}</p>}
-      <div className="mt-8 flex flex-wrap items-end gap-x-10 gap-y-3">
+      <div className="document-signatory-row mt-8 flex flex-wrap items-end gap-x-10 gap-y-3">
         {valid.map((s, i) => (
           <div key={`${s.memberId ?? "custom"}-${i}`} className="shrink-0 text-left min-w-[120px]">
             {s.signatureUrl ? (
@@ -238,7 +238,6 @@ export default function DocumentSheet({
     <article
       ref={sheetRef}
       className="document-sheet mx-auto w-full max-w-[210mm] bg-white text-zinc-900 shadow-xl print:shadow-none"
-      style={{ minHeight: "297mm", padding: "18mm 20mm" }}
     >
       <Letterhead councilLetterheadUrl={letterheadUrl} />
       {kind === "permission_letter" ? (
@@ -252,7 +251,7 @@ export default function DocumentSheet({
           <p className="text-[12px] font-semibold font-fira text-zinc-700 mb-3 uppercase tracking-wide">
             Faculty approval
           </p>
-          <div className="flex flex-wrap items-end gap-x-10 gap-y-3">
+          <div className="document-signatory-row flex flex-wrap items-end gap-x-10 gap-y-3">
             {facultySignatures.map((s, i) => (
               <div key={`${s.name}-${i}`} className="shrink-0 text-left min-w-[120px]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}

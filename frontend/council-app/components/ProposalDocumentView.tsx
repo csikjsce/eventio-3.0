@@ -1,9 +1,12 @@
 "use client";
 
+import { useRef } from "react";
 import DocumentSheet from "@/components/document-builder/DocumentSheet";
 import type { AssignedFacultyReviewer } from "@/lib/document-builder";
 import type { ProposalPackage } from "@/lib/proposal";
 import { mergeProposalSignatories } from "@/lib/proposal";
+import { Printer } from "lucide-react";
+import { useReactToPrint } from "react-to-print";
 
 export default function ProposalDocumentView({
   proposal,
@@ -14,7 +17,13 @@ export default function ProposalDocumentView({
   compact?: boolean;
   facultyReviewers?: AssignedFacultyReviewer[];
 }) {
+  const contentRef = useRef<HTMLDivElement>(null);
   const doc = mergeProposalSignatories(proposal, facultyReviewers);
+  
+  const printDocument = useReactToPrint({
+    contentRef,
+    documentTitle: "Eventio Proposal Letter",
+  });
 
   if (!doc) {
     return (
@@ -26,22 +35,36 @@ export default function ProposalDocumentView({
 
   return (
     <div
-      className={
+      className={`proposal-document-view ${
         compact
           ? "rounded-xl border border-border-c overflow-x-auto bg-zinc-100/80 dark:bg-zinc-900/40 p-3"
           : "rounded-xl border border-border-c overflow-x-auto bg-zinc-100/80 dark:bg-zinc-900/40 p-4 sm:p-6"
-      }
+      }`}
     >
-      <DocumentSheet
-        kind={doc.kind}
-        permissionTemplate={doc.permissionTemplate}
-        letterheadUrl={doc.letterheadUrl}
-        signatories={doc.signatories}
-        permission={doc.permission}
-        report={doc.report}
-      />
+      {!compact && (
+        <div className="flex justify-end mb-3 print:hidden">
+          <button
+            type="button"
+            onClick={() => printDocument()}
+            className="flex items-center gap-2 rounded-lg border border-border-c bg-surface px-3 py-2 text-xs font-fira text-muted-tx hover:text-tx"
+          >
+            <Printer size={14} />
+            Print / Save PDF
+          </button>
+        </div>
+      )}
+      <div ref={contentRef} className="faculty-print-root">
+        <DocumentSheet
+          kind={doc.kind}
+          permissionTemplate={doc.permissionTemplate}
+          letterheadUrl={doc.letterheadUrl}
+          signatories={doc.signatories}
+          permission={doc.permission}
+          report={doc.report}
+        />
+      </div>
       {proposal.submittedAt && (
-        <p className="text-subtle-tx text-xs font-fira mt-3 text-center">
+        <p className="proposal-document-submitted text-subtle-tx text-xs font-fira mt-3 text-center">
           Submitted to faculty on{" "}
           {new Date(proposal.submittedAt).toLocaleDateString("en-IN", {
             day: "numeric",
