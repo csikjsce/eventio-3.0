@@ -47,7 +47,7 @@ html.dark {
   &::-webkit-scrollbar { display: none; }
 }
 
-/* Document builder — preview fits column; print stays full A4 */
+/* Document builder — preview fits column; print uses the browser's Letter default. */
 .document-builder-preview {
   overflow-x: hidden;
 }
@@ -58,24 +58,73 @@ html.dark {
   box-sizing: border-box;
 }
 
+.document-sheet {
+  min-height: 297mm;
+  padding: 18mm 20mm;
+  box-sizing: border-box;
+}
+
 @media print {
+  @page {
+    size: letter;
+    margin: 0;
+  }
+
+  html,
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+
   body * {
     visibility: hidden;
   }
 
-  .document-sheet,
-  .document-sheet * {
+  .proposal-document-view,
+  .proposal-document-view * {
     visibility: visible;
   }
 
-  .document-sheet {
+  .proposal-document-view {
     position: absolute;
     left: 0;
     top: 0;
-    width: 210mm !important;
-    min-height: auto !important;
+    width: 8.5in !important;
+    padding: 0 !important;
     margin: 0 !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+
+  .proposal-document-view .document-sheet {
+    width: 8.5in !important;
+    height: 11in !important;
+    min-height: 11in !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 12mm 16mm !important;
+    box-sizing: border-box !important;
     box-shadow: none !important;
+  }
+
+  .document-builder-preview .document-sheet {
+    width: 8.5in !important;
+    height: 11in !important;
+    min-height: 11in !important;
+    max-width: none !important;
+    padding: 12mm 16mm !important;
+  }
+
+  .document-signatory-row {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px !important;
+    align-items: end;
+  }
+
+  .proposal-document-submitted {
+    display: none !important;
   }
 
   .document-builder-chrome {
@@ -87,6 +136,7 @@ html.dark {
     padding: 0 !important;
     overflow: visible !important;
   }
+
 }
 
 @layer base {
