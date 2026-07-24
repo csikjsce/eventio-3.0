@@ -26,6 +26,7 @@ import { ApprovalTimeline } from "@/components/EventCard";
 import type { EventData, EventDocument, BudgetItem } from "@/lib/types";
 import { STATE_BADGE, fmtDate, PENDING_STATE } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { navigate } from "next/dist/client/components/segment-cache/navigation";
 
 type Tab = "overview" | "proposal" | "documents" | "budget" | "journey";
 
@@ -300,10 +301,11 @@ function EventReviewContent({ id }: { id: string }) {
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
         <div className="flex items-start gap-3 min-w-0">
-          <Link href="/pending"
+          <button type="button"
+            onClick={() => router.back()}
             className="w-8 h-8 mt-1 rounded-lg bg-card border border-border hover:border-red-500/30 flex items-center justify-center text-muted-foreground hover:text-foreground shrink-0">
             <ArrowLeft size={15} />
-          </Link>
+          </button>
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap mb-1">
               <h1 className="text-xl sm:text-2xl font-marcellus text-foreground leading-tight">{event.name}</h1>
