@@ -22,7 +22,6 @@ export const newEventSchema = yup.object({
         const name = String(this.parent?.name ?? "").trim().toLowerCase();
         const tag = String(value ?? "").trim().toLowerCase();
         if (!name || !tag) return true;
-        // Block exact match or simple name-name concatenations
         if (tag === name) return false;
         if (tag === `${name}${name}`) return false;
         return true;
@@ -91,7 +90,20 @@ export const newEventSchema = yup.object({
     linkedin: yup.string().url().optional(),
     other: yup.string().url().optional(),
   }).optional(),
-  female_requirement: yup.number().min(0).nullable().notRequired(),
+  female_requirement: yup
+    .number()
+    .min(0, "Cannot be negative")
+    .nullable()
+    .notRequired()
+    .test(
+      "is-less-than-total",
+      "Reserved female seats cannot exceed the total ticket count",
+      (value: number | null | undefined, context: yup.TestContext) => {
+        const { ticket_count } = context.parent as { ticket_count: number };
+        if (value === undefined || value === null) return true;
+        return value <= ticket_count;
+      }
+    ),
   more_details_enabled: yup.boolean().default(false).notRequired(),
   registration_fields: yup
     .array()
