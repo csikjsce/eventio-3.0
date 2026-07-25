@@ -224,10 +224,11 @@ function buildApprovalChain(
       actor = "You (Council)";
     }
 
+    const isApprovalInProgress = isLast && APPROVAL_STATES.has(stage);
     chain.push({
       stage,
       label,
-      status: (isLast ? "active" : "done") as ApprovalStep["status"],
+      status: (isApprovalInProgress ? "active" : "done") as ApprovalStep["status"],
       actor,
     });
   }
