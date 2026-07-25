@@ -29,7 +29,7 @@ export default function StatisticsPage() {
     fetchStats()
       .then((data) => {
         setStats(data);
-        if (data.length > 0) setSelected(data[0].eventId);
+        if (data.length > 0) setSelected(String(data[0].eventId));
       })
       .catch(() => setStats([]))
       .finally(() => setLoading(false));
@@ -48,7 +48,7 @@ export default function StatisticsPage() {
     [stats],
   );
 
-  const selectedEvent = stats.find((e) => e.eventId === selected);
+  const selectedEvent = stats.find((e) => String(e.eventId) === selected);
 
   const branchData = useMemo(() => {
     if (!selectedEvent) return [];
