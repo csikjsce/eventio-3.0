@@ -1,8 +1,8 @@
 import * as yup from "yup";
 
-function yesterday() {
+function startOfToday() {
   const d = new Date();
-  d.setDate(d.getDate() - 1);
+  d.setHours(0, 0, 0, 0);
   return d;
 }
 
@@ -37,10 +37,14 @@ export const newEventSchema = yup.object({
   ),
   dates: yup
     .array()
-    .of(yup.date().min(yesterday()).required())
+    .of(yup.date().required())
     .min(1)
     .required("Dates required")
-    .test("start-before-end", "Start must be before end", (v) => {
+    .test("in-future", "Event date must be in the future", (v) => {
+      if (!v || v.length === 0) return true;
+      return new Date(v[0]) >= startOfToday();
+    })
+    .test("start-before-end", "Please select an end time that occurs after the start time.", (v) => {
       if (!v || v.length < 2) return true;
       return new Date(v[0]) < new Date(v[v.length - 1]);
     }),

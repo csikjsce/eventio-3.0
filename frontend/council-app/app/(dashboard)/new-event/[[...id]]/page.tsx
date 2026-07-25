@@ -195,15 +195,13 @@ export default function NewEventPage() {
       const [hh, mm] = endTime.split(":").map(Number);
       const end = new Date(start);
       end.setHours(hh ?? 23, mm ?? 59, 0, 0);
-      // If end time is before or equal start time, push to next day
-      if (end <= start) end.setDate(end.getDate() + 1);
-      setValue("dates", [start, end]);
+      // Keep end as-is (even if before start) so validation can flag it
+      setValue("dates", [start, end], { shouldValidate: true });
       return;
     }
-    // Multi-day: store [startDatetime, endDatetime] — no per-day expansion needed
+    // Multi-day: store [startDatetime, endDatetime] — validation flags end < start
     const end = new Date(endDate);
-    if (end < start) setValue("dates", [start]);
-    else setValue("dates", [start, end]);
+    setValue("dates", [start, end], { shouldValidate: true });
   }, [startDate, endDate, endTime, multiDay]);
 
   useEffect(() => { if (!teamEvent) { setValue("ma_ppt", 1); setValue("min_ppt", 1); } }, [teamEvent]);
@@ -473,16 +471,17 @@ export default function NewEventPage() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <FieldWrap label={multiDay ? "Start Date & Time *" : "Event Date & Time *"}>
-                        <input type="datetime-local" className={INPUT} value={startDate} onChange={e => setStartDate(e.target.value)} />
+                        <input type="datetime-local" min={dateToString(new Date())} className={INPUT} value={startDate} onChange={e => setStartDate(e.target.value)} />
                       </FieldWrap>
                       <FieldWrap label={multiDay ? "End Date & Time *" : "End Time *"}>
                         {multiDay ? (
-                          <input type="datetime-local" className={INPUT} value={endDate} onChange={e => setEndDate(e.target.value)} />
+                          <input type="datetime-local" min={startDate} className={INPUT} value={endDate} onChange={e => setEndDate(e.target.value)} />
                         ) : (
                           <input type="time" className={INPUT} value={endTime} onChange={e => setEndTime(e.target.value)} />
                         )}
                       </FieldWrap>
                     </div>
+                    {errors.dates?.message && <p className={ERR}>{String(errors.dates.message)}</p>}
 
                     <Toggle on={multiDay} onToggle={() => setMultiDay(!multiDay)} label="Multi-day Event" sub="Event spans across more than one calendar day." />
 
