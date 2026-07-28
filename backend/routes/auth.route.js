@@ -111,7 +111,6 @@ router.post("/googleToken", async (req, res) => {
                 delete new_user["updated_at"];
                 delete new_user["created_at"];
                 delete new_user["council_type"];
-                delete new_user["about"];
                 return res.json({
                     accessToken,
                     refreshToken,
@@ -140,7 +139,6 @@ router.post("/googleToken", async (req, res) => {
             delete user["updated_at"];
             delete user["created_at"];
             delete user["council_type"];
-            delete user["about"];
             return res.json({
                 accessToken,
                 refreshToken,

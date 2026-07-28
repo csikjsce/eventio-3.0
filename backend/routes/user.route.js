@@ -9,13 +9,16 @@ const { ensureFacultyRoleForAdvisor } = require("../utils/faculty-access");
 let protected = "/p";
 router.post(protected + "/me", authCheck, async (req, res) => {
     try {
-        const user = await ensureFacultyRoleForAdvisor(req.user);
+        const fullUser = await ensureFacultyRoleForAdvisor(req.user);
+        // Shallow-copy before stripping fields — the cache stores this object by
+        // reference (useClones: false), so mutating it would corrupt the cached
+        // user (e.g. drop google_id, breaking cache invalidation on /update).
+        const user = { ...fullUser };
         delete user["google_id"];
         delete user["refresh_token"];
         delete user["updated_at"];
         delete user["created_at"];
         delete user["council_type"];
-        delete user["about"];
         res.json({
             error: false,
             user,
