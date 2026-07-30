@@ -141,6 +141,14 @@ export async function registerForEvent(eventId: number, moreDetails?: unknown) {
   return data;
 }
 
+/** Cancel a solo registration (only allowed before the event starts) */
+export async function unregisterFromEvent(eventId: number) {
+  const { data } = await api.post("/event/p/unregister-from-event", {
+    event_id: eventId,
+  });
+  return data;
+}
+
 /** Claim ticket / RSVP */
 export async function claimTicket(eventId: number) {
   const { data } = await api.post("/event/p/claim-ticket", {

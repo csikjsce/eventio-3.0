@@ -557,6 +557,27 @@ const PUBLIC_STATES = new Set([
     "COMPLETED",
 ]);
 
+const PRIVILEGED_ROLES = new Set(["COUNCIL", "FACULTY", "PRINCIPAL", "ADMIN"]);
+
+/**
+ * True when this user must not see or register for `is_only_somaiya` events.
+ * Organisers and staff always keep full visibility.
+ */
+function somaiyaOnlyBlocked(user, event) {
+    if (!event || !event.is_only_somaiya) return false;
+    if (PRIVILEGED_ROLES.has(user.role)) return false;
+    return !user.is_somaiya_student;
+}
+
+/** Prisma `where` fragment that hides Somaiya-only events from outside users */
+function somaiyaVisibilityFilter(user) {
+    if (PRIVILEGED_ROLES.has(user.role) || user.is_somaiya_student) return {};
+    return { is_only_somaiya: false };
+}
+
+const SOMAIYA_ONLY_MESSAGE =
+    "This event is open to Somaiya participants only";
+
 router.post(protected + "/get/:id", authCheck, async (req, res) => {
     if (!req.user) {
         return res.status(401).json({ error: true, message: "Unauthorized" });
@@ -626,10 +647,21 @@ router.post(protected + "/get/:id", authCheck, async (req, res) => {
             },
         });
 
+        if (!event) {
+            return res.status(404).json({ error: true, message: "Event not found" });
+        }
+
         // Non-privileged users (students) can only view publicly-visible states
-        const isPrivileged = ["COUNCIL", "FACULTY", "PRINCIPAL", "ADMIN"].includes(req.user.role);
+        const isPrivileged = PRIVILEGED_ROLES.has(req.user.role);
         if (!isPrivileged && !PUBLIC_STATES.has(event.state)) {
             return res.status(403).json({ error: true, message: "Event not publicly accessible" });
+        }
+
+        // Let registered users view a Somaiya-only event even if they are now
+        // considered non-Somaiya (e.g. registered before flag was enforced) so
+        // they can see the page and cancel their registration.
+        if (somaiyaOnlyBlocked(req.user, event) && event.Participant.length === 0) {
+            return res.status(403).json({ error: true, message: SOMAIYA_ONLY_MESSAGE });
         }
 
         if (req.user.role === "FACULTY") {
@@ -1533,6 +1565,11 @@ router.get(protected + "/search/", authCheck, async (req, res) => {
             };
         }
 
+        const somaiyaFilter = somaiyaVisibilityFilter(req.user);
+        if (Object.keys(somaiyaFilter).length) {
+            searchWhere = { AND: [searchWhere, somaiyaFilter] };
+        }
+
         let events = await prisma.events.findMany({
             where: searchWhere,
             orderBy: {
@@ -1722,6 +1759,7 @@ router.post(protected + "/get-children/:id", authCheck, async (req, res) => {
         // Non-privileged users only see publicly visible children
         if (!isPrivileged) {
             childWhere.state = { in: [...PUBLIC_STATES] };
+            Object.assign(childWhere, somaiyaVisibilityFilter(req.user));
         }
 
         const children = await prisma.events.findMany({
@@ -1796,7 +1834,10 @@ router.post(protected + "/get-calendar", authCheck, async (req, res) => {
         } else if (role === "PRINCIPAL") {
             whereClause = { state: { in: publicCalendarStates } };
         } else {
-            whereClause = { state: { in: studentCalendarStates } };
+            whereClause = {
+                state: { in: studentCalendarStates },
+                ...somaiyaVisibilityFilter(req.user),
+            };
         }
 
         const events = await prisma.events.findMany({
@@ -1845,6 +1886,10 @@ router.post(protected + "/register-for-event", authCheck, async (req, res) => {
             .json({ error: true, message: "Error fetching event" });
     }
 
+    if (!event) {
+        return res.status(404).json({ error: true, message: "Event not found" });
+    }
+
     try {
         await prisma.participant.findFirstOrThrow({
             where: {
@@ -1863,11 +1908,10 @@ router.post(protected + "/register-for-event", authCheck, async (req, res) => {
                 message: "use /create-team to register for this event",
             });
         }
-        if (!req.user.is_somaiya_student && event.is_only_somaiya) {
+        if (somaiyaOnlyBlocked(req.user, event)) {
             return res.status(403).json({
                 error: true,
-                message:
-                    "Only Somaiya participants are allowed to register for this event",
+                message: SOMAIYA_ONLY_MESSAGE,
             });
         }
         if (event.state !== "REGISTRATION_OPEN") {
@@ -1907,6 +1951,81 @@ router.post(protected + "/register-for-event", authCheck, async (req, res) => {
         }
     }
 });
+
+// Cancel a solo registration. Only allowed while registrations are open.
+router.post(protected + "/unregister-from-event", authCheck, async (req, res) => {
+    if (!req.user) {
+        return res.status(401).json({ error: true, message: "Unauthorized" });
+    }
+
+    const eventId = parseInt(req.body.event_id);
+    if (isNaN(eventId)) {
+        return res.status(400).json({ error: true, message: "Invalid event id" });
+    }
+
+    try {
+        const event = await prisma.events.findUnique({ where: { id: eventId } });
+        if (!event) {
+            return res
+                .status(404)
+                .json({ error: true, message: "Event not found" });
+        }
+
+        const participant = await prisma.participant.findFirst({
+            where: { user_id: req.user.id, event_id: eventId },
+        });
+        if (!participant) {
+            return res.status(400).json({
+                error: true,
+                message: "You are not registered for this event",
+            });
+        }
+
+        if (participant.team_id || event.ma_ppt > 1) {
+            return res.status(403).json({
+                error: true,
+                message:
+                    "This is a team event — leave or delete your team to cancel",
+            });
+        }
+
+        if (event.state !== "REGISTRATION_OPEN") {
+            return res.status(403).json({
+                error: true,
+                message: "Cancellations are only allowed while registrations are open",
+            });
+        }
+
+        if (participant.attended) {
+            return res.status(403).json({
+                error: true,
+                message: "You have already checked in for this event",
+            });
+        }
+
+        if (event.fee > 0 && participant.payment_status === "SUCCESS") {
+            return res.status(403).json({
+                error: true,
+                message:
+                    "Paid registrations can't be cancelled here — contact the organiser",
+            });
+        }
+
+        await prisma.participant.delete({ where: { id: participant.id } });
+        invalidateEvent(eventId, event.organizer_id);
+
+        return res.json({
+            error: false,
+            message: "Registration cancelled",
+        });
+    } catch (err) {
+        logger.error(err);
+        return res
+            .status(500)
+            .json({ error: true, message: "Error cancelling registration" });
+    }
+});
+
 router.post(protected + "/create-team", authCheck, async (req, res) => {
     if (!req.user) {
         return res.status(401).json({ error: true, message: "Unauthorized" });
@@ -1946,11 +2065,10 @@ router.post(protected + "/create-team", authCheck, async (req, res) => {
         });
     }
 
-    if (!req.user.is_somaiya_student && event.is_only_somaiya) {
+    if (somaiyaOnlyBlocked(req.user, event)) {
         return res.status(403).json({
             error: true,
-            message:
-                "Only Somaiya participants are allowed to register for this event",
+            message: SOMAIYA_ONLY_MESSAGE,
         });
     }
 
@@ -2094,11 +2212,10 @@ router.post(protected + "/join-team", authCheck, async (req, res) => {
         });
     }
 
-    if (!req.user.is_somaiya_student && event.is_only_somaiya) {
+    if (somaiyaOnlyBlocked(req.user, event)) {
         return res.status(403).json({
             error: true,
-            message:
-                "Only Somaiya participants are allowed to register for this event",
+            message: SOMAIYA_ONLY_MESSAGE,
         });
     }
 

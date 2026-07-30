@@ -48,7 +48,8 @@ const keys = {
     stats: (councilUserId) =>
         councilUserId ? `stats:council:${councilUserId}` : `stats:all`,
     councilList: ()          => `councils:all`,
-    councilProfile: (id)     => `council:profile:${id}`,
+    // `scope` separates the full listing from the one trimmed for non-Somaiya viewers
+    councilProfile: (id, scope = "all") => `council:profile:${id}:${scope}`,
     search: (q)              => `search:${q}`,
     budget: (eventId)        => `budget:${eventId}`,
     docs: (eventId)          => `docs:${eventId}`,
@@ -68,7 +69,11 @@ function invalidateEvent(eventId, councilUserId) {
 
 /** Call whenever a council profile is updated */
 function invalidateCouncil(councilId) {
-    del(keys.councilList(), keys.councilProfile(councilId));
+    del(
+        keys.councilList(),
+        keys.councilProfile(councilId, "all"),
+        keys.councilProfile(councilId, "open"),
+    );
 }
 
 // ─── Express cache middleware factory ────────────────────────────────

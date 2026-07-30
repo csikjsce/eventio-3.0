@@ -20,16 +20,38 @@ import { looksLikeMarkdown } from "@/lib/markdown";
 import Spinner from "@/components/Spinner";
 import FeedbackModal from "@/components/FeedbackModal";
 import RegistrationDetailsModal from "@/components/RegistrationDetailsModal";
-import { fetchEvent, registerForEvent, claimTicket as apiClaimTicket } from "@/lib/api";
+import {
+  fetchEvent,
+  registerForEvent,
+  unregisterFromEvent,
+  claimTicket as apiClaimTicket,
+} from "@/lib/api";
 import { EventDetailsSkeleton } from "@/components/Skeletons";
 import type { EventData } from "@/types/eventio";
+
+/** Live status shown as a pill under the title */
+const STATUS_LABELS: Record<string, { label: string; className: string }> = {
+  UPCOMING:            { label: "Upcoming",             className: "bg-blue-500/15 text-blue-500" },
+  REGISTRATION_OPEN:   { label: "Registrations open",   className: "bg-green-500/15 text-green-500" },
+  REGISTRATION_CLOSED: { label: "Registrations closed", className: "bg-amber-500/15 text-amber-500" },
+  TICKET_OPEN:         { label: "RSVP open",            className: "bg-green-500/15 text-green-500" },
+  TICKET_CLOSED:       { label: "RSVP closed",          className: "bg-amber-500/15 text-amber-500" },
+  ONGOING:             { label: "Happening now",        className: "bg-red-500/15 text-red-500" },
+  COMPLETED:           { label: "Event over",           className: "bg-mute/15 text-mute" },
+};
+
 
 export default function EventDetailsScreen() {
   const [event, setEvent] = useState<EventData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [snackbarVisible, setSnackbarVisible] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [snackbar, setSnackbar] = useState<string | null>(null);
   const [isFeedbackPopupOpen, setIsFeedbackPopupOpen] = useState(false);
   const [showRegistrationForm, setShowRegistrationForm] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   const [buttonState, setButtonState] = useState<{
     text: string;
@@ -58,8 +80,9 @@ export default function EventDetailsScreen() {
       await registerForEvent(Number(id), moreDetails);
       setShowRegistrationForm(false);
       setButtonState({ text: "Registered ✓", loading: false, disabled: true, onClick: () => {} });
-      setSnackbarVisible(true);
-      setTimeout(() => setSnackbarVisible(false), 3000);
+      setReloadKey((k) => k + 1);
+      setSnackbar("You're registered!");
+      setTimeout(() => setSnackbar(null), 3000);
     } catch (err) {
       setButtonState({
         text: "Register Now",
@@ -91,12 +114,31 @@ export default function EventDetailsScreen() {
         disabled: false,
         onClick: () => router.push("/ticket/" + id),
       });
-      setSnackbarVisible(true);
-      setTimeout(() => setSnackbarVisible(false), 3000);
+      setSnackbar("Ticket claimed!");
+      setTimeout(() => setSnackbar(null), 3000);
     } catch {
       setButtonState({ text: "RSVP for this event", loading: false, disabled: false, onClick: () => { void claimTicket(); } });
     }
   }, [id, router]);
+
+  const cancelRegistration = useCallback(async () => {
+    setCancelling(true);
+    setCancelError(null);
+    try {
+      await unregisterFromEvent(Number(id));
+      setShowCancelConfirm(false);
+      setReloadKey((k) => k + 1);
+      setSnackbar("Registration cancelled");
+      setTimeout(() => setSnackbar(null), 3000);
+    } catch (err) {
+      const message =
+        (err as { response?: { data?: { message?: string } } }).response?.data
+          ?.message ?? "Could not cancel your registration. Try again.";
+      setCancelError(message);
+    } finally {
+      setCancelling(false);
+    }
+  }, [id]);
 
   useEffect(() => {
     let cancelled = false;
@@ -106,6 +148,7 @@ export default function EventDetailsScreen() {
         const eventData: EventData | null = await fetchEvent(Number(id));
         if (!eventData || cancelled) { setLoading(false); return; }
         setEvent(eventData);
+        setLoadError(null);
         setLoading(false);
 
         // Derive button state from event
@@ -171,22 +214,41 @@ export default function EventDetailsScreen() {
         } else if (s === "COMPLETED") {
           setButtonState({ text: "Give Feedback", loading: false, disabled: false, onClick: () => setIsFeedbackPopupOpen(true) });
         }
-      } catch {
-        if (!cancelled) setLoading(false);
+      } catch (err) {
+        if (cancelled) return;
+        const res = (err as { response?: { status?: number; data?: { message?: string } } }).response;
+        // 403 here means the event is restricted (e.g. Somaiya-only)
+        setLoadError(
+          res?.status === 403
+            ? res.data?.message ?? "You don't have access to this event"
+            : null,
+        );
+        setLoading(false);
       }
     }
 
     load();
     return () => { cancelled = true; };
     // Only refetch when the event id changes — register/claimTicket are stable for a given id
-  }, [id, register, claimTicket, router]);
+  }, [id, register, claimTicket, router, reloadKey]);
 
   if (loading) return <EventDetailsSkeleton />;
   if (!event) return (
-    <div className="flex items-center justify-center min-h-screen bg-background">
-      <p className="text-mute font-poppins">Event not found</p>
+    <div className="flex flex-col items-center justify-center gap-3 min-h-screen bg-background px-8 text-center">
+      <p className="text-mute font-poppins">{loadError ?? "Event not found"}</p>
+      <Link href="/" className="text-primary font-poppins text-sm font-semibold">
+        Back to events
+      </Link>
     </div>
   );
+
+  const status = STATUS_LABELS[event.state];
+  const canUnregister =
+    event.state === "REGISTRATION_OPEN" &&
+    !!event.Participant &&
+    !event.Participant.team &&
+    event.ma_ppt <= 1 &&
+    !(event.fee > 0);
 
   return (
     <>
@@ -249,6 +311,16 @@ export default function EventDetailsScreen() {
             <h1 className="font-poppins font-bold text-2xl text-foreground leading-tight">
               {event.name}
             </h1>
+            {status && (
+              <span
+                className={`inline-flex items-center gap-1.5 mt-2 rounded-full px-3 py-1 text-xs font-poppins font-semibold ${status.className}`}
+              >
+                {event.state === "ONGOING" && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                )}
+                {status.label}
+              </span>
+            )}
             <div className="flex items-center gap-2 mt-2">
               <img
                 src={event.organizer.photo_url}
@@ -327,6 +399,14 @@ export default function EventDetailsScreen() {
             {buttonState.loading && <Spinner />}
             {buttonState.text}
           </button>
+          {canUnregister && (
+            <button
+              className="w-full mt-2 h-11 rounded-full text-sm font-semibold font-poppins text-red-500 hover:bg-red-500/10 transition-colors"
+              onClick={() => { setCancelError(null); setShowCancelConfirm(true); }}
+            >
+              Cancel registration
+            </button>
+          )}
         </div>
       </div>
 
@@ -341,6 +421,44 @@ export default function EventDetailsScreen() {
         />
       )}
 
+      {/* Cancel-registration confirmation */}
+      {showCancelConfirm && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 px-6"
+          onClick={(e) => { if (e.target === e.currentTarget && !cancelling) setShowCancelConfirm(false); }}
+        >
+          <div className="bg-card border border-border rounded-2xl p-5 w-full max-w-sm flex flex-col gap-3">
+            <h2 className="font-poppins font-bold text-lg text-foreground">
+              Cancel registration?
+            </h2>
+            <p className="font-poppins text-sm text-mute">
+              You&apos;ll lose your spot for {event.name}. You can register again
+              while registrations stay open.
+            </p>
+            {cancelError && (
+              <p className="font-poppins text-sm text-red-500">{cancelError}</p>
+            )}
+            <div className="flex gap-3 mt-1">
+              <button
+                className="flex-1 h-11 rounded-full border border-border font-poppins text-sm font-semibold text-foreground disabled:opacity-50"
+                disabled={cancelling}
+                onClick={() => setShowCancelConfirm(false)}
+              >
+                Keep it
+              </button>
+              <button
+                className="flex-1 h-11 rounded-full bg-red-500 text-white font-poppins text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
+                disabled={cancelling}
+                onClick={() => { void cancelRegistration(); }}
+              >
+                {cancelling && <Spinner />}
+                Yes, cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Feedback modal */}
       {isFeedbackPopupOpen && (
         <div
@@ -352,10 +470,10 @@ export default function EventDetailsScreen() {
       )}
 
       {/* Snackbar */}
-      {snackbarVisible && (
+      {snackbar && (
         <div className="fixed bottom-24 left-4 right-4 bg-green-500 text-white p-4 rounded-2xl z-40 flex gap-3 items-center shadow-lg">
           <TickCircle size="22" color="white" variant="Bold" />
-          <span className="font-poppins text-sm font-medium">Action successful!</span>
+          <span className="font-poppins text-sm font-medium">{snackbar}</span>
         </div>
       )}
     </>

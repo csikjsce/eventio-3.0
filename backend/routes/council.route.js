@@ -67,7 +67,10 @@ router.post(p + "/get", authCheck, async (req, res) => {
 // GET /api/v1/council/p/profile/:id
 router.get(p + "/profile/:id", authCheck, async (req, res) => {
     const id = parseInt(req.params.id);
-    const cacheKey = keys.councilProfile(id);
+    // Non-Somaiya viewers must not be shown Somaiya-only events, so they get
+    // their own cache scope.
+    const somaiyaOnlyHidden = !req.user.is_somaiya_student && req.user.role === "USER";
+    const cacheKey = keys.councilProfile(id, somaiyaOnlyHidden ? "open" : "all");
     const cached = get(cacheKey);
     if (cached) return res.json(cached);
 
@@ -90,7 +93,10 @@ router.get(p + "/profile/:id", authCheck, async (req, res) => {
                     },
                 },
                 Events: {
-                    where: { state: { notIn: ["DRAFT", "PRIVATE"] } },
+                    where: {
+                        state: { notIn: ["DRAFT", "PRIVATE"] },
+                        ...(somaiyaOnlyHidden ? { is_only_somaiya: false } : {}),
+                    },
                     select: {
                         id: true, name: true, banner_url: true, state: true,
                         dates: true, venue: true, fee: true, tags: true,
