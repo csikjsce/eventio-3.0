@@ -162,6 +162,7 @@ export default function NewEventPage() {
   const [multiDay, setMultiDay]       = useState(false);
   const [teamEvent, setTeamEvent]     = useState(false);
   const [femaleQuota, setFemaleQuota] = useState(false);
+  const [femaleSeatError, setFemaleSeatError] = useState<string | null>(null);
   const [showParent, setShowParent]   = useState(false);
   const [loading, setLoading]         = useState(false);
   const [toast, setToast]             = useState<{ msg: string; ok: boolean } | null>(null);
@@ -252,6 +253,18 @@ export default function NewEventPage() {
   async function goNext() {
     const fields = STEP_FIELDS[step] ?? [];
     const valid  = fields.length === 0 || await trigger(fields as Parameters<typeof trigger>[0]);
+
+    // Registration & Tickets: reserved female seats can't exceed total seats
+    if (step === 3 && femaleQuota && methods.getValues("registration_type") !== "EXTERNAL") {
+      const total  = Number(methods.getValues("ticket_count"));
+      const female = Number(methods.getValues("female_requirement"));
+      if (Number.isFinite(total) && Number.isFinite(female) && female > total) {
+        setFemaleSeatError("Number of reserved female seats exceed total seats");
+        return;
+      }
+    }
+    setFemaleSeatError(null);
+
     if (valid) setStep(s => Math.min(STEPS.length, s + 1));
   }
 
@@ -321,6 +334,20 @@ export default function NewEventPage() {
   const wType         = watch("event_type");
   const wRegType      = watch("registration_type");
   const wAttendance   = watch("attendance_type");
+  const wFemaleReq    = watch("female_requirement");
+
+  // Live-check reserved female seats against total seats while editing
+  useEffect(() => {
+    if (femaleQuota && wRegType !== "EXTERNAL") {
+      const total  = Number(wTickets);
+      const female = Number(wFemaleReq);
+      if (Number.isFinite(total) && Number.isFinite(female) && female > total) {
+        setFemaleSeatError("Number of reserved female seats exceed total seats");
+        return;
+      }
+    }
+    setFemaleSeatError(null);
+  }, [wFemaleReq, wTickets, femaleQuota, wRegType]);
 
   return (
     <FormProvider {...methods}>
@@ -589,7 +616,7 @@ export default function NewEventPage() {
 
                     <Toggle on={femaleQuota} onToggle={() => setFemaleQuota(!femaleQuota)} label="Female Seat Reservation" sub="Reserve a number of seats exclusively for female participants." />
                     {femaleQuota && (
-                      <FieldWrap label="Reserved Female Seats" error={errors.female_requirement?.message}>
+                      <FieldWrap label="Reserved Female Seats" error={femaleSeatError ?? errors.female_requirement?.message}>
                         <NumberInput min={0} className="w-full" {...register("female_requirement")} placeholder="e.g. 50" />
                       </FieldWrap>
                     )}
