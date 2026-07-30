@@ -8,11 +8,14 @@ import type { DocumentSignatory } from "@/lib/document-builder";
 function SignPanel({
   onApply,
   busy,
+  canSaveToMember,
 }: {
-  onApply: (dataUrl: string) => void;
+  onApply: (dataUrl: string, saveToMember: boolean) => void;
   busy: boolean;
+  canSaveToMember: boolean;
 }) {
   const [draft, setDraft] = useState<string | null>(null);
+  const [saveToMember, setSaveToMember] = useState(true);
 
   async function handleUpload(file: File) {
     const dataUrl = await new Promise<string>((resolve, reject) => {
@@ -46,10 +49,21 @@ function SignPanel({
         />
       </label>
       <SignaturePad onChange={setDraft} />
+      {canSaveToMember && (
+        <label className="flex items-center gap-2 text-[11px] font-fira text-muted-tx cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={saveToMember}
+            onChange={(e) => setSaveToMember(e.target.checked)}
+            className="rounded border-border-c accent-red-500"
+          />
+          Save to this member for future events
+        </label>
+      )}
       <button
         type="button"
         disabled={!draft || busy}
-        onClick={() => draft && onApply(draft)}
+        onClick={() => draft && onApply(draft, canSaveToMember && saveToMember)}
         className="w-full py-2 rounded-lg bg-red-500 hover:bg-red-600 disabled:opacity-40 text-white text-xs font-fira font-medium"
       >
         Apply signature
@@ -64,7 +78,7 @@ export default function CouncilSignatorySigning({
   disabled,
 }: {
   signatories: DocumentSignatory[];
-  onSign: (index: number, dataUrl: string) => Promise<void>;
+  onSign: (index: number, dataUrl: string, saveToMember: boolean) => Promise<void>;
   disabled?: boolean;
 }) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
@@ -73,11 +87,11 @@ export default function CouncilSignatorySigning({
   const required = signatories.filter((s) => s.name.trim() && !s.facultyReviewer);
   if (required.length === 0) return null;
 
-  async function applySign(index: number, dataUrl: string | null) {
+  async function applySign(index: number, dataUrl: string | null, saveToMember: boolean) {
     if (!dataUrl) return;
     setBusy(true);
     try {
-      await onSign(index, dataUrl);
+      await onSign(index, dataUrl, saveToMember);
       setActiveIndex(null);
     } finally {
       setBusy(false);
@@ -107,20 +121,21 @@ export default function CouncilSignatorySigning({
                     <p className="text-[11px] font-fira text-muted-tx truncate">{sig.role}</p>
                   )}
                 </div>
-                {signed ? (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-fira text-emerald-600 shrink-0">
-                    <CheckCircle2 size={13} /> Signed
-                  </span>
-                ) : (
+                <div className="flex items-center gap-2 shrink-0">
+                  {signed && (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-fira text-emerald-600">
+                      <CheckCircle2 size={13} /> Signed
+                    </span>
+                  )}
                   <button
                     type="button"
                     disabled={disabled || busy}
                     onClick={() => setActiveIndex(activeIndex === index ? null : index)}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-red-500/30 text-red-600 text-[11px] font-fira hover:bg-red-500/5 shrink-0"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-red-500/30 text-red-600 text-[11px] font-fira hover:bg-red-500/5"
                   >
-                    <PenLine size={12} /> Sign
+                    <PenLine size={12} /> {signed ? "Replace" : "Sign"}
                   </button>
-                )}
+                </div>
               </div>
 
               {signed && (
@@ -128,8 +143,12 @@ export default function CouncilSignatorySigning({
                 <img src={sig.signatureUrl} alt="" className="h-10 object-contain" />
               )}
 
-              {activeIndex === index && !signed && (
-                <SignPanel busy={busy} onApply={(dataUrl) => applySign(index, dataUrl)} />
+              {activeIndex === index && (
+                <SignPanel
+                  busy={busy}
+                  canSaveToMember={!!sig.memberId}
+                  onApply={(dataUrl, saveToMember) => applySign(index, dataUrl, saveToMember)}
+                />
               )}
             </div>
           );

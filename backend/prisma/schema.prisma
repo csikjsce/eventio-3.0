@@ -154,11 +154,12 @@ model CouncilMember {
   council    CouncilProfile @relation(fields: [council_id], references: [id], onDelete: Cascade)
   name       String
   email      String
-  role       String         @default("Member")
-  team       String         @default("Technical")
-  is_head    Boolean        @default(false)
-  photo_url  String?
-  created_at DateTime       @default(now())
+  role          String         @default("Member")
+  team          String         @default("Technical")
+  is_head       Boolean        @default(false)
+  photo_url     String?
+  signature_url String?
+  created_at    DateTime       @default(now())
 }
 
 // ── Council faculty advisors ──────────────────────────────────────────

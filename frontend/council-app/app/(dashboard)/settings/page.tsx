@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import {
   fetchCouncilProfile, updateCouncilProfile,
-  createMember, updateMember, deleteMember as apiDeleteMember,
+  createMember, updateMember, deleteMember as apiDeleteMember, setMemberSignature,
   createAdvisor, updateAdvisor, deleteAdvisor as apiDeleteAdvisor,
   type CouncilProfile, type CouncilMemberRow, type FacultyAdvisorRow,
 } from "@/lib/api";
@@ -11,6 +11,7 @@ import { useData } from "@/contexts/DataContext";
 import {
   Settings, Users, Upload, Plus, X, Edit2, Trash2,
   Mail, Link2, ChevronDown, CheckCircle2, Save, AtSign, Phone, Globe, Eye,
+  AlertTriangle,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -25,6 +26,7 @@ interface Member {
   team: string;
   is_head: boolean;
   photo_url: string;
+  signature_url?: string | null;
 }
 
 interface FacultyAdvisor {
@@ -258,9 +260,10 @@ function FacultyModal({ advisor, onSave, onClose }: {
 
 // ─── Member form modal ────────────────────────────────────────────────────────
 
-function MemberModal({ member, onSave, onClose }: {
+function MemberModal({ member, onSave, onSignatureSaved, onClose }: {
   member: Partial<Member> | null;
   onSave: (m: Member) => Promise<void>;
+  onSignatureSaved: (memberId: number, url: string | null) => void;
   onClose: () => void;
 }) {
   const [form, setForm] = useState<Omit<Member, "id">>({
@@ -270,11 +273,18 @@ function MemberModal({ member, onSave, onClose }: {
     team:      member?.team      ?? "Technical",
     is_head:   member?.is_head   ?? false,
     photo_url: member?.photo_url ?? "",
+    signature_url: member?.signature_url ?? null,
   });
   const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [sigUploading, setSigUploading] = useState(false);
+  const [sigError, setSigError] = useState<string | null>(null);
   const photoRef = useRef<HTMLInputElement>(null);
+  const sigRef = useRef<HTMLInputElement>(null);
 
   function set(k: keyof typeof form, v: string | boolean) {
+    if (k === "email") setError(null);   // clear stale "not registered" error on edit
     setForm(prev => ({ ...prev, [k]: v }));
   }
 
@@ -289,10 +299,55 @@ function MemberModal({ member, onSave, onClose }: {
     finally { setUploading(false); e.target.value = ""; }
   }
 
-  function handleSave() {
+  async function handleSigFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !member?.id) return;
+    setSigUploading(true);
+    setSigError(null);
+    try {
+      const url = await uploadFile(file, "eventio-council-images");
+      const saved = await setMemberSignature(member.id, url);
+      setForm(prev => ({ ...prev, signature_url: saved }));
+      onSignatureSaved(member.id, saved);
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+        ?? "Couldn't save signature. Please try again.";
+      setSigError(msg);
+    } finally {
+      setSigUploading(false);
+      e.target.value = "";
+    }
+  }
+
+  async function handleSigRemove() {
+    if (!member?.id) return;
+    setSigUploading(true);
+    setSigError(null);
+    try {
+      await setMemberSignature(member.id, null);
+      setForm(prev => ({ ...prev, signature_url: null }));
+      onSignatureSaved(member.id, null);
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+        ?? "Couldn't remove signature. Please try again.";
+      setSigError(msg);
+    } finally {
+      setSigUploading(false);
+    }
+  }
+
+  async function handleSave() {
     if (!form.name.trim() || !form.email.trim()) return;
     const auto = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(form.name)}&backgroundColor=b61f2d&textColor=ffffff`;
-    onSave({ id: member?.id ?? 0, ...form, photo_url: form.photo_url || auto });
+    setSaving(true);
+    setError(null);
+    try {
+      await onSave({ id: member?.id ?? 0, ...form, photo_url: form.photo_url || auto });
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to save member.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   const previewPhoto = form.photo_url ||
@@ -347,6 +402,14 @@ function MemberModal({ member, onSave, onClose }: {
             </div>
           </div>
 
+          {/* Registered-user requirement */}
+          <div className="flex items-start gap-2 rounded-lg bg-amber-500/10 border border-amber-500/25 px-3 py-2">
+            <AlertTriangle size={14} className="text-amber-500 shrink-0 mt-0.5" />
+            <p className="text-amber-700 dark:text-amber-400 text-[11px] font-fira leading-relaxed">
+              This person must be a registered Eventio user — they need to have signed in to Eventio at least once. You can&apos;t add an email that isn&apos;t in the system.
+            </p>
+          </div>
+
           {/* Role + Team */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="relative">
@@ -374,14 +437,63 @@ function MemberModal({ member, onSave, onClose }: {
             <span className="text-tx text-sm font-fira">Mark as Head / Core Team</span>
           </label>
 
+          {/* Signature — saved to the member's Eventio account */}
+          <div className="pt-3 border-t border-border-c">
+            <label className={LABEL}>Signature</label>
+            {member?.id ? (
+              <>
+                <div className="flex items-center gap-3">
+                  <div className="w-28 h-14 rounded-lg border border-border-c bg-white flex items-center justify-center overflow-hidden shrink-0">
+                    {form.signature_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={form.signature_url} alt="signature" className="max-w-full max-h-full object-contain" />
+                    ) : (
+                      <span className="text-subtle-tx text-[10px] font-fira">No signature</span>
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <input ref={sigRef} type="file" accept="image/png,image/webp,image/jpeg" className="hidden" onChange={handleSigFile} />
+                    <button type="button" onClick={() => sigRef.current?.click()} disabled={sigUploading}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface2 border border-border-c hover:border-red-500/30 text-muted-tx hover:text-tx text-xs font-fira transition-all disabled:opacity-50">
+                      <Upload size={13} /> {sigUploading ? "Saving…" : form.signature_url ? "Replace signature" : "Upload signature PNG"}
+                    </button>
+                    {form.signature_url && !sigUploading && (
+                      <button type="button" onClick={handleSigRemove}
+                        className="text-subtle-tx hover:text-red-500 text-[11px] font-fira text-left transition-colors">
+                        Remove signature
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <p className="text-subtle-tx text-[11px] font-fira mt-1.5">Saved to this member&apos;s Eventio account and reused on event proposals.</p>
+                {sigError && (
+                  <div className="flex items-start gap-2 rounded-lg bg-red-500/10 border border-red-500/30 px-3 py-2 mt-2">
+                    <AlertTriangle size={14} className="text-red-500 shrink-0 mt-0.5" />
+                    <p className="text-red-600 dark:text-red-400 text-xs font-fira leading-relaxed">{sigError}</p>
+                  </div>
+                )}
+              </>
+            ) : (
+              <p className="text-subtle-tx text-[11px] font-fira">Add the member first, then reopen to save their signature.</p>
+            )}
+          </div>
+
+          {/* Save error (e.g. email not a registered user) */}
+          {error && (
+            <div className="flex items-start gap-2 rounded-lg bg-red-500/10 border border-red-500/30 px-3 py-2">
+              <AlertTriangle size={14} className="text-red-500 shrink-0 mt-0.5" />
+              <p className="text-red-600 dark:text-red-400 text-xs font-fira leading-relaxed">{error}</p>
+            </div>
+          )}
+
           {/* Actions */}
           <div className="flex gap-3 pt-1">
-            <button type="button" onClick={onClose} className="flex-1 py-2.5 border border-border-c rounded-xl text-sm font-fira text-muted-tx hover:text-tx hover:border-red-500/30 transition-all">
+            <button type="button" onClick={onClose} disabled={saving} className="flex-1 py-2.5 border border-border-c rounded-xl text-sm font-fira text-muted-tx hover:text-tx hover:border-red-500/30 disabled:opacity-40 transition-all">
               Cancel
             </button>
-            <button type="button" onClick={handleSave} disabled={!form.name.trim() || !form.email.trim() || uploading}
+            <button type="button" onClick={handleSave} disabled={!form.name.trim() || !form.email.trim() || uploading || saving}
               className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-red-500 hover:bg-red-600 disabled:opacity-40 text-white text-sm font-fira font-semibold rounded-xl transition-all">
-              <Save size={14} /> {member?.id ? "Save Changes" : "Add Member"}
+              <Save size={14} /> {saving ? "Saving…" : member?.id ? "Save Changes" : "Add Member"}
             </button>
           </div>
         </div>
@@ -634,6 +746,7 @@ export default function SettingsPage() {
           team:      m.team      ?? "Technical",
           is_head:   m.is_head   ?? false,
           photo_url: m.photo_url ?? `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(m.name ?? "M")}&backgroundColor=b61f2d&textColor=ffffff`,
+          signature_url: m.signature_url ?? null,
         })));
       }
     }).catch(() => {}).finally(() => setProfileLoading(false));
@@ -707,8 +820,9 @@ export default function SettingsPage() {
     }
   }
 
+  // Throws on failure (with a human-readable message) so the modal can show the
+  // error inline and stay open; closes the modal itself only on success.
   async function saveMember(m: Member) {
-    setModal(null);
     try {
       if (m.id === 0) {
         // new record
@@ -726,11 +840,16 @@ export default function SettingsPage() {
           ...x, name: updated.name, email: updated.email, role: updated.role,
           team: updated.team, is_head: updated.is_head,
           photo_url: updated.photo_url ?? x.photo_url,
+          signature_url: x.signature_url,   // signature is managed by its own endpoint
         } : x));
         showToast("Member updated!");
       }
-    } catch {
-      showToast("Failed to save member. Please try again.");
+      setModal(null);
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+        ?? "Failed to save member. Please try again.";
+      throw new Error(msg);
     }
   }
 
@@ -791,6 +910,9 @@ export default function SettingsPage() {
         <MemberModal
           member={modal}
           onSave={saveMember}
+          onSignatureSaved={(memberId, url) =>
+            setMembers(prev => prev.map(x => x.id === memberId ? { ...x, signature_url: url } : x))
+          }
           onClose={() => setModal(null)}
         />
       )}

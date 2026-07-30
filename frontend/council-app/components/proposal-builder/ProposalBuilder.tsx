@@ -22,6 +22,7 @@ import BuilderField, { LABEL } from "@/components/proposal-builder/BuilderField"
 import { useData } from "@/contexts/DataContext";
 import {
   fetchCouncilProfile,
+  setMemberSignature,
   type CouncilMemberRow,
   type FacultyAdvisorRow,
 } from "@/lib/api";
@@ -121,6 +122,10 @@ export default function ProposalBuilder({ eventId }: { eventId: string }) {
             memberId: m.id,
             name: m.name,
             role: m.role,
+            // Prefill a saved member signature so heads start pre-signed (can be replaced).
+            ...(m.signature_url
+              ? { signatureUrl: m.signature_url, signedAt: new Date().toISOString() }
+              : {}),
           }));
         }
       }
@@ -255,7 +260,7 @@ export default function ProposalBuilder({ eventId }: { eventId: string }) {
     }
   }
 
-  async function handleSign(index: number, dataUrl: string) {
+  async function handleSign(index: number, dataUrl: string, saveToMember: boolean) {
     if (!state) return;
     const sig = state.signatories[index];
     const file = dataUrlToFile(dataUrl, `council-sig-${sig.memberId ?? index}.png`);
@@ -269,6 +274,17 @@ export default function ProposalBuilder({ eventId }: { eventId: string }) {
     setSaving(true);
     try {
       await persist(next);
+      // Optionally store this signature on the member for future events.
+      if (saveToMember && sig.memberId) {
+        try {
+          await setMemberSignature(sig.memberId, url);
+          setMembers((prev) =>
+            prev.map((m) => (m.id === sig.memberId ? { ...m, signature_url: url } : m)),
+          );
+        } catch {
+          /* non-fatal: the proposal signature is saved; only the member copy failed */
+        }
+      }
       showToast(`${sig.name} signed.`);
     } catch {
       showToast("Could not save signature.");
@@ -297,7 +313,14 @@ export default function ProposalBuilder({ eventId }: { eventId: string }) {
         ...s,
         signatories: selected
           ? s.signatories.filter((sig) => sig.memberId !== member.id)
-          : [...s.signatories, { memberId: member.id, name: member.name, role: member.role }],
+          : [...s.signatories, {
+              memberId: member.id,
+              name: member.name,
+              role: member.role,
+              ...(member.signature_url
+                ? { signatureUrl: member.signature_url, signedAt: new Date().toISOString() }
+                : {}),
+            }],
       };
     });
   }

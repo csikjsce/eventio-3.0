@@ -567,6 +567,8 @@ export interface CouncilMemberRow {
   is_head: boolean;
   photo_url: string | null;
   created_at: string;
+  /** Resolved from the member's User account (User.signature.png_url). */
+  signature_url?: string | null;
 }
 
 export interface FacultyAdvisorRow {
@@ -627,6 +629,15 @@ export async function updateMember(id: number, data: Partial<Omit<CouncilMemberR
 
 export async function deleteMember(id: number): Promise<void> {
   await api.delete(`/council/p/members/${id}`);
+}
+
+/**
+ * Save (or clear, with null) a member's signature. Stored on the member's own
+ * User account — no CouncilMember column exists. Returns the saved URL or null.
+ */
+export async function setMemberSignature(id: number, png_url: string | null): Promise<string | null> {
+  const res = await api.put(`/council/p/members/${id}/signature`, { png_url });
+  return res.data.signature_url ?? null;
 }
 
 // ── Faculty Advisor CRUD ───────────────────────────────────────────────────────

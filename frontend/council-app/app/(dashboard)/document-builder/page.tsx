@@ -11,6 +11,7 @@ import { useData } from "@/contexts/DataContext";
 import {
   fetchCouncilProfile,
   updateCouncilProfile,
+  setMemberSignature,
   type CouncilMemberRow,
 } from "@/lib/api";
 import { dataUrlToFile } from "@/lib/proposal";
@@ -191,6 +192,9 @@ export default function DocumentBuilderPage() {
               memberId: m.id,
               name: m.name,
               role: m.role,
+              ...(m.signature_url
+                ? { signatureUrl: m.signature_url, signedAt: new Date().toISOString() }
+                : {}),
             }));
           }
         }
@@ -259,7 +263,14 @@ export default function DocumentBuilderPage() {
         ? s.signatories.filter((sig) => sig.memberId !== member.id)
         : [
             ...s.signatories,
-            { memberId: member.id, name: member.name, role: member.role },
+            {
+              memberId: member.id,
+              name: member.name,
+              role: member.role,
+              ...(member.signature_url
+                ? { signatureUrl: member.signature_url, signedAt: new Date().toISOString() }
+                : {}),
+            },
           ];
       return { ...s, signatories };
     });
@@ -286,7 +297,7 @@ export default function DocumentBuilderPage() {
     }));
   }
 
-  async function handleSignCouncilMember(index: number, dataUrl: string) {
+  async function handleSignCouncilMember(index: number, dataUrl: string, saveToMember: boolean) {
     const sig = state.signatories[index];
     const file = dataUrlToFile(
       dataUrl,
@@ -301,6 +312,17 @@ export default function DocumentBuilderPage() {
           : x,
       ),
     }));
+    // Optionally store this signature on the member for future events.
+    if (saveToMember && sig.memberId) {
+      try {
+        await setMemberSignature(sig.memberId, url);
+        setMembers((prev) =>
+          prev.map((m) => (m.id === sig.memberId ? { ...m, signature_url: url } : m)),
+        );
+      } catch {
+        /* non-fatal: signature applied to the document; member copy failed */
+      }
+    }
     showToast(`${sig.name} signed.`);
   }
 

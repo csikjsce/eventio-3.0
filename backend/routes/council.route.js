@@ -152,6 +152,10 @@ router.get(p + "/me", authCheck, councilOnly, async (req, res) => {
 
         if (!user) return res.status(404).json({ error: true, message: "User not found" });
 
+        // signature_url is a real column on CouncilMember now, so it comes back
+        // with the members query — no resolution step needed. (See the
+        // commented-out attachMemberSignatures above if reviving User fallback.)
+
         const payload = {
             error: false,
             council: {
@@ -230,6 +234,51 @@ router.put(p + "/me", authCheck, councilOnly, async (req, res) => {
 // ── MEMBER CRUD ──────────────────────────────────────────────────────
 // ════════════════════════════════════════════════════════════════════
 
+// Every council member must correspond to a registered Eventio user (someone
+// who has logged in at least once). Returns the matched User, or null.
+async function findRegisteredUser(email) {
+    if (!email || typeof email !== "string" || !email.trim()) return null;
+    return prisma.user.findFirst({
+        where: { email: { equals: email.trim(), mode: "insensitive" } },
+        select: { id: true, email: true },
+    });
+}
+
+const NOT_REGISTERED_MSG =
+    "This email is not a registered Eventio user. Ask them to sign in to Eventio once, then add them.";
+
+// ── SUPERSEDED (kept for potential reuse) ────────────────────────────────────
+// Signatures now live on CouncilMember.signature_url (a real column), so they
+// are returned by the members query directly — no per-request resolution needed.
+// This resolved a member's signature from their own User account instead. If we
+// ever want to fall back to a user's personal signature, revive this.
+//
+// async function attachMemberSignatures(members) {
+//     if (!Array.isArray(members) || members.length === 0) return members;
+//     const emails = [
+//         ...new Set(members.map((m) => (m.email || "").trim().toLowerCase()).filter(Boolean)),
+//     ];
+//     if (emails.length === 0) return members;
+//     const users = await prisma.user.findMany({
+//         where: { email: { in: emails, mode: "insensitive" } },
+//         select: { email: true, signature: true },
+//     });
+//     const byEmail = new Map(
+//         users.map((u) => {
+//             const sig = u.signature;
+//             const url =
+//                 sig && typeof sig === "object" && !Array.isArray(sig) && typeof sig.png_url === "string"
+//                     ? sig.png_url
+//                     : null;
+//             return [u.email.toLowerCase(), url];
+//         }),
+//     );
+//     for (const m of members) {
+//         m.signature_url = byEmail.get((m.email || "").trim().toLowerCase()) ?? null;
+//     }
+//     return members;
+// }
+
 // POST /api/v1/council/p/members — create one member
 router.post(p + "/members", authCheck, councilOnly, async (req, res) => {
     const { name, email, role, team, is_head, photo_url } = req.body;
@@ -237,6 +286,13 @@ router.post(p + "/members", authCheck, councilOnly, async (req, res) => {
         return res.status(400).json({ error: true, message: "name and email are required" });
     }
     try {
+        if (!(await findRegisteredUser(email))) {
+            return res.status(400).json({
+                error: true,
+                code: "MEMBER_NOT_REGISTERED",
+                message: NOT_REGISTERED_MSG,
+            });
+        }
         const profileId = await getProfileId(req.user.id);
         if (!profileId) {
             // Auto-create profile row if it doesn't exist yet
@@ -283,6 +339,19 @@ router.put(p + "/members/:id", authCheck, councilOnly, async (req, res) => {
             return res.status(403).json({ error: true, message: "Forbidden" });
         }
 
+        // Re-validate only when the email is being changed, so existing rows
+        // aren't retroactively blocked when editing other fields.
+        const emailChanged =
+            email !== undefined &&
+            email.trim().toLowerCase() !== (existing.email ?? "").trim().toLowerCase();
+        if (emailChanged && !(await findRegisteredUser(email))) {
+            return res.status(400).json({
+                error: true,
+                code: "MEMBER_NOT_REGISTERED",
+                message: NOT_REGISTERED_MSG,
+            });
+        }
+
         const member = await prisma.councilMember.update({
             where: { id: memberId },
             data: {
@@ -298,6 +367,55 @@ router.put(p + "/members/:id", authCheck, councilOnly, async (req, res) => {
         del(`council:me:${req.user.id}`);
         invalidateCouncil(req.user.id);
         return res.json({ error: false, member });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ error: true, message: "Internal Server Error" });
+    }
+});
+
+// PUT /api/v1/council/p/members/:id/signature — set or clear a member's saved
+// signature. There is no CouncilMember signature column (no migrations); the
+// signature lives on the member's own User account, matched by email. Send
+// { png_url } to set, or { png_url: null } to clear.
+router.put(p + "/members/:id/signature", authCheck, councilOnly, async (req, res) => {
+    const memberId = parseInt(req.params.id);
+    const { png_url } = req.body;
+    try {
+        const existing = await prisma.councilMember.findUnique({
+            where: { id: memberId },
+            include: { council: { select: { user_id: true } } },
+        });
+        if (!existing || existing.council.user_id !== req.user.id) {
+            return res.status(403).json({ error: true, message: "Forbidden" });
+        }
+
+        // ── SUPERSEDED (kept for potential reuse) ────────────────────────────
+        // Signatures used to be written to the member's own User account, which
+        // meant guarding against overwriting an approver's personal signature.
+        // Now the signature lives on the CouncilMember row itself, so neither the
+        // user lookup nor the role guard is needed. Revive if we ever write back
+        // to User.signature again.
+        //
+        // const target = await prisma.user.findFirst({
+        //     where: { email: { equals: (existing.email || "").trim(), mode: "insensitive" } },
+        //     select: { id: true, role: true },
+        // });
+        // if (!target) {
+        //     return res.status(400).json({ error: true, code: "MEMBER_NOT_REGISTERED", message: NOT_REGISTERED_MSG });
+        // }
+        // if (["FACULTY", "PRINCIPAL", "ADMIN"].includes(target.role)) {
+        //     return res.status(403).json({ error: true, code: "PROTECTED_SIGNATURE", message: "This member is a faculty / principal / admin account — they manage their own signature." });
+        // }
+
+        const clearing = png_url === null || png_url === undefined || png_url === "";
+        const member = await prisma.councilMember.update({
+            where: { id: memberId },
+            data: { signature_url: clearing ? null : String(png_url) },
+        });
+
+        del(`council:me:${req.user.id}`);
+        invalidateCouncil(req.user.id);
+        return res.json({ error: false, signature_url: member.signature_url });
     } catch (err) {
         console.error(err);
         return res.status(500).json({ error: true, message: "Internal Server Error" });
