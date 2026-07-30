@@ -28,6 +28,22 @@ function dateToString(d: Date) {
   }).replace(", ", "T").slice(0, 16);
 }
 
+const LOCAL_DRAFT_PREFIX = "eventio:council:new-event:";
+
+type LocalDraft = {
+  values: Partial<NewEventSchema> & { dates?: (Date | string)[] };
+  step: number;
+  startDate: string;
+  endDate: string;
+  endTime: string;
+  multiDay: boolean;
+  teamEvent: boolean;
+  femaleQuota: boolean;
+  showParent: boolean;
+  descFormat: DescFormat;
+  savedAt: string;
+};
+
 /* ─── style tokens ─── */
 const INPUT =
   "w-full bg-surface2 border border-border-c focus:border-red-500/50 rounded-lg px-3 py-2.5 text-tx text-sm font-fira outline-none transition-colors placeholder:text-subtle-tx";
@@ -154,6 +170,8 @@ export default function NewEventPage() {
   const { events, refreshEvents } = useData();
   const idParam = Array.isArray(params.id) ? params.id[0] : params.id;
   const existing = idParam ? events.find(e => String(e.id) === idParam) ?? null : null;
+  const localDraftKey = `${LOCAL_DRAFT_PREFIX}${idParam ?? "new"}`;
+  const restoredDraftRef = useRef(false);
 
   const [step, setStep]               = useState(1);
   const [startDate, setStartDate]     = useState(dateToString(new Date()));
@@ -188,7 +206,38 @@ export default function NewEventPage() {
   const { register, handleSubmit, setValue, watch, trigger, formState: { errors } } = methods;
 
   useEffect(() => {
-    if (existing) {
+    // Wait for the event list before deciding that an edit has no local draft.
+    if (idParam && !existing) return;
+    if (restoredDraftRef.current) return;
+
+    let restored = false;
+    try {
+      const raw = window.localStorage.getItem(localDraftKey);
+      if (raw) {
+        const draft = JSON.parse(raw) as LocalDraft;
+        methods.reset({
+          ...draft.values,
+          dates: draft.values.dates?.map((date) => new Date(date)),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } as any);
+        setStep(Math.min(STEPS.length, Math.max(1, draft.step || 1)));
+        setStartDate(draft.startDate || dateToString(new Date()));
+        setEndDate(draft.endDate || dateToString(new Date()));
+        setEndTime(draft.endTime || "18:00");
+        setMultiDay(Boolean(draft.multiDay));
+        setTeamEvent(Boolean(draft.teamEvent));
+        setFemaleQuota(Boolean(draft.femaleQuota));
+        setShowParent(Boolean(draft.showParent));
+        setDescFormat(draft.descFormat === "markdown" ? "markdown" : "plaintext");
+        restored = true;
+        setToast({ msg: "Recovered your unsaved draft.", ok: true });
+        setTimeout(() => setToast(null), 2500);
+      }
+    } catch {
+      window.localStorage.removeItem(localDraftKey);
+    }
+
+    if (existing && !restored) {
       methods.reset({
         ...toEventUpdatePayload(existing as unknown as Record<string, unknown>),
         dates: existing.dates.map((d) => new Date(d)),
@@ -213,7 +262,38 @@ export default function NewEventPage() {
       if (existing.ma_ppt > 1) setTeamEvent(true);
       if (looksLikeMarkdown(existing.long_description)) setDescFormat("markdown");
     }
-  }, []);
+    restoredDraftRef.current = true;
+  }, [existing, idParam, localDraftKey, methods]);
+
+  // Keep an in-progress form in this browser so an accidental reload is recoverable.
+  useEffect(() => {
+    if (!restoredDraftRef.current) return;
+
+    const persist = (values: NewEventSchema) => {
+      const draft: LocalDraft = {
+        values: values as LocalDraft["values"],
+        step,
+        startDate,
+        endDate,
+        endTime,
+        multiDay,
+        teamEvent,
+        femaleQuota,
+        showParent,
+        descFormat,
+        savedAt: new Date().toISOString(),
+      };
+      try {
+        window.localStorage.setItem(localDraftKey, JSON.stringify(draft));
+      } catch {
+        // Storage can be unavailable or full; the form must remain usable.
+      }
+    };
+
+    persist(methods.getValues());
+    const subscription = methods.watch((values) => persist(values as NewEventSchema));
+    return () => subscription.unsubscribe();
+  }, [descFormat, endDate, endTime, femaleQuota, localDraftKey, methods, multiDay, showParent, startDate, step, teamEvent]);
 
   useEffect(() => {
     const start = new Date(startDate);
@@ -285,6 +365,7 @@ export default function NewEventPage() {
         await createEvent(data as unknown as Record<string, unknown>);
       }
       await refreshEvents();
+      window.localStorage.removeItem(localDraftKey);
       setToast({ msg: "Draft saved.", ok: true });
     } catch {
       setToast({ msg: "Failed to save draft.", ok: false });
@@ -312,6 +393,7 @@ export default function NewEventPage() {
         setToast({ msg: "Event created as Draft!", ok: true });
       }
       await refreshEvents();
+      window.localStorage.removeItem(localDraftKey);
       setTimeout(() => { setToast(null); router.push("/"); }, 1800);
     } catch {
       setToast({ msg: "Failed to save event. Please try again.", ok: false });
