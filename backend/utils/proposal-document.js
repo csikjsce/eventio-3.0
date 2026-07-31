@@ -4,6 +4,24 @@ function signatoryKey(sig) {
     return `name:${String(sig.name || "").trim().toLowerCase()}`;
 }
 
+function removeFacultySignatureFromDocument(document, email) {
+    if (!document || typeof document !== "object" || !email) {
+        return document;
+    }
+    const normalizedEmail = String(email).trim().toLowerCase();
+    if (!Array.isArray(document.signatories)) return document;
+
+    return {
+        ...document,
+        signatories: document.signatories.map((s) => {
+            if (!s?.facultyReviewer) return s;
+            if (String(s.email || "").trim().toLowerCase() !== normalizedEmail) return s;
+            const { signatureUrl, signedAt, ...rest } = s;
+            return rest;
+        }),
+    };
+}
+
 function normalizeProposal(raw) {
     if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
         return {
@@ -167,5 +185,6 @@ module.exports = {
     buildFacultyRecipientBlock,
     embedFacultyReviewersInDocument,
     applyFacultySignatureToDocument,
+    removeFacultySignatureFromDocument, 
     facultyReviewersToSignatories,
 };

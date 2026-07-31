@@ -16,13 +16,14 @@ import {
 } from "@/lib/api";
 import {
   facultySignProposal,
+  facultyUnsignProposal,
   fetchProposal,
   userHasSignature,
   type ProposalPackage,
   type AssignedFacultyReviewer,
 } from "@/lib/proposal";
 import ProposalDocumentView from "@/components/ProposalDocumentView";
-import { PenLine } from "lucide-react";
+import { PenLine, Xcircle } from "lucide-react";
 import { ApprovalTimeline } from "@/components/EventCard";
 import type { EventData, EventDocument, BudgetItem } from "@/lib/types";
 import { STATE_BADGE, fmtDate, PENDING_STATE } from "@/lib/types";
@@ -136,6 +137,24 @@ function EventReviewContent({ id }: { id: string }) {
     }
   }
 
+  async function unsignProposal() {
+    if (!event) return;
+    setBusy(true);
+    try {
+      await facultyUnsignProposal(event.id);
+      const { proposal: updated, assigned_faculty_reviewers } = await fetchProposal(event.id);
+      setProposal(updated);
+      setFacultyReviewers(assigned_faculty_reviewers);
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message;
+      alert(msg ?? "Could not remove signature.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   function renderReviewActions() {
     if (!canApprove && !canUnapprove) return null;
 
@@ -155,9 +174,20 @@ function EventReviewContent({ id }: { id: string }) {
             </p>
           </div>
           {canApprove && alreadySigned && (
-            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-              ✓ You have signed this proposal
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                ✓ You have signed this proposal
+              </span>
+              <button
+                type="button"
+                onClick={unsignProposal}
+                disabled={busy}
+                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-red-500 disabled:opacity-50"
+              >
+                <XCircle size={13} />
+                Remove signature
+              </button>
+            </div>
           )}
         </div>
 

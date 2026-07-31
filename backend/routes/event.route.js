@@ -25,6 +25,7 @@ const {
     getSignaturePngUrl,
     embedFacultyReviewersInDocument,
     applyFacultySignatureToDocument,
+    removeFacultySignatureFromDocument,  
 } = require("../utils/proposal-document");
 
 let protected = "/p";
@@ -985,14 +986,9 @@ router.post(
                 }
             }
 
-            const pngUrl = getSignaturePngUrl(req.user.signature);
-            if (!pngUrl) {
-                return res.status(400).json({
-                    error: true,
-                    message:
-                        "Add your digital signature in Settings before signing documents.",
-                });
-            }
+            const approve = req.body?.approve === true;
+            const unsign = !approve && req.body?.unsign === true;
+            const sendToPrincipal = req.body?.sendToPrincipal === true;
 
             const proposal = normalizeProposal(event.proposal_document);
             if (!proposal.document) {
@@ -1002,12 +998,25 @@ router.post(
                 });
             }
 
-            const approve = req.body?.approve === true;
-            const sendToPrincipal = req.body?.sendToPrincipal === true;
-
             const alreadySigned = (proposal.facultySignatures ?? []).some(
                 (s) => s.user_id === req.user.id,
             );
+
+            if (unsign && !alreadySigned) {
+                return res.status(400).json({
+                    error: true,
+                    message: "You have not signed this proposal yet.",
+                });
+            }
+
+            const pngUrl = unsign ? null : getSignaturePngUrl(req.user.signature);
+            if (!unsign && !pngUrl) {
+                return res.status(400).json({
+                    error: true,
+                    message:
+                        "Add your digital signature in Settings before signing documents.",
+                });
+            }
 
             let facultySignatures = [...(proposal.facultySignatures ?? [])];
 
@@ -1019,6 +1028,10 @@ router.post(
                             "Sign the proposal document first, then approve.",
                     });
                 }
+            } else if (unsign) {
+                facultySignatures = facultySignatures.filter(
+                    (s) => s.user_id !== req.user.id,
+                );
             } else {
                 facultySignatures = facultySignatures.filter(
                     (s) => s.user_id !== req.user.id,
@@ -1049,7 +1062,12 @@ router.post(
             }
 
             let documentWithSig = proposal.document;
-            if (!approve) {
+            if (unsign) {
+                documentWithSig = removeFacultySignatureFromDocument(
+                    proposal.document,
+                    req.user.email,
+                );
+            } else if (!approve) {
                 const newSig = facultySignatures[facultySignatures.length - 1];
                 if (newSig) {
                     documentWithSig = applyFacultySignatureToDocument(
@@ -1082,6 +1100,8 @@ router.post(
                 error: false,
                 message: approve
                     ? "Proposal signed and event approved."
+                    : unsign
+                    ? "Signature removed"
                     : "Proposal signed.",
                 proposal: normalizeProposal({
                     ...proposal,
