@@ -166,6 +166,11 @@ export async function submitProposal(
   });
 }
 
+/** Withdraw a submitted proposal back to DRAFT (council only, before a decision). */
+export async function unsubmitProposal(eventId: string | number): Promise<void> {
+  await api.post(`/event/p/proposal/${eventId}/unsubmit`);
+}
+
 export function dataUrlToFile(dataUrl: string, filename: string): File {
   const [header, base64] = dataUrl.split(",");
   const mime = header.match(/:(.*?);/)?.[1] ?? "image/png";

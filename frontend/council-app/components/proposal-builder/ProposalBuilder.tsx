@@ -293,6 +293,26 @@ export default function ProposalBuilder({ eventId }: { eventId: string }) {
     }
   }
 
+  async function handleUnsign(index: number) {
+    if (!state) return;
+    const sig = state.signatories[index];
+    const next: DocumentBuilderState = {
+      ...state,
+      signatories: state.signatories.map((x, i) =>
+        i === index ? { ...x, signatureUrl: undefined, signedAt: undefined } : x,
+      ),
+    };
+    setSaving(true);
+    try {
+      await persist(next);
+      showToast(`${sig.name}'s signature removed.`);
+    } catch {
+      showToast("Could not remove signature.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   function selectTemplate(templateId: PermissionTemplateId) {
     setState((s) =>
       s
@@ -507,6 +527,7 @@ export default function ProposalBuilder({ eventId }: { eventId: string }) {
             <CouncilSignatorySigning
               signatories={state!.signatories}
               onSign={handleSign}
+              onUnsign={handleUnsign}
               disabled={saving || submitting}
             />
           )}

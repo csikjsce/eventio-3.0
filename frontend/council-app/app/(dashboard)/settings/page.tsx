@@ -7,6 +7,7 @@ import {
   type CouncilProfile, type CouncilMemberRow, type FacultyAdvisorRow,
 } from "@/lib/api";
 import { uploadFile } from "@/lib/upload";
+import Avatar from "@/components/Avatar";
 import { useData } from "@/contexts/DataContext";
 import {
   Settings, Users, Upload, Plus, X, Edit2, Trash2,
@@ -338,20 +339,17 @@ function MemberModal({ member, onSave, onSignatureSaved, onClose }: {
 
   async function handleSave() {
     if (!form.name.trim() || !form.email.trim()) return;
-    const auto = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(form.name)}&backgroundColor=b61f2d&textColor=ffffff`;
     setSaving(true);
     setError(null);
     try {
-      await onSave({ id: member?.id ?? 0, ...form, photo_url: form.photo_url || auto });
+      // Blank photo → backend fills it from the member's Google profile picture.
+      await onSave({ id: member?.id ?? 0, ...form, photo_url: form.photo_url.trim() });
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to save member.");
     } finally {
       setSaving(false);
     }
   }
-
-  const previewPhoto = form.photo_url ||
-    `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(form.name || "M")}&backgroundColor=b61f2d&textColor=ffffff`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
@@ -368,7 +366,7 @@ function MemberModal({ member, onSave, onSignatureSaved, onClose }: {
           {/* Photo upload */}
           <div className="flex items-center gap-4">
             <div className="relative shrink-0">
-              <img src={previewPhoto} alt="preview" className="w-14 h-14 rounded-full object-cover border-2 border-border-c" />
+              <Avatar src={form.photo_url} name={form.name} className="w-14 h-14 rounded-full object-cover border-2 border-border-c text-xl" />
               {uploading && (
                 <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center">
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -386,7 +384,7 @@ function MemberModal({ member, onSave, onSignatureSaved, onClose }: {
                   <Upload size={13} />
                 </button>
               </div>
-              <p className="text-subtle-tx text-[11px] font-fira mt-1">Leave blank to auto-generate from name</p>
+              <p className="text-subtle-tx text-[11px] font-fira mt-1">Leave blank to use their Google profile picture</p>
             </div>
           </div>
 
@@ -519,7 +517,7 @@ function MemberCard({ member, onEdit, onDelete }: { member: Member; onEdit: () =
   return (
     <div className="group bg-surface border border-border-c hover:border-red-500/20 rounded-2xl p-4 flex items-center gap-3 transition-all">
       <div className="relative shrink-0">
-        <img src={member.photo_url} alt={member.name} className="w-10 h-10 rounded-full object-cover border border-border-c" />
+        <Avatar src={member.photo_url} name={member.name} className="w-10 h-10 rounded-full object-cover border border-border-c text-base" />
         {member.is_head && (
           <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-white text-[8px]">★</span>
         )}
@@ -602,10 +600,10 @@ function TeamPreviewModal({
                 {heads.map(m => (
                   <div key={m.id} className="flex flex-col items-center gap-2 p-3 bg-surface2 border border-border-c rounded-2xl text-center">
                     <div className="relative">
-                      <img
+                      <Avatar
                         src={m.photo_url}
-                        alt={m.name}
-                        className="w-14 h-14 rounded-full object-cover border-2 border-red-500/40"
+                        name={m.name}
+                        className="w-14 h-14 rounded-full object-cover border-2 border-red-500/40 text-xl"
                       />
                       <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-white text-[8px]">★</span>
                     </div>
@@ -635,10 +633,10 @@ function TeamPreviewModal({
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                   {group.map(m => (
                     <div key={m.id} className="flex flex-col items-center gap-2 p-3 bg-surface2 border border-border-c rounded-2xl text-center">
-                      <img
+                      <Avatar
                         src={m.photo_url}
-                        alt={m.name}
-                        className="w-12 h-12 rounded-full object-cover border border-border-c"
+                        name={m.name}
+                        className="w-12 h-12 rounded-full object-cover border border-border-c text-lg"
                       />
                       <div>
                         <p className="text-tx text-xs font-fira font-semibold leading-tight line-clamp-1">{m.name}</p>
@@ -745,7 +743,7 @@ export default function SettingsPage() {
           role:      m.role      ?? "Member",
           team:      m.team      ?? "Technical",
           is_head:   m.is_head   ?? false,
-          photo_url: m.photo_url ?? `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(m.name ?? "M")}&backgroundColor=b61f2d&textColor=ffffff`,
+          photo_url: m.photo_url ?? "",
           signature_url: m.signature_url ?? null,
         })));
       }
@@ -830,7 +828,7 @@ export default function SettingsPage() {
         setMembers(prev => [...prev, {
           id: created.id, name: created.name, email: created.email,
           role: created.role, team: created.team, is_head: created.is_head,
-          photo_url: created.photo_url ?? `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(created.name)}&backgroundColor=b61f2d&textColor=ffffff`,
+          photo_url: created.photo_url ?? "",
         }]);
         showToast("Member added!");
       } else {

@@ -6,6 +6,20 @@ function startOfToday() {
   return d;
 }
 
+/**
+ * Validation context supplied via `useForm({ context })`.
+ * `originalStart` is the start datetime already saved on the event being
+ * edited — an unchanged start stays valid even after the event has begun, so
+ * a council can still fix the description of a running or finished event.
+ */
+export interface EventFormContext {
+  originalStart?: string | Date | null;
+}
+
+function sameMinute(a: Date, b: Date) {
+  return Math.floor(a.getTime() / 60000) === Math.floor(b.getTime() / 60000);
+}
+
 export const newEventSchema = yup.object({
   name: yup.string().trim().min(3).max(100).required("Event name is required"),
   description: yup.string().trim().min(10).max(1000).required("Description is required"),
@@ -40,9 +54,17 @@ export const newEventSchema = yup.object({
     .of(yup.date().required())
     .min(1)
     .required("Dates required")
-    .test("in-future", "Event date must be in the future", (v) => {
+    .test("in-future", "Event date must be in the future", function (v) {
       if (!v || v.length === 0) return true;
-      return new Date(v[0]) >= startOfToday();
+      const start = new Date(v[0]);
+      const original = (this.options.context as EventFormContext | undefined)?.originalStart;
+      if (original) {
+        const originalStart = new Date(original);
+        if (!Number.isNaN(originalStart.getTime()) && sameMinute(originalStart, start)) {
+          return true;
+        }
+      }
+      return start >= startOfToday();
     })
     .test("start-before-end", "Please select an end time that occurs after the start time.", (v) => {
       if (!v || v.length < 2) return true;
@@ -114,7 +136,16 @@ export const newEventSchema = yup.object({
     .of(
       yup.object({
         id: yup.string().trim().notRequired(),
-        label: yup.string().trim().required(),
+        // Only enforced while the toggle is on — a leftover half-filled row must
+        // never block the form once extra fields are switched off.
+        label: yup
+          .string()
+          .trim()
+          .when("$moreDetailsEnabled", {
+            is: true,
+            then: (s) => s.required("Give every custom registration field a label"),
+            otherwise: (s) => s.notRequired(),
+          }),
         type: yup
           .string()
           .oneOf(["text", "textarea", "url", "number", "select"])

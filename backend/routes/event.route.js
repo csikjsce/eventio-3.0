@@ -30,6 +30,28 @@ const {
 
 let protected = "/p";
 
+// Lifecycle states a reviewer (faculty / principal) sees by default: their own
+// approval queue plus everything that has already moved past it.
+const REVIEWED_EVENT_STATES = [
+    "UPCOMING",
+    "REGISTRATION_OPEN",
+    "REGISTRATION_CLOSED",
+    "TICKET_OPEN",
+    "TICKET_CLOSED",
+    "ONGOING",
+    "COMPLETED",
+    "UNLISTED",
+];
+const FACULTY_VISIBLE_STATES = [
+    "APPLIED_FOR_APPROVAL",
+    "APPLIED_FOR_PRINCI_APPROVAL",
+    ...REVIEWED_EVENT_STATES,
+];
+const PRINCIPAL_VISIBLE_STATES = [
+    "APPLIED_FOR_PRINCI_APPROVAL",
+    ...REVIEWED_EVENT_STATES,
+];
+
 function generateRandomCode() {
     const chars =
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvqxyz0123456789";
@@ -193,7 +215,7 @@ router.post(protected + "/get", authCheck, async (req, res) => {
                 events = await prisma.events.findMany({
                     where: {
                         state: {
-                            in: ["APPLIED_FOR_PRINCI_APPROVAL", "UNLISTED"],
+                            in: PRINCIPAL_VISIBLE_STATES,
                         },
                     },
                     relationLoadStrategy: "join",
@@ -278,18 +300,7 @@ router.post(protected + "/get", authCheck, async (req, res) => {
                     where: {
                         ...organizerFilter,
                         state: {
-                            in: [
-                                "APPLIED_FOR_APPROVAL",
-                                "UPCOMING",
-                                "REGISTRATION_OPEN",
-                                "REGISTRATION_CLOSED",
-                                "TICKET_OPEN",
-                                "TICKET_CLOSED",
-                                "ONGOING",
-                                "COMPLETED",
-                                "APPLIED_FOR_PRINCI_APPROVAL",
-                                "UNLISTED",
-                            ],
+                            in: FACULTY_VISIBLE_STATES,
                         },
                     },
                     relationLoadStrategy: "join",
@@ -938,6 +949,72 @@ router.post(protected + "/proposal/:id/submit", authCheck, async (req, res) => {
         return res.json({
             error: false,
             message: "Proposal submitted to faculty for review.",
+        });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ error: true, message: "Internal Server Error" });
+    }
+});
+
+// POST /event/p/proposal/:id/unsubmit — council withdraws a proposal still under review
+router.post(protected + "/proposal/:id/unsubmit", authCheck, async (req, res) => {
+    if (req.user.role !== "COUNCIL") {
+        return res.status(403).json({ error: true, message: "Forbidden" });
+    }
+
+    try {
+        const eventId = parseInt(req.params.id);
+        const loaded = await loadEventForProposal(eventId, req.user);
+        if (loaded.error) {
+            return res
+                .status(loaded.error.status)
+                .json({ error: true, message: loaded.error.message });
+        }
+
+        const event = loaded.event;
+        const withdrawable = [
+            "APPLIED_FOR_APPROVAL",
+            "APPLIED_FOR_PRINCI_APPROVAL",
+        ];
+        if (!withdrawable.includes(event.state)) {
+            return res.status(400).json({
+                error: true,
+                message:
+                    event.state === "DRAFT"
+                        ? "This proposal has not been submitted."
+                        : "This proposal has already been decided and can no longer be withdrawn.",
+            });
+        }
+
+        const proposal = normalizeProposal(event.proposal_document);
+
+        // Back to draft: any faculty/principal signature collected so far is void.
+        let document = proposal.document;
+        for (const sig of proposal.facultySignatures ?? []) {
+            document = removeFacultySignatureFromDocument(document, sig.email);
+        }
+
+        const state_history = [...(event.state_history ?? []), "DRAFT"];
+
+        await prisma.events.update({
+            where: { id: eventId },
+            data: {
+                state: "DRAFT",
+                state_history,
+                comment: null,
+                proposal_document: {
+                    ...proposal,
+                    document,
+                    facultySignatures: [],
+                    submittedAt: null,
+                },
+            },
+        });
+        invalidateEvent(eventId, req.user.id);
+
+        return res.json({
+            error: false,
+            message: "Proposal withdrawn — the event is back in draft.",
         });
     } catch (err) {
         console.error(err);

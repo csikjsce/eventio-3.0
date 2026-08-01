@@ -13,6 +13,7 @@ import {
   People,
 } from "iconsax-react";
 import EventCard from "@/components/EventCard";
+import Avatar from "@/components/Avatar";
 import { CouncilDetailsSkeleton } from "@/components/Skeletons";
 import { type Council } from "@/lib/dummy-data";
 import { fetchCouncilProfile } from "@/lib/api";
@@ -76,11 +77,7 @@ export default function CouncilDetailsScreen() {
           // Extract team members + faculty advisors from profile
           const cp = data.CouncilProfile ?? {};
           if (Array.isArray(cp.members)) {
-            setMembers(cp.members.map((m: TeamMember) => ({
-              ...m,
-              photo_url: m.photo_url ||
-                `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(m.name ?? "M")}&backgroundColor=b61f2d&textColor=ffffff`,
-            })));
+            setMembers(cp.members);
           }
           if (Array.isArray(cp.faculty_advisors)) {
             setAdvisors(cp.faculty_advisors);
@@ -263,10 +260,10 @@ export default function CouncilDetailsScreen() {
                   {members.filter(m => m.is_head).map(m => (
                     <div key={m.id} className="bg-card border border-border rounded-2xl p-3 flex flex-col items-center gap-2 text-center">
                       <div className="relative">
-                        <img
+                        <Avatar
                           src={m.photo_url}
-                          alt={m.name}
-                          className="w-14 h-14 rounded-full object-cover ring-2 ring-primary/40"
+                          name={m.name}
+                          className="w-14 h-14 rounded-full object-cover ring-2 ring-primary/40 text-xl"
                         />
                         <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center text-white text-[8px]">★</span>
                       </div>
@@ -292,10 +289,10 @@ export default function CouncilDetailsScreen() {
                 <div className="grid grid-cols-3 gap-2">
                   {members.filter(m => !m.is_head).map(m => (
                     <div key={m.id} className="bg-card border border-border rounded-2xl p-2.5 flex flex-col items-center gap-1.5 text-center">
-                      <img
+                      <Avatar
                         src={m.photo_url}
-                        alt={m.name}
-                        className="w-10 h-10 rounded-full object-cover"
+                        name={m.name}
+                        className="w-10 h-10 rounded-full object-cover text-sm"
                       />
                       <div>
                         <p className="font-poppins font-medium text-foreground text-[10px] leading-tight line-clamp-1">{m.name}</p>

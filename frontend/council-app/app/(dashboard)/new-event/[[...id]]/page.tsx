@@ -153,6 +153,32 @@ function ReviewRow({ label, value, step, onJump }: { label: string; value: strin
   );
 }
 
+/* Friendly names for the "why can't I continue" summary. */
+const FIELD_LABELS: Record<string, string> = {
+  name: "Event name",
+  tag_line: "Tagline",
+  description: "Short description",
+  long_description: "Detailed description",
+  event_page_image_url: "Event image",
+  banner_url: "Banner image",
+  event_type: "Event type",
+  dates: "Event date & time",
+  venue: "Venue",
+  online_event_link: "Online event link",
+  fee: "Entry fee",
+  ticket_count: "Total seats",
+  external_registration_link: "External registration link",
+  min_ppt: "Minimum team members",
+  ma_ppt: "Maximum team members",
+  female_requirement: "Reserved female seats",
+  registration_fields: "Extra registration fields",
+};
+
+function prettifyPath(path: string) {
+  const leaf = path.split(".").filter((p) => !/^\d+$/.test(p)).pop() ?? path;
+  return leaf.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
+}
+
 /* ─── step config ─── */
 const STEPS = [
   { id: 1, label: "Basics",       sub: "Name, tagline & images" },
@@ -181,6 +207,7 @@ export default function NewEventPage() {
   const [teamEvent, setTeamEvent]     = useState(false);
   const [femaleQuota, setFemaleQuota] = useState(false);
   const [femaleSeatError, setFemaleSeatError] = useState<string | null>(null);
+  const [stepErrors, setStepErrors]   = useState<string[]>([]);
   const [showParent, setShowParent]   = useState(false);
   const [loading, setLoading]         = useState(false);
   const [toast, setToast]             = useState<{ msg: string; ok: boolean } | null>(null);
@@ -190,8 +217,18 @@ export default function NewEventPage() {
   const bannerFileRef = useRef<HTMLInputElement>(null);
   const detailFileRef = useRef<HTMLInputElement>(null);
 
+  // Validation context, mutated in place each render so yup always reads the
+  // current values. `originalStart` is the start datetime already saved on the
+  // event being edited — leaving it unchanged stays valid even after the event
+  // has begun, so descriptions can still be fixed during / after the event.
+  const validationCtx = useRef<{
+    originalStart: string | null;
+    moreDetailsEnabled: boolean;
+  }>({ originalStart: null, moreDetailsEnabled: false });
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const methods = useForm<NewEventSchema>({ resolver: yupResolver(newEventSchema) as any,
+    context: validationCtx.current,
     defaultValues: {
       fee: 0, is_ticket_feature_enabled: true, ma_ppt: 1, min_ppt: 1,
       state: "DRAFT",
@@ -330,6 +367,22 @@ export default function NewEventPage() {
     4: ["registration_fields"], 5: [],
   };
 
+  // Flattens react-hook-form's (possibly nested / array) error tree into plain
+  // "Label — message" lines so the user can see what is blocking Continue.
+  function collectErrors(node: unknown, path: string, out: string[]) {
+    if (!node || typeof node !== "object") return;
+    const err = node as { message?: unknown; type?: unknown };
+    if (typeof err.message === "string" && err.message.trim()) {
+      const label = FIELD_LABELS[path] ?? prettifyPath(path);
+      out.push(label ? `${label} — ${err.message}` : err.message);
+      return;
+    }
+    for (const [key, child] of Object.entries(node)) {
+      if (key === "ref" || key === "types") continue;
+      collectErrors(child, path ? `${path}.${key}` : key, out);
+    }
+  }
+
   async function goNext() {
     const fields = STEP_FIELDS[step] ?? [];
     const valid  = fields.length === 0 || await trigger(fields as Parameters<typeof trigger>[0]);
@@ -340,12 +393,28 @@ export default function NewEventPage() {
       const female = Number(methods.getValues("female_requirement"));
       if (Number.isFinite(total) && Number.isFinite(female) && female > total) {
         setFemaleSeatError("Number of reserved female seats exceed total seats");
+        setStepErrors(["Reserved female seats — cannot exceed the total seat count"]);
         return;
       }
     }
     setFemaleSeatError(null);
 
-    if (valid) setStep(s => Math.min(STEPS.length, s + 1));
+    if (valid) {
+      setStepErrors([]);
+      setStep(s => Math.min(STEPS.length, s + 1));
+      return;
+    }
+
+    const current = methods.formState.errors as Record<string, unknown>;
+    const messages: string[] = [];
+    for (const field of fields) {
+      collectErrors(current[field as string], String(field), messages);
+    }
+    setStepErrors(
+      messages.length > 0
+        ? [...new Set(messages)]
+        : ["Some fields on this step are incomplete or invalid."],
+    );
   }
 
   async function saveDraft() {
@@ -374,6 +443,19 @@ export default function NewEventPage() {
       setTimeout(() => setToast(null), 2500);
     }
   }
+
+  // Surfaces the reason instead of a silently dead submit button.
+  const onInvalidSubmit = () => {
+    const messages: string[] = [];
+    collectErrors(methods.formState.errors, "", messages);
+    setStepErrors(
+      messages.length > 0
+        ? [...new Set(messages)]
+        : ["Some required details are missing — step back through the form to check."],
+    );
+    setToast({ msg: "Some details still need fixing.", ok: false });
+    setTimeout(() => setToast(null), 2500);
+  };
 
   const onSubmit = async (data: NewEventSchema) => {
     data.logo_image_url = data.event_page_image_url;
@@ -417,6 +499,18 @@ export default function NewEventPage() {
   const wRegType      = watch("registration_type");
   const wAttendance   = watch("attendance_type");
   const wFemaleReq    = watch("female_requirement");
+
+  // Keep the yup context current for this render's validation pass.
+  validationCtx.current.originalStart = existing?.dates?.[0] ?? null;
+  validationCtx.current.moreDetailsEnabled = !!moreDetails;
+
+  // Editing an event that already started must not be forced to a future date.
+  const startMin = (() => {
+    const now = dateToString(new Date());
+    if (!existing?.dates?.[0]) return now;
+    const saved = dateToString(new Date(existing.dates[0]));
+    return saved < now ? saved : now;
+  })();
 
   // Live-check reserved female seats against total seats while editing
   useEffect(() => {
@@ -635,7 +729,7 @@ export default function NewEventPage() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <FieldWrap label={multiDay ? "Start Date & Time *" : "Event Date & Time *"}>
-                        <input type="datetime-local" min={dateToString(new Date())} className={INPUT} value={startDate} onChange={e => setStartDate(e.target.value)} />
+                        <input type="datetime-local" min={startMin} className={INPUT} value={startDate} onChange={e => setStartDate(e.target.value)} />
                       </FieldWrap>
                       <FieldWrap label={multiDay ? "End Date & Time *" : "End Time *"}>
                         {multiDay ? (
@@ -738,7 +832,7 @@ export default function NewEventPage() {
                     <Toggle on={submission}   onToggle={() => setValue("is_submission_enabled", !submission)}   label="Project Submissions"      sub="Allow participants to submit files or links as project deliverables." />
                     <Toggle on={moreDetails}  onToggle={() => {
                       const next = !moreDetails;
-                      setValue("more_details_enabled", next);
+                      setValue("more_details_enabled", next, { shouldValidate: true });
                       if (next && regFields.length === 0) {
                         setValue("registration_fields", [{
                           id: "answer",
@@ -746,6 +840,12 @@ export default function NewEventPage() {
                           type: "text",
                           required: true,
                         }]);
+                      }
+                      // Turning it back off drops the scaffolded rows, so a
+                      // half-filled field can never block the next step.
+                      if (!next) {
+                        setValue("registration_fields", [], { shouldValidate: true });
+                        void trigger("registration_fields");
                       }
                     }}  label="Extra Registration Fields" sub="Collect additional info from registrants beyond name and email." />
                     {moreDetails && (
@@ -819,9 +919,23 @@ export default function NewEventPage() {
                   </div>
                 )}
 
+                {/* Why Continue is blocked */}
+                {stepErrors.length > 0 && (
+                  <div className="mt-8 rounded-xl border border-red-500/30 bg-red-500/5 p-4">
+                    <p className="text-red-500 text-sm font-fira font-semibold mb-1.5">
+                      Fix {stepErrors.length === 1 ? "this" : `these ${stepErrors.length} things`} to continue
+                    </p>
+                    <ul className="list-disc pl-5 space-y-1">
+                      {stepErrors.map((msg) => (
+                        <li key={msg} className="text-red-400 text-xs font-fira leading-relaxed">{msg}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
                 {/* Step nav footer */}
                 <div className="flex items-center justify-between mt-10 pt-6 border-t border-border-c">
-                  <button type="button" onClick={() => setStep(s => Math.max(1, s - 1))} disabled={step === 1}
+                  <button type="button" onClick={() => { setStepErrors([]); setStep(s => Math.max(1, s - 1)); }} disabled={step === 1}
                     className="px-5 py-2.5 text-sm font-fira text-muted-tx hover:text-tx border border-border-c hover:border-red-500/20 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed">
                     ← Back
                   </button>
@@ -831,7 +945,7 @@ export default function NewEventPage() {
                       Continue <ChevronRight size={14} />
                     </button>
                   ) : (
-                    <button type="button" onClick={handleSubmit(onSubmit)} disabled={loading}
+                    <button type="button" onClick={handleSubmit(onSubmit, onInvalidSubmit)} disabled={loading}
                       className={`flex items-center gap-2 px-6 py-2.5 text-white text-sm font-fira font-semibold rounded-lg transition-colors ${loading ? "bg-red-700/50 cursor-not-allowed" : "bg-red-600 hover:bg-red-600"}`}>
                       {loading ? <Spinner /> : existing ? "Update Event" : "Create Event"}
                     </button>

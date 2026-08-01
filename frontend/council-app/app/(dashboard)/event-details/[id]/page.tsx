@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getNextAction, type EventData, type EventDocument, type ApprovalStep } from "@/lib/dummy-data";
 import { fetchEvent, fetchDocuments, addDocument, deleteDocument, transitionEventState, fetchCouncilProfile, mapStateToPipeline, type DocumentRow, type FacultyAdvisorRow } from "@/lib/api";
-import { fetchProposal, type ProposalPackage } from "@/lib/proposal";
+import { fetchProposal, unsubmitProposal, type ProposalPackage } from "@/lib/proposal";
 import { resolveFacultyReviewers, type AssignedFacultyReviewer } from "@/lib/document-builder";
 import ProposalApprovalCard from "@/components/ProposalApprovalCard";
 import { proposalBuilderPath } from "@/lib/proposal-routes";
@@ -461,6 +461,52 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
     }
   }
 
+  async function handleUnsubmit() {
+    if (actionLoading) return;
+    const ok = window.confirm(
+      "Withdraw this proposal from review? The event goes back to draft and any faculty signature collected so far is cleared.",
+    );
+    if (!ok) return;
+    setActionLoading(true);
+    try {
+      await unsubmitProposal(id);
+      const updated = await fetchEvent(id);
+      setEvent(updated);
+      await refreshEvents();
+      showToast("Proposal withdrawn — back in draft.");
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message;
+      showToast(msg ?? "Could not withdraw the proposal.");
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function handleShare() {
+    const link = window.location.href;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(link);
+      } else {
+        // Clipboard API needs a secure context — fall back to a temp textarea.
+        const ta = document.createElement("textarea");
+        ta.value = link;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        const ok = document.execCommand("copy");
+        document.body.removeChild(ta);
+        if (!ok) throw new Error("copy failed");
+      }
+      showToast("Link copied!");
+    } catch {
+      showToast("Couldn't copy the link — copy it from the address bar.");
+    }
+  }
+
   function handleDocUpdated(docId: string, url: string) {
     setDocs(prev => prev.map(d =>
       String(d.id) === docId ? { ...d, url, uploaded_at: new Date().toISOString() } : d
@@ -494,7 +540,7 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
         </button>
         {/* Actions */}
         <div className="absolute top-4 right-4 flex items-center gap-2">
-          <button type="button" onClick={() => showToast("Link copied!")}
+          <button type="button" onClick={handleShare}
             className="p-2 bg-black/50 backdrop-blur-sm text-white rounded-lg hover:bg-black/70 transition-all">
             <Share2 size={14} />
           </button>
@@ -678,6 +724,26 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
                 onAction={handleAction}
                 actionLoading={actionLoading}
               />
+            )}
+
+            {/* Withdraw a proposal that is still awaiting a decision */}
+            {["APPLIED_FOR_APPROVAL", "APPLIED_FOR_PRINCI_APPROVAL"].includes(event.state) && (
+              <div className="bg-surface border border-border-c rounded-2xl p-5">
+                <p className="text-tx text-sm font-fira font-semibold mb-1">Withdraw proposal</p>
+                <p className="text-muted-tx text-xs font-fira leading-relaxed mb-3">
+                  Pull this proposal back from{" "}
+                  {event.state === "APPLIED_FOR_PRINCI_APPROVAL" ? "the principal" : "faculty"}{" "}
+                  review to keep editing it. Signatures already collected from reviewers are cleared.
+                </p>
+                <button
+                  type="button"
+                  onClick={handleUnsubmit}
+                  disabled={actionLoading}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border border-red-500/30 text-red-600 dark:text-red-400 text-sm font-fira hover:bg-red-500/5 transition-all disabled:opacity-50"
+                >
+                  <RotateCcw size={14} /> {actionLoading ? "Withdrawing…" : "Withdraw to draft"}
+                </button>
+              </div>
             )}
 
             {/* Ticket progress */}

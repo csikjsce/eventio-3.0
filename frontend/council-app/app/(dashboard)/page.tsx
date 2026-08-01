@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { PIPELINE_STAGES, type EventData } from "@/lib/dummy-data";
 import { useData } from "@/contexts/DataContext";
+import Avatar from "@/components/Avatar";
 import { Plus, TrendingUp, Activity, CheckCircle, Clock, ChevronRight } from "lucide-react";
 
 const PIPELINE_COLOR: Record<string, string> = {
@@ -88,7 +89,7 @@ export default function HomePage() {
   const [view, setView] = useState<"grid" | "list">("grid");
 
   const displayName = user?.name ?? "Council";
-  const displayPhoto = user?.photo_url ?? `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(displayName)}&backgroundColor=b61f2d&textColor=ffffff`;
+  const displayPhoto = user?.photo_url ?? "";
 
   const stats = [
     { label: "Total Events",      value: events.length,                                               icon: <Activity    size={15} />, color: "text-tx"          },
@@ -119,7 +120,7 @@ export default function HomePage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6 sm:mb-8">
         <div className="flex items-center gap-3">
-          <img src={displayPhoto} alt={displayName} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-red-400/30 object-cover" />
+          <Avatar src={displayPhoto} name={displayName} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-red-400/30 object-cover text-lg" />
           <div>
             <p className="text-subtle-tx text-xs font-fira">Welcome back</p>
             <h1 className="text-tx text-lg sm:text-xl font-marcellus">{displayName}</h1>

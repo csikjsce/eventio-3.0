@@ -114,6 +114,12 @@ router.get(p + "/profile/:id", authCheck, async (req, res) => {
             return res.status(404).json({ error: true, message: "Council not found" });
         }
 
+        if (user.CouncilProfile?.members) {
+            user.CouncilProfile.members = scrubGeneratedAvatars(
+                user.CouncilProfile.members,
+            );
+        }
+
         const payload = { error: false, council: user };
         set(cacheKey, payload, TTL.COUNCIL);
         return res.json(payload);
@@ -155,6 +161,12 @@ router.get(p + "/me", authCheck, councilOnly, async (req, res) => {
         // signature_url is a real column on CouncilMember now, so it comes back
         // with the members query — no resolution step needed. (See the
         // commented-out attachMemberSignatures above if reviving User fallback.)
+
+        if (user.CouncilProfile?.members) {
+            user.CouncilProfile.members = scrubGeneratedAvatars(
+                user.CouncilProfile.members,
+            );
+        }
 
         const payload = {
             error: false,
@@ -234,13 +246,27 @@ router.put(p + "/me", authCheck, councilOnly, async (req, res) => {
 // ── MEMBER CRUD ──────────────────────────────────────────────────────
 // ════════════════════════════════════════════════════════════════════
 
+/**
+ * Rows created before member photos defaulted to the Google picture may still
+ * hold a generated avatar-service URL. Drop it on read so clients render their
+ * own local initials fallback instead of calling an external service.
+ */
+function scrubGeneratedAvatars(members) {
+    if (!Array.isArray(members)) return members;
+    return members.map((m) =>
+        typeof m?.photo_url === "string" && m.photo_url.includes("api.dicebear.com")
+            ? { ...m, photo_url: null }
+            : m,
+    );
+}
+
 // Every council member must correspond to a registered Eventio user (someone
 // who has logged in at least once). Returns the matched User, or null.
 async function findRegisteredUser(email) {
     if (!email || typeof email !== "string" || !email.trim()) return null;
     return prisma.user.findFirst({
         where: { email: { equals: email.trim(), mode: "insensitive" } },
-        select: { id: true, email: true },
+        select: { id: true, email: true, photo_url: true },
     });
 }
 
@@ -286,7 +312,8 @@ router.post(p + "/members", authCheck, councilOnly, async (req, res) => {
         return res.status(400).json({ error: true, message: "name and email are required" });
     }
     try {
-        if (!(await findRegisteredUser(email))) {
+        const registered = await findRegisteredUser(email);
+        if (!registered) {
             return res.status(400).json({
                 error: true,
                 code: "MEMBER_NOT_REGISTERED",
@@ -312,7 +339,9 @@ router.post(p + "/members", authCheck, councilOnly, async (req, res) => {
                 role:      role      ?? "Member",
                 team:      team      ?? "Technical",
                 is_head:   is_head   ?? false,
-                photo_url: photo_url ?? null,
+                // Default to the member's own Google profile picture; only an
+                // explicit upload/URL from the council overrides it.
+                photo_url: photo_url?.trim() || registered.photo_url || null,
             },
         });
 
@@ -344,12 +373,26 @@ router.put(p + "/members/:id", authCheck, councilOnly, async (req, res) => {
         const emailChanged =
             email !== undefined &&
             email.trim().toLowerCase() !== (existing.email ?? "").trim().toLowerCase();
-        if (emailChanged && !(await findRegisteredUser(email))) {
-            return res.status(400).json({
-                error: true,
-                code: "MEMBER_NOT_REGISTERED",
-                message: NOT_REGISTERED_MSG,
-            });
+        let registered = null;
+        if (emailChanged) {
+            registered = await findRegisteredUser(email);
+            if (!registered) {
+                return res.status(400).json({
+                    error: true,
+                    code: "MEMBER_NOT_REGISTERED",
+                    message: NOT_REGISTERED_MSG,
+                });
+            }
+        }
+
+        // Clearing the photo (or moving to a different person) falls back to the
+        // linked user's Google profile picture rather than leaving it blank.
+        let nextPhoto =
+            photo_url !== undefined ? photo_url?.trim() || null : existing.photo_url;
+        if (!nextPhoto) {
+            const linked =
+                registered ?? (await findRegisteredUser(email ?? existing.email));
+            if (linked?.photo_url) nextPhoto = linked.photo_url;
         }
 
         const member = await prisma.councilMember.update({
@@ -360,7 +403,7 @@ router.put(p + "/members/:id", authCheck, councilOnly, async (req, res) => {
                 ...(role      !== undefined && { role }),
                 ...(team      !== undefined && { team }),
                 ...(is_head   !== undefined && { is_head }),
-                ...(photo_url !== undefined && { photo_url }),
+                ...(nextPhoto !== existing.photo_url && { photo_url: nextPhoto }),
             },
         });
 
