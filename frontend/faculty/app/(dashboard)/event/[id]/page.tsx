@@ -23,12 +23,11 @@ import {
   type AssignedFacultyReviewer,
 } from "@/lib/proposal";
 import ProposalDocumentView from "@/components/ProposalDocumentView";
-import { PenLine, Xcircle } from "lucide-react";
+import { PenLine, XCircle } from "lucide-react";
 import { ApprovalTimeline } from "@/components/EventCard";
 import type { EventData, EventDocument, BudgetItem } from "@/lib/types";
 import { STATE_BADGE, fmtDate, PENDING_STATE } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { navigate } from "next/dist/client/components/segment-cache/navigation";
 
 type Tab = "overview" | "proposal" | "documents" | "budget" | "journey";
 
@@ -40,6 +39,7 @@ export default function EventReviewPage({ params }: { params: Promise<{ id: stri
 function EventReviewContent({ id }: { id: string }) {
   const router = useRouter();
   const { user, refresh } = useData();
+  const userRole = user?.role;
 
   const [event, setEvent] = useState<EventData | null>(null);
   const [docs, setDocs] = useState<EventDocument[]>([]);
@@ -70,11 +70,18 @@ function EventReviewContent({ id }: { id: string }) {
         setBudget(b);
         setProposal(propRes?.proposal ?? null);
         setFacultyReviewers(propRes?.assigned_faculty_reviewers ?? []);
+        if (
+          userRole &&
+          PENDING_STATE[userRole] === ev.state &&
+          propRes?.proposal?.document
+        ) {
+          setTab("proposal");
+        }
       })
       .catch(() => { if (!cancelled) setEvent(null); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [id]);
+  }, [id, userRole]);
 
   const pendingState = user?.role ? PENDING_STATE[user.role] : null;
   const canApprove = !!(event && pendingState && event.state === pendingState);
@@ -90,12 +97,6 @@ function EventReviewContent({ id }: { id: string }) {
   );
   const hasSavedSignature = userHasSignature(user?.signature);
   const hasProposalDoc = !!proposal?.document;
-
-  useEffect(() => {
-    if (canApprove && hasProposalDoc) {
-      setTab("proposal");
-    }
-  }, [canApprove, hasProposalDoc, id]);
 
   async function approve() {
     if (!event) return;
