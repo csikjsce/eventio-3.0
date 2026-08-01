@@ -1,18 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle2, PenLine, Upload } from "lucide-react";
+import { CheckCircle2, PenLine, Upload, XCircle } from "lucide-react";
 import SignaturePad from "@/components/SignaturePad";
 import type { DocumentSignatory } from "@/lib/document-builder";
 
 function SignPanel({
   onApply,
   busy,
+  canSaveToMember,
 }: {
-  onApply: (dataUrl: string) => void;
+  onApply: (dataUrl: string, saveToMember: boolean) => void;
   busy: boolean;
+  canSaveToMember: boolean;
 }) {
   const [draft, setDraft] = useState<string | null>(null);
+  const [saveToMember, setSaveToMember] = useState(true);
 
   async function handleUpload(file: File) {
     const dataUrl = await new Promise<string>((resolve, reject) => {
@@ -46,10 +49,21 @@ function SignPanel({
         />
       </label>
       <SignaturePad onChange={setDraft} />
+      {canSaveToMember && (
+        <label className="flex items-center gap-2 text-[11px] font-fira text-muted-tx cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={saveToMember}
+            onChange={(e) => setSaveToMember(e.target.checked)}
+            className="rounded border-border-c accent-red-500"
+          />
+          Save to this member for future events
+        </label>
+      )}
       <button
         type="button"
         disabled={!draft || busy}
-        onClick={() => draft && onApply(draft)}
+        onClick={() => draft && onApply(draft, canSaveToMember && saveToMember)}
         className="w-full py-2 rounded-lg bg-red-500 hover:bg-red-600 disabled:opacity-40 text-white text-xs font-fira font-medium"
       >
         Apply signature
@@ -61,24 +75,20 @@ function SignPanel({
 export default function CouncilSignatorySigning({
   signatories,
   onSign,
+  onUnsign,
   disabled,
 }: {
   signatories: DocumentSignatory[];
   onSign: (index: number, dataUrl: string) => Promise<void>;
+  onUnsign?: (index: number) => Promise<void>;
   disabled?: boolean;
 }) {
-  const [activeIndex, setActiveIndex] = useState<number | null>(null);
-  const [busy, setBusy] = useState(false);
-
-  const required = signatories.filter((s) => s.name.trim() && !s.facultyReviewer);
-  if (required.length === 0) return null;
-
-  async function applySign(index: number, dataUrl: string | null) {
-    if (!dataUrl) return;
+  
+  async function removeSign(index: number) {
+    if (!onUnsign) return;
     setBusy(true);
     try {
-      await onSign(index, dataUrl);
-      setActiveIndex(null);
+      await onUnsign(index);
     } finally {
       setBusy(false);
     }
@@ -107,34 +117,37 @@ export default function CouncilSignatorySigning({
                     <p className="text-[11px] font-fira text-muted-tx truncate">{sig.role}</p>
                   )}
                 </div>
-                {signed ? (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-fira text-emerald-600 shrink-0">
-                    <CheckCircle2 size={13} /> Signed
-                  </span>
-                ) : (
+                <div className="flex items-center gap-2 shrink-0">
+                  {signed && (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-fira text-emerald-600">
+                      <CheckCircle2 size={13} /> Signed
+                    </span>
+                  )}
                   <button
                     type="button"
                     disabled={disabled || busy}
                     onClick={() => setActiveIndex(activeIndex === index ? null : index)}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-red-500/30 text-red-600 text-[11px] font-fira hover:bg-red-500/5 shrink-0"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-red-500/30 text-red-600 text-[11px] font-fira hover:bg-red-500/5"
                   >
-                    <PenLine size={12} /> Sign
+                    <PenLine size={12} /> {signed ? "Replace" : "Sign"}
                   </button>
-                )}
+                </div>
               </div>
 
-              {signed && (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img src={sig.signatureUrl} alt="" className="h-10 object-contain" />
-              )}
-
-              {activeIndex === index && !signed && (
-                <SignPanel busy={busy} onApply={(dataUrl) => applySign(index, dataUrl)} />
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
+              {signed ? (
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="inline-flex items-center gap-1 text-[11px] font-fira text-emerald-600">
+                      <CheckCircle2 size={13} /> Signed
+                    </span>
+                    {onUnsign && (
+                      <button
+                        type="button"
+                        disabled={disabled || busy}
+                        onClick={() => removeSign(index)}
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-border-c text-muted-tx text-[11px] font-fira hover:text-red-500 hover:border-red-500/30 disabled:opacity-50"
+                      >
+                        <XCircle size={12} /> Remove
+                      </button>
+                    )}
+                  </div>
+                ) : (

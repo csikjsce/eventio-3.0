@@ -16,13 +16,14 @@ import {
 } from "@/lib/api";
 import {
   facultySignProposal,
+  facultyUnsignProposal,
   fetchProposal,
   userHasSignature,
   type ProposalPackage,
   type AssignedFacultyReviewer,
 } from "@/lib/proposal";
 import ProposalDocumentView from "@/components/ProposalDocumentView";
-import { PenLine } from "lucide-react";
+import { PenLine, Xcircle } from "lucide-react";
 import { ApprovalTimeline } from "@/components/EventCard";
 import type { EventData, EventDocument, BudgetItem } from "@/lib/types";
 import { STATE_BADGE, fmtDate, PENDING_STATE } from "@/lib/types";
@@ -40,12 +41,12 @@ function EventReviewContent({ id }: { id: string }) {
   const router = useRouter();
   const { user, refresh } = useData();
 
-  const [event, setEvent]       = useState<EventData | null>(null);
-  const [docs, setDocs]         = useState<EventDocument[]>([]);
-  const [budget, setBudget]     = useState<BudgetItem[]>([]);
-  const [loading, setLoading]   = useState(true);
-  const [tab, setTab]           = useState<Tab>("overview");
-  const [busy, setBusy]         = useState(false);
+  const [event, setEvent] = useState<EventData | null>(null);
+  const [docs, setDocs] = useState<EventDocument[]>([]);
+  const [budget, setBudget] = useState<BudgetItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState<Tab>("overview");
+  const [busy, setBusy] = useState(false);
   const [showReturnBox, setShowReturnBox] = useState(false);
   const [returnFeedback, setReturnFeedback] = useState("");
   const [sendToPrincipal, setSendToPrincipal] = useState(false);
@@ -76,13 +77,13 @@ function EventReviewContent({ id }: { id: string }) {
   }, [id]);
 
   const pendingState = user?.role ? PENDING_STATE[user.role] : null;
-  const canApprove   = !!(event && pendingState && event.state === pendingState);
+  const canApprove = !!(event && pendingState && event.state === pendingState);
   const canUnapprove = !!(
     event &&
     (user?.role === "FACULTY" || user?.role === "PRINCIPAL") &&
     event.state === "UNLISTED"
   );
-  const isPrincipal  = user?.role === "PRINCIPAL";
+  const isPrincipal = user?.role === "PRINCIPAL";
 
   const alreadySigned = proposal?.facultySignatures?.some(
     (s) => s.user_id === user?.id,
@@ -136,6 +137,24 @@ function EventReviewContent({ id }: { id: string }) {
     }
   }
 
+  async function unsignProposal() {
+    if (!event) return;
+    setBusy(true);
+    try {
+      await facultyUnsignProposal(event.id);
+      const { proposal: updated, assigned_faculty_reviewers } = await fetchProposal(event.id);
+      setProposal(updated);
+      setFacultyReviewers(assigned_faculty_reviewers);
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message;
+      alert(msg ?? "Could not remove signature.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   function renderReviewActions() {
     if (!canApprove && !canUnapprove) return null;
 
@@ -150,14 +169,25 @@ function EventReviewContent({ id }: { id: string }) {
               {canUnapprove
                 ? "If this event needs changes, unapprove it and send it back to council with a reason."
                 : hasProposalDoc
-                ? "Read the proposal above, sign it, then approve or return to council."
-                : "No proposal letter yet — you can still return this to council with feedback."}
+                  ? "Read the proposal above, sign it, then approve or return to council."
+                  : "No proposal letter yet — you can still return this to council with feedback."}
             </p>
           </div>
           {canApprove && alreadySigned && (
-            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-              ✓ You have signed this proposal
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                ✓ You have signed this proposal
+              </span>
+              <button
+                type="button"
+                onClick={unsignProposal}
+                disabled={busy}
+                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-red-500 disabled:opacity-50"
+              >
+                <XCircle size={13} />
+                Remove signature
+              </button>
+            </div>
           )}
         </div>
 
@@ -214,7 +244,7 @@ function EventReviewContent({ id }: { id: string }) {
               type="button"
               onClick={approve}
               disabled={busy || !hasSavedSignature || !alreadySigned}
-              className="px-4 py-2.5 rounded-lg border border-border bg-muted/50 hover:bg-muted text-sm font-medium disabled:opacity-40 flex items-center gap-2"
+              className="px-4 py-2.5 rounded-lg border border-border bg-muted/50 hover:bg-emerald-400 text-sm font-medium disabled:opacity-40 flex items-center gap-2"
               title={!alreadySigned ? "Sign the proposal first" : undefined}
             >
               {busy && <Loader2 size={14} className="animate-spin" />}
@@ -349,10 +379,10 @@ function EventReviewContent({ id }: { id: string }) {
       {/* Info strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
         {[
-          { icon: <CalendarDays size={14} />, label: "Date",  value: fmtDate(event.dates[0]) },
-          { icon: <MapPin size={14} />,      label: "Venue", value: event.venue || "TBD" },
-          { icon: <Users size={14} />,       label: "Team",  value: event.min_ppt === event.ma_ppt ? `${event.min_ppt}` : `${event.min_ppt}–${event.ma_ppt}` },
-          { icon: <Ticket size={14} />,      label: "Seats", value: event.is_ticket_feature_enabled ? `${event.ticket_count}` : "N/A" },
+          { icon: <CalendarDays size={14} />, label: "Date", value: fmtDate(event.dates[0]) },
+          { icon: <MapPin size={14} />, label: "Venue", value: event.venue || "TBD" },
+          { icon: <Users size={14} />, label: "Team", value: event.min_ppt === event.ma_ppt ? `${event.min_ppt}` : `${event.min_ppt}–${event.ma_ppt}` },
+          { icon: <Ticket size={14} />, label: "Seats", value: event.is_ticket_feature_enabled ? `${event.ticket_count}` : "N/A" },
         ].map((info) => (
           <div key={info.label} className="bg-card border border-border rounded-xl p-3">
             <div className="flex items-center gap-1 text-muted-foreground mb-1">{info.icon}
@@ -366,11 +396,11 @@ function EventReviewContent({ id }: { id: string }) {
       {/* Tabs */}
       <div className="flex gap-1 p-1 bg-muted rounded-xl w-fit mb-4 flex-wrap">
         {([
-          ["overview",  "Overview"],
-          ["proposal",  "Proposal"],
+          ["overview", "Overview"],
+          ["proposal", "Proposal"],
           ["documents", `Documents (${docs.length})`],
-          ["budget",    `Budget (${budget.length})`],
-          ["journey",   "State History"],
+          ["budget", `Budget (${budget.length})`],
+          ["journey", "State History"],
         ] as [Tab, string][]).map(([t, label]) => (
           <button key={t} type="button" onClick={() => setTab(t)}
             className={cn(
@@ -404,7 +434,7 @@ function EventReviewContent({ id }: { id: string }) {
             <div className="grid grid-cols-2 gap-3 pt-2">
               {[
                 ["Event Type", event.event_type?.replace(/_/g, " ")],
-                ["Entry Fee",  event.fee ? `₹${event.fee}` : "Free"],
+                ["Entry Fee", event.fee ? `₹${event.fee}` : "Free"],
                 ["Somaiya Only", event.is_only_somaiya ? "Yes" : "No"],
                 ["Tickets", event.is_ticket_feature_enabled ? "Enabled" : "Disabled"],
               ].map(([k, v]) => (

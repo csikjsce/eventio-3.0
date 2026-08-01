@@ -174,6 +174,14 @@ export async function facultySignProposal(
   });
 }
 
+export async function facultyUnsignProposal(
+  eventId: string | number,
+): Promise<void> {
+  await api.post(`/event/p/proposal/${eventId}/faculty-sign`, {
+    unsign: true,
+  });
+}
+
 export function userHasSignature(signature: unknown): boolean {
   return !!getSignaturePngUrl(signature);
 }
