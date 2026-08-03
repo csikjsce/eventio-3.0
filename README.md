@@ -14,9 +14,6 @@
 
 > Full-stack college event management platform with role-based access for students, councils, faculty, and the principal.
 
-**New here or coming back after a break? Read [`SETUP.md`](SETUP.md) for the step-by-step local + deployed run guide.**
-**AI agents / Claude Code: read [`AGENTS.md`](AGENTS.md) first** for the repo map and hard rules (e.g. which frontends are dead code).
-
 ---
 
 ## Table of Contents
