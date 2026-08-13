@@ -27,17 +27,9 @@ fi
   echo "-- docker build --"
   "${COMPOSE[@]}" build
 
-  echo "-- restart Coolify service (or compose up) --"
-  if [[ -n "${COOLIFY_TOKEN:-}" ]]; then
-    curl -fsS -X POST \
-      -H "Authorization: Bearer ${COOLIFY_TOKEN}" \
-      -H "Accept: application/json" \
-      "http://127.0.0.1:8090/api/v1/services/${SERVICE_UUID}/restart?latest=false" \
-      | tee -a "$LOG" || true
-    # Coolify restart won't pick new local tags reliably; force recreate with compose project Coolify uses
-  fi
-
-  # Always recreate containers from newly built local tags (Coolify service dir)
+  # Recreate from newly built local tags via Coolify's compose project.
+  # Do NOT also call Coolify /restart — it races with force-recreate ("marked for removal").
+  echo "-- recreate Coolify compose stack --"
   COOLIFY_DIR="/vm-storage/coolify/services/${SERVICE_UUID}"
   if [[ -f "$COOLIFY_DIR/docker-compose.yml" ]]; then
     (cd "$COOLIFY_DIR" && docker compose up -d --force-recreate --remove-orphans)
