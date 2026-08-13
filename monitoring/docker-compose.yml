@@ -1,0 +1,100 @@
+# Eventio observability stack (Prometheus + Loki + Tempo + Grafana + Alertmanager)
+# Usage:
+#   cd monitoring && docker compose up -d
+#
+# Grafana: http://127.0.0.1:3005  (admin / see GRAFANA_ADMIN_PASSWORD)
+# Prometheus: http://127.0.0.1:9095
+
+services:
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: eventio-prometheus
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.enable-lifecycle
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9095:9090"
+    restart: unless-stopped
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    container_name: eventio-alertmanager
+    extra_hosts:
+      # Force IPv4 — host IPv6 to Gmail is unreachable on this server
+      - "smtp.gmail.com:192.178.211.109"
+    volumes:
+      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - ./alertmanager/smtp_password:/etc/alertmanager/smtp_password:ro
+    ports:
+      - "9093:9093"
+    restart: unless-stopped
+
+  loki:
+    image: grafana/loki:3.1.1
+    container_name: eventio-loki
+    command: -config.file=/etc/loki/local-config.yaml
+    ports:
+      - "3101:3100"
+    restart: unless-stopped
+
+  promtail:
+    image: grafana/promtail:3.1.1
+    container_name: eventio-promtail
+    volumes:
+      - ./promtail/promtail.yml:/etc/promtail/config.yml:ro
+      - /tmp/eventio:/var/log/eventio:ro
+    command: -config.file=/etc/promtail/config.yml
+    restart: unless-stopped
+
+  tempo:
+    image: grafana/tempo:2.6.1
+    container_name: eventio-tempo
+    command: ["-config.file=/etc/tempo/tempo.yml"]
+    volumes:
+      - ./tempo/tempo.yml:/etc/tempo/tempo.yml:ro
+    ports:
+      - "3200:3200"
+      - "4317:4317"
+      - "4318:4318"
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    container_name: eventio-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-eventio-change-me}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL:-http://localhost:3005}
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "3005:3000"
+    depends_on:
+      - prometheus
+      - loki
+      - tempo
+    restart: unless-stopped
+
+  blackbox:
+    image: prom/blackbox-exporter:v0.25.0
+    container_name: eventio-blackbox
+    volumes:
+      - ./blackbox/blackbox.yml:/config/blackbox.yml:ro
+    command: --config.file=/config/blackbox.yml
+    ports:
+      - "9115:9115"
+    restart: unless-stopped
+
+volumes:
+  prometheus_data:
+  grafana_data:

@@ -4,7 +4,8 @@ import type {
   EventDocument, FacultyUser, StatsItem,
 } from "@/lib/types";
 
-const SERVER = process.env.NEXT_PUBLIC_SERVER_ADDRESS ?? "https://eventioapi.swdc.somaiya.edu";
+const SERVER = process.env.NEXT_PUBLIC_SERVER_ADDRESS ?? "https://eventio.somaiya.edu";
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "/faculty";
 
 export const api = axios.create({
   baseURL: `${SERVER}/api/v1`,
@@ -26,7 +27,7 @@ function getRefreshToken() {
 export function logout() {
   localStorage.removeItem("faculty_accessToken");
   localStorage.removeItem("faculty_refreshToken");
-  window.location.replace("/login");
+  window.location.replace(`${BASE_PATH}/login`);
 }
 
 api.interceptors.request.use((config) => {

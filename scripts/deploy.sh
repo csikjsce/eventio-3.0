@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Enterprise production deploy for Eventio.
+# Supports path-filtered service flags, last-good tracking, and auto-rollback.
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -22,7 +24,7 @@ fi
 : "${RUN_DIR:=/tmp/eventio}"
 : "${GIT_REMOTE:=origin}"
 : "${GIT_BRANCH:=main}"
-: "${NEXT_PUBLIC_SERVER_ADDRESS:=https://eventioapi.swdc.somaiya.edu}"
+: "${NEXT_PUBLIC_SERVER_ADDRESS:=https://eventio.somaiya.edu}"
 : "${SKIP_GIT_PULL:=0}"
 : "${DEPLOY_BACKEND:=1}"
 : "${DEPLOY_APP:=1}"
@@ -30,13 +32,20 @@ fi
 : "${DEPLOY_FACULTY_APP:=1}"
 : "${STOP_STUDENT_PREVIEW:=1}"
 : "${STOP_OLD_COUNCIL_PREVIEW:=1}"
+: "${AUTO_ROLLBACK:=1}"
+: "${LAST_DEPLOYED_FILE:=/tmp/eventio/last-deployed.sha}"
+: "${LAST_GOOD_FILE:=/tmp/eventio/last-good.sha}"
+: "${EVENTIO_DEPLOY_SHA:=}"
+: "${PRESERVE_WORKTREE:=1}"
 
 DEPLOY_SHA=""
+PREV_GOOD_SHA=""
 GITHUB_STATUS_REPORTED=0
 DEPLOY_FAILURE_MESSAGE=""
 DEPLOY_LOG_FILE="${LOG_DIR}/last-deploy.log"
+ROLLBACK_ATTEMPTED=0
 
-mkdir -p "$LOG_DIR"
+mkdir -p "$LOG_DIR" "$RUN_DIR"
 
 die() {
   DEPLOY_FAILURE_MESSAGE="$*"
@@ -50,11 +59,79 @@ on_deploy_err() {
   DEPLOY_FAILURE_MESSAGE="${DEPLOY_FAILURE_MESSAGE:-Command failed at line ${line}: ${BASH_COMMAND} (exit ${exit_code})}"
 }
 
+snapshot_last_good() {
+  if [[ -f "$LAST_GOOD_FILE" ]]; then
+    PREV_GOOD_SHA="$(tr -d '[:space:]' < "$LAST_GOOD_FILE" || true)"
+  elif [[ -f "$LAST_DEPLOYED_FILE" ]]; then
+    PREV_GOOD_SHA="$(tr -d '[:space:]' < "$LAST_DEPLOYED_FILE" || true)"
+  fi
+  if [[ -n "$PREV_GOOD_SHA" ]]; then
+    log "Previous good SHA: ${PREV_GOOD_SHA:0:7}"
+  else
+    log "No previous good SHA recorded"
+  fi
+}
+
+mark_good() {
+  local sha="$1"
+  echo "$sha" > "$LAST_GOOD_FILE"
+  echo "$sha" > "$LAST_DEPLOYED_FILE"
+  log "Marked ${sha:0:7} as last-good"
+}
+
+public_smoke() {
+  local base="${PUBLIC_BASE_URL:-https://eventio.somaiya.edu}"
+  local urls=(
+    "${base}/api/v1/health"
+    "${base}/login"
+    "${base}/council/login"
+    "${base}/faculty/login"
+  )
+  local url
+  for url in "${urls[@]}"; do
+    if ! curl -fsS --max-time 20 "$url" >/dev/null; then
+      die "Public smoke failed: $url"
+    fi
+    log "Public smoke OK: $url"
+  done
+}
+
+attempt_auto_rollback() {
+  if [[ "$AUTO_ROLLBACK" != "1" ]]; then
+    log "AUTO_ROLLBACK disabled"
+    return 1
+  fi
+  if [[ "$ROLLBACK_ATTEMPTED" == "1" ]]; then
+    log "Rollback already attempted"
+    return 1
+  fi
+  if [[ -z "$PREV_GOOD_SHA" || "$PREV_GOOD_SHA" == "$DEPLOY_SHA" ]]; then
+    log "No usable previous good SHA — cannot auto-rollback"
+    return 1
+  fi
+
+  ROLLBACK_ATTEMPTED=1
+  log "AUTO-ROLLBACK: restoring ${PREV_GOOD_SHA:0:7}"
+  AUTO_ROLLBACK=0 EVENTIO_DEPLOY_SHA="$PREV_GOOD_SHA" PRESERVE_WORKTREE=0 \
+    bash "$ROOT_DIR/scripts/rollback.sh" "$PREV_GOOD_SHA" || return 1
+  return 0
+}
+
 on_deploy_exit() {
   local exit_code=$?
 
   if [[ -n "${DEPLOY_SHA:-}" ]]; then
     cp -f "$DEPLOY_LOG_FILE" "${LOG_DIR}/deploy-${DEPLOY_SHA}.log" 2>/dev/null || true
+  fi
+
+  if [[ "$exit_code" -ne 0 && "$ROLLBACK_ATTEMPTED" == "0" ]]; then
+    if attempt_auto_rollback; then
+      log "Auto-rollback succeeded after failed deploy"
+      if [[ "$GITHUB_STATUS_REPORTED" != "1" ]]; then
+        github_report_failure "Deploy failed; auto-rolled back to ${PREV_GOOD_SHA:0:7}"
+      fi
+      return
+    fi
   fi
 
   if [[ "$GITHUB_STATUS_REPORTED" == "1" ]]; then
@@ -78,10 +155,22 @@ deploy_repo() {
     return
   fi
 
+  local target_sha="${EVENTIO_DEPLOY_SHA:-}"
   log "Updating repository (${GIT_REMOTE}/${GIT_BRANCH})"
-  git -C "$REPO_DIR" fetch "$GIT_REMOTE" "$GIT_BRANCH"
-  git -C "$REPO_DIR" checkout "$GIT_BRANCH"
-  git -C "$REPO_DIR" pull --ff-only "$GIT_REMOTE" "$GIT_BRANCH"
+  git -C "$REPO_DIR" fetch "$GIT_REMOTE" "$GIT_BRANCH" --tags --force
+
+  # Stash local WIP so CI reset does not destroy in-progress operator edits
+  if [[ "$PRESERVE_WORKTREE" == "1" ]]; then
+    git -C "$REPO_DIR" stash push -u -m "eventio-deploy-autostash-$(date -u +%Y%m%d%H%M%S)" || true
+  fi
+
+  if [[ -n "$target_sha" ]]; then
+    log "Checking out requested SHA ${target_sha:0:7}"
+    git -C "$REPO_DIR" checkout --force "$target_sha"
+  else
+    git -C "$REPO_DIR" checkout --force "$GIT_BRANCH"
+    git -C "$REPO_DIR" reset --hard "${GIT_REMOTE}/${GIT_BRANCH}"
+  fi
 }
 
 deploy_backend() {
@@ -129,7 +218,7 @@ deploy_council_app() {
 
   start_detached council-app "$REPO_DIR/frontend/council-app" "$COUNCIL_APP_PORT" \
     env PORT="$COUNCIL_APP_PORT" npm run start -- --port "$COUNCIL_APP_PORT"
-  wait_for_http "http://127.0.0.1:${COUNCIL_APP_PORT}/login"
+  wait_for_http "http://127.0.0.1:${COUNCIL_APP_PORT}/council/login"
 }
 
 deploy_faculty_app() {
@@ -143,17 +232,18 @@ deploy_faculty_app() {
 
   start_detached faculty "$REPO_DIR/frontend/faculty" "$FACULTY_APP_PORT" \
     env PORT="$FACULTY_APP_PORT" npm run start -- --port "$FACULTY_APP_PORT"
-  wait_for_http "http://127.0.0.1:${FACULTY_APP_PORT}/login"
+  wait_for_http "http://127.0.0.1:${FACULTY_APP_PORT}/faculty/login"
 }
 
 main() {
-  trap on_deploy_err ERR
+  trap 'on_deploy_err $LINENO' ERR
   trap on_deploy_exit EXIT
 
   : > "$DEPLOY_LOG_FILE"
   exec > >(tee -a "$DEPLOY_LOG_FILE") 2>&1
 
   log "Eventio deploy started"
+  snapshot_last_good
   deploy_repo
 
   DEPLOY_SHA="$(git -C "$REPO_DIR" rev-parse HEAD)"
@@ -164,9 +254,11 @@ main() {
   [[ "$DEPLOY_COUNCIL_APP" == "1" ]] && deploy_council_app
   [[ "$DEPLOY_FACULTY_APP" == "1" ]] && deploy_faculty_app
 
+  public_smoke
+  mark_good "$DEPLOY_SHA"
+
   GITHUB_STATUS_REPORTED=1
-  github_report_success "Deployed to production"
-  echo "$DEPLOY_SHA" > "${LAST_DEPLOYED_FILE:-/tmp/eventio/last-deployed.sha}"
+  github_report_success "Deployed to production (${DEPLOY_SHA:0:7})"
   log "Eventio deploy finished successfully"
 }
 

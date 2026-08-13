@@ -103,7 +103,7 @@ export default function Sidebar({ onClose }: Props) {
         <button type="button" onClick={() => {
             localStorage.removeItem("council_accessToken");
             localStorage.removeItem("council_refreshToken");
-            window.location.href = "/login";
+            window.location.href = `${process.env.NEXT_PUBLIC_BASE_PATH ?? "/council"}/login`;
           }}
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-fira font-medium text-muted-tx hover:bg-red-500/10 hover:text-red-500 transition-all duration-150">
           <LogOut size={17} /> Logout

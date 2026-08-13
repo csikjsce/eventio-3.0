@@ -1,0 +1,141 @@
+name: Deploy Production
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      services:
+        description: "Services to deploy (all|backend|app|council|faculty|comma-list)"
+        required: false
+        default: all
+      sha:
+        description: "Optional git SHA to deploy (default: current main HEAD)"
+        required: false
+        default: ""
+      skip_rollback:
+        description: "Disable auto-rollback on health failure"
+        type: boolean
+        required: false
+        default: false
+
+concurrency:
+  group: eventio-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  deployments: write
+  statuses: write
+
+jobs:
+  changes:
+    name: Detect changed paths
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      app: ${{ steps.filter.outputs.app }}
+      council: ${{ steps.filter.outputs.council }}
+      faculty: ${{ steps.filter.outputs.faculty }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+              - 'scripts/**'
+              - 'deploy/**'
+            app:
+              - 'frontend/app/**'
+            council:
+              - 'frontend/council-app/**'
+            faculty:
+              - 'frontend/faculty/**'
+
+  deploy:
+    name: Deploy to SWDC
+    needs: changes
+    runs-on: [self-hosted, eventio]
+    environment:
+      name: production
+      url: https://eventio.somaiya.edu
+    timeout-minutes: 45
+    steps:
+      - name: Resolve deploy targets
+        id: targets
+        run: |
+          set -euo pipefail
+          SERVICES="${{ github.event.inputs.services || 'all' }}"
+          backend=0; app=0; council=0; faculty=0
+
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            if [[ "$SERVICES" == "all" ]]; then
+              backend=1; app=1; council=1; faculty=1
+            else
+              IFS=',' read -ra parts <<< "$SERVICES"
+              for p in "${parts[@]}"; do
+                case "$(echo "$p" | tr -d ' ')" in
+                  backend) backend=1 ;;
+                  app|student) app=1 ;;
+                  council) council=1 ;;
+                  faculty) faculty=1 ;;
+                  all) backend=1; app=1; council=1; faculty=1 ;;
+                esac
+              done
+            fi
+          else
+            [[ "${{ needs.changes.outputs.backend }}" == "true" ]] && backend=1
+            [[ "${{ needs.changes.outputs.app }}" == "true" ]] && app=1
+            [[ "${{ needs.changes.outputs.council }}" == "true" ]] && council=1
+            [[ "${{ needs.changes.outputs.faculty }}" == "true" ]] && faculty=1
+          fi
+
+          if [[ $backend$app$council$faculty == 0000 ]]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+          {
+            echo "backend=$backend"
+            echo "app=$app"
+            echo "council=$council"
+            echo "faculty=$faculty"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Deploy
+        if: steps.targets.outputs.skip != 'true'
+        env:
+          DEPLOY_BACKEND: ${{ steps.targets.outputs.backend }}
+          DEPLOY_APP: ${{ steps.targets.outputs.app }}
+          DEPLOY_COUNCIL_APP: ${{ steps.targets.outputs.council }}
+          DEPLOY_FACULTY_APP: ${{ steps.targets.outputs.faculty }}
+          EVENTIO_DEPLOY_SHA: ${{ github.event.inputs.sha || github.sha }}
+          AUTO_ROLLBACK: ${{ github.event.inputs.skip_rollback == true && '0' || '1' }}
+          GITHUB_TOKEN: ${{ secrets.EVENTIO_DEPLOY_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+          DEPLOY_ENVIRONMENT: production
+          DEPLOY_ENVIRONMENT_URL: https://eventio.somaiya.edu
+          PUBLIC_BASE_URL: https://eventio.somaiya.edu
+          NEXT_PUBLIC_SERVER_ADDRESS: https://eventio.somaiya.edu
+        run: |
+          set -euo pipefail
+          REPO_DIR="${EVENTIO_REPO_DIR:-/vm-storage/projects/eventio-3.0}"
+          cd "$REPO_DIR"
+          bash scripts/deploy.sh
+
+      - name: Post-deploy public smoke
+        if: steps.targets.outputs.skip != 'true'
+        run: |
+          set -euo pipefail
+          for url in \
+            "https://eventio.somaiya.edu/api/v1/health" \
+            "https://eventio.somaiya.edu/login" \
+            "https://eventio.somaiya.edu/council/login" \
+            "https://eventio.somaiya.edu/faculty/login"; do
+            echo "Checking $url"
+            curl -fsS --max-time 20 "$url" >/dev/null
+          done

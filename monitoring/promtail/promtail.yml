@@ -1,0 +1,16 @@
+server:
+  http_listen_port: 3100
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: eventio-logs
+    static_configs:
+      - targets: [localhost]
+        labels:
+          job: eventio
+          __path__: /var/log/eventio/*.log

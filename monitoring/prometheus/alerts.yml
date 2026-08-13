@@ -1,0 +1,20 @@
+groups:
+  - name: eventio-slo
+    rules:
+      - alert: EventioSyntheticDown
+        expr: probe_success{job="eventio-synthetics"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Eventio synthetic check failing"
+          description: "{{ $labels.instance }} has been down for >2m"
+
+      - alert: EventioHighLatency
+        expr: probe_duration_seconds{job="eventio-synthetics"} > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Eventio endpoint slow"
+          description: "{{ $labels.instance }} probe duration > 2s"

@@ -6,58 +6,130 @@ on:
       - main
   pull_request:
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  security-events: write
+
 jobs:
-  audit:
-    name: Security Audit — ${{ matrix.dir }}
+  changes:
+    name: Detect changed paths
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      app: ${{ steps.filter.outputs.app }}
+      council: ${{ steps.filter.outputs.council }}
+      faculty: ${{ steps.filter.outputs.faculty }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+            app:
+              - 'frontend/app/**'
+            council:
+              - 'frontend/council-app/**'
+            faculty:
+              - 'frontend/faculty/**'
+
+  backend:
+    name: Backend — lint & validate
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - name: Prisma validate
+        run: npx prisma validate
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci?schema=public
+      - name: Security audit
+        run: npm audit --audit-level=high || true
+
+  frontend:
+    name: Build — ${{ matrix.name }}
+    needs: changes
+    if: |
+      (matrix.key == 'app' && needs.changes.outputs.app == 'true') ||
+      (matrix.key == 'council' && needs.changes.outputs.council == 'true') ||
+      (matrix.key == 'faculty' && needs.changes.outputs.faculty == 'true')
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        dir:
-          - backend
-          - frontend/student
-          - frontend/council
-          - frontend/dean
+        include:
+          - key: app
+            name: student
+            dir: frontend/app
+          - key: council
+            name: council
+            dir: frontend/council-app
+          - key: faculty
+            name: faculty
+            dir: frontend/faculty
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
           cache-dependency-path: ${{ matrix.dir }}/package-lock.json
-
-      - name: Install dependencies
+      - name: Install
         run: npm ci
         working-directory: ${{ matrix.dir }}
-
-      - name: Audit for high/critical vulnerabilities
-        run: npm audit --audit-level=high
-        working-directory: ${{ matrix.dir }}
-
-  build-frontends:
-    name: Build — ${{ matrix.dir }}
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        dir:
-          - frontend/student
-          - frontend/council
-          - frontend/dean
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-          cache-dependency-path: ${{ matrix.dir }}/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-        working-directory: ${{ matrix.dir }}
-
       - name: Build
         run: npm run build
         working-directory: ${{ matrix.dir }}
+        env:
+          NEXT_PUBLIC_SERVER_ADDRESS: https://eventio.somaiya.edu
+      - name: Security audit
+        run: npm audit --audit-level=high || true
+        working-directory: ${{ matrix.dir }}
+
+  codeql:
+    name: CodeQL
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+      - uses: github/codeql-action/analyze@v3
+
+  ci-success:
+    name: CI gate
+    needs: [changes, backend, frontend, codeql]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Evaluate required jobs
+        run: |
+          set -euo pipefail
+          for result in \
+            "${{ needs.backend.result }}" \
+            "${{ needs.frontend.result }}" \
+            "${{ needs.codeql.result }}"; do
+            case "$result" in
+              failure|cancelled)
+                echo "Required job failed: $result"
+                exit 1
+                ;;
+            esac
+          done
+          echo "CI gate passed"

@@ -1,7 +1,8 @@
 import axios from "axios";
 import type { ApprovalStep, EventData, PipelineStage } from "@/lib/dummy-data";
 
-const SERVER = process.env.NEXT_PUBLIC_SERVER_ADDRESS ?? "";
+const SERVER = process.env.NEXT_PUBLIC_SERVER_ADDRESS ?? "https://eventio.somaiya.edu";
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "/council";
 
 export const api = axios.create({
   baseURL: `${SERVER}/api/v1`,
@@ -20,7 +21,7 @@ export function logout() {
   if (typeof window === "undefined") return;
   localStorage.removeItem("council_accessToken");
   localStorage.removeItem("council_refreshToken");
-  window.location.replace("/login");
+  window.location.replace(`${BASE_PATH}/login`);
 }
 
 // ── Request interceptor — attach Authorization header ─────────────────────────

@@ -38,3 +38,5 @@ ssl/*.csr
 backend/cert/*
 !backend/cert/*.example
 deploy/config.env
+monitoring/alertmanager/smtp_password
+backend/dumps/

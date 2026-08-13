@@ -19,28 +19,47 @@ github_api() {
   local method="$1"
   local path="$2"
   local data="${3:-}"
+  local http_code
+  local body
+  local tmp
+  tmp="$(mktemp)"
 
   if [[ -n "$data" ]]; then
-    curl -fsS -X "$method" \
+    http_code="$(curl -sS -o "$tmp" -w "%{http_code}" -X "$method" \
       -H "Authorization: Bearer ${GITHUB_TOKEN}" \
       -H "Accept: application/vnd.github+json" \
       -H "X-GitHub-Api-Version: 2022-11-28" \
       -H "Content-Type: application/json" \
       "https://api.github.com/repos/${GITHUB_REPO}/${path}" \
-      -d "$data"
+      -d "$data" || true)"
   else
-    curl -fsS -X "$method" \
+    http_code="$(curl -sS -o "$tmp" -w "%{http_code}" -X "$method" \
       -H "Authorization: Bearer ${GITHUB_TOKEN}" \
       -H "Accept: application/vnd.github+json" \
       -H "X-GitHub-Api-Version: 2022-11-28" \
-      "https://api.github.com/repos/${GITHUB_REPO}/${path}"
+      "https://api.github.com/repos/${GITHUB_REPO}/${path}" || true)"
   fi
+
+  body="$(cat "$tmp")"
+  rm -f "$tmp"
+
+  if [[ "$http_code" =~ ^2 ]]; then
+    printf '%s' "$body"
+    return 0
+  fi
+
+  log "WARNING: GitHub API ${method} ${path} -> HTTP ${http_code}"
+  return 0
 }
 
 github_truncate() {
   local max="$1"
   shift
-  python3 -c "import sys; s=sys.argv[1]; print(s[:int(sys.argv[0])])" "$max" "$*"
+  python3 - "$max" "$*" <<'PY'
+import sys
+max_len = int(sys.argv[1])
+print(sys.argv[2][:max_len])
+PY
 }
 
 github_set_deploy_sha() {

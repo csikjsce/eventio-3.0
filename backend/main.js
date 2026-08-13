@@ -120,13 +120,32 @@ app.use(
 app.use(passport.session());
 app.use(httpLogger);
 app.use(express.json({ limit: "2mb" }));
-app.use(
-    cors({
-        origin: [
+// CORS matches browser Origin (scheme+host+port only — path prefixes ignored).
+const allowedOrigins = [
+    ...new Set(
+        [
             process.env.CLIENT_URL,
             process.env.COUNCIL_CLIENT_URL,
             process.env.FACULTY_CLIENT_URL,
-        ],
+            "https://eventio.somaiya.edu",
+            "http://localhost:3000",
+            "http://localhost:4173",
+            "http://localhost:4174",
+            "http://localhost:4175",
+        ]
+            .filter(Boolean)
+            .map((u) => {
+                try {
+                    return new URL(u).origin;
+                } catch {
+                    return u;
+                }
+            })
+    ),
+];
+app.use(
+    cors({
+        origin: allowedOrigins,
         credentials: true,
     })
 );
@@ -158,8 +177,50 @@ app.use("/api", globalLimiter);
 const version = "v1";
 const base = "/api/" + version;
 
+const metrics = {
+    startedAt: Date.now(),
+    httpRequestsTotal: 0,
+    httpErrorsTotal: 0,
+};
+
+app.use((req, res, next) => {
+    metrics.httpRequestsTotal += 1;
+    res.on("finish", () => {
+        if (res.statusCode >= 500) metrics.httpErrorsTotal += 1;
+    });
+    next();
+});
+
 app.get(base + "/health", async (req, res) => {
     res.json({ status: "up and running" });
+});
+
+// Prometheus text exposition (scraped by monitoring stack; not public-facing ideally)
+app.get("/metrics", (req, res) => {
+    const mem = process.memoryUsage();
+    const uptime = process.uptime();
+    const lines = [
+        "# HELP eventio_up 1 if process is up",
+        "# TYPE eventio_up gauge",
+        "eventio_up 1",
+        "# HELP eventio_process_uptime_seconds Process uptime",
+        "# TYPE eventio_process_uptime_seconds gauge",
+        `eventio_process_uptime_seconds ${uptime}`,
+        "# HELP eventio_http_requests_total Total HTTP requests",
+        "# TYPE eventio_http_requests_total counter",
+        `eventio_http_requests_total ${metrics.httpRequestsTotal}`,
+        "# HELP eventio_http_errors_total Total HTTP 5xx responses",
+        "# TYPE eventio_http_errors_total counter",
+        `eventio_http_errors_total ${metrics.httpErrorsTotal}`,
+        "# HELP eventio_nodejs_heap_used_bytes Heap used bytes",
+        "# TYPE eventio_nodejs_heap_used_bytes gauge",
+        `eventio_nodejs_heap_used_bytes ${mem.heapUsed}`,
+        "# HELP eventio_nodejs_rss_bytes RSS bytes",
+        "# TYPE eventio_nodejs_rss_bytes gauge",
+        `eventio_nodejs_rss_bytes ${mem.rss}`,
+    ];
+    res.set("Content-Type", "text/plain; version=0.0.4");
+    res.send(lines.join("\n") + "\n");
 });
 
 app.use(base + "/auth",         authLimiter, authRoute);
