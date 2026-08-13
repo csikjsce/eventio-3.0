@@ -1,9 +1,8 @@
 name: Deploy Production
 
+# Disabled auto-run: production deploys via Coolify UI / coolify-redeploy.yml webhook
+# (no teammate SSH). Keep workflow_dispatch only for emergency admin use.
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
     inputs:
       services:
@@ -58,9 +57,9 @@ jobs:
               - 'frontend/faculty/**'
 
   deploy:
-    name: Deploy to SWDC
+    name: Deploy to SWDC over SSH
     needs: changes
-    runs-on: [self-hosted, eventio]
+    runs-on: ubuntu-latest
     environment:
       name: production
       url: https://eventio.somaiya.edu
@@ -107,25 +106,29 @@ jobs:
             echo "faculty=$faculty"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Deploy
+      - name: Deploy over SSH
         if: steps.targets.outputs.skip != 'true'
-        env:
-          DEPLOY_BACKEND: ${{ steps.targets.outputs.backend }}
-          DEPLOY_APP: ${{ steps.targets.outputs.app }}
-          DEPLOY_COUNCIL_APP: ${{ steps.targets.outputs.council }}
-          DEPLOY_FACULTY_APP: ${{ steps.targets.outputs.faculty }}
-          EVENTIO_DEPLOY_SHA: ${{ github.event.inputs.sha || github.sha }}
-          AUTO_ROLLBACK: ${{ github.event.inputs.skip_rollback == true && '0' || '1' }}
-          GITHUB_TOKEN: ${{ secrets.EVENTIO_DEPLOY_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
-          DEPLOY_ENVIRONMENT: production
-          DEPLOY_ENVIRONMENT_URL: https://eventio.somaiya.edu
-          PUBLIC_BASE_URL: https://eventio.somaiya.edu
-          NEXT_PUBLIC_SERVER_ADDRESS: https://eventio.somaiya.edu
-        run: |
-          set -euo pipefail
-          REPO_DIR="${EVENTIO_REPO_DIR:-/vm-storage/projects/eventio-3.0}"
-          cd "$REPO_DIR"
-          bash scripts/deploy.sh
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EVENTIO_DEPLOY_HOST }}
+          username: ${{ secrets.EVENTIO_DEPLOY_USER }}
+          key: ${{ secrets.EVENTIO_DEPLOY_SSH_KEY }}
+          command_timeout: 40m
+          script: |
+            set -euo pipefail
+            export DEPLOY_BACKEND='${{ steps.targets.outputs.backend }}'
+            export DEPLOY_APP='${{ steps.targets.outputs.app }}'
+            export DEPLOY_COUNCIL_APP='${{ steps.targets.outputs.council }}'
+            export DEPLOY_FACULTY_APP='${{ steps.targets.outputs.faculty }}'
+            export EVENTIO_DEPLOY_SHA='${{ github.event.inputs.sha || github.sha }}'
+            export AUTO_ROLLBACK='${{ github.event.inputs.skip_rollback == true && '0' || '1' }}'
+            export DEPLOY_ENVIRONMENT=production
+            export DEPLOY_ENVIRONMENT_URL=https://eventio.somaiya.edu
+            export PUBLIC_BASE_URL=https://eventio.somaiya.edu
+            export NEXT_PUBLIC_SERVER_ADDRESS=https://eventio.somaiya.edu
+            export EVENTIO_REPO_DIR=/vm-storage/projects/eventio-3.0
+            cd "$EVENTIO_REPO_DIR"
+            bash scripts/deploy.sh
 
       - name: Post-deploy public smoke
         if: steps.targets.outputs.skip != 'true'
@@ -139,3 +142,70 @@ jobs:
             echo "Checking $url"
             curl -fsS --max-time 20 "$url" >/dev/null
           done
+
+  build-images:
+    name: Build & push images (GHCR)
+    needs: deploy
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/setup-buildx-action@v3
+      - name: Backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/eventio-backend:latest
+            ghcr.io/${{ github.repository_owner }}/eventio-backend:${{ github.sha }}
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,scope=backend,mode=max
+      - name: Student app image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend/app
+          file: ./frontend/app/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/eventio-app:latest
+            ghcr.io/${{ github.repository_owner }}/eventio-app:${{ github.sha }}
+          build-args: |
+            NEXT_PUBLIC_SERVER_ADDRESS=https://eventio.somaiya.edu
+          cache-from: type=gha,scope=app
+          cache-to: type=gha,scope=app,mode=max
+      - name: Council app image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend/council-app
+          file: ./frontend/council-app/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/eventio-council-app:latest
+            ghcr.io/${{ github.repository_owner }}/eventio-council-app:${{ github.sha }}
+          build-args: |
+            NEXT_PUBLIC_SERVER_ADDRESS=https://eventio.somaiya.edu
+          cache-from: type=gha,scope=council-app
+          cache-to: type=gha,scope=council-app,mode=max
+      - name: Faculty app image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend/faculty
+          file: ./frontend/faculty/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/eventio-faculty:latest
+            ghcr.io/${{ github.repository_owner }}/eventio-faculty:${{ github.sha }}
+          build-args: |
+            NEXT_PUBLIC_SERVER_ADDRESS=https://eventio.somaiya.edu
+          cache-from: type=gha,scope=faculty
+          cache-to: type=gha,scope=faculty,mode=max
