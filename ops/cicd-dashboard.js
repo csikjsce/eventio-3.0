@@ -96,13 +96,14 @@ async function collectStatus() {
     runner,
     links: {
       actions: `https://github.com/${REPO}/actions`,
-      deployWorkflow: `https://github.com/${REPO}/actions/workflows/deploy-production.yml`,
+      deployWorkflow: `https://github.com/${REPO}/actions/workflows/coolify-redeploy.yml`,
       ciWorkflow: `https://github.com/${REPO}/actions/workflows/ci.yml`,
       environments: `https://github.com/${REPO}/settings/environments`,
       deployments: `https://github.com/${REPO}/deployments`,
       grafana: "https://grafana.arnabbhowmik.in",
       prometheus: "https://prometheus.arnabbhowmik.in",
       alerts: "https://alerts.arnabbhowmik.in",
+      coolify: "https://coolify.arnabbhowmik.in",
       app: APP_URL,
     },
   };
@@ -246,19 +247,34 @@ function htmlPage(data) {
       </section>
 
       <section class="card span-6">
-        <h2>Control plane</h2>
+        <h2>Control plane (no SSH)</h2>
         <div class="links">
-          <a href="${data.links.deployWorkflow}" target="_blank" rel="noreferrer">Deploy workflow</a>
+          <button id="redeployBtn" type="button" style="border:1px solid var(--accent);background:#1a1810;color:var(--text);padding:0.55rem 0.8rem;border-radius:10px;font-size:0.9rem;cursor:pointer">Redeploy now</button>
+          <a href="${data.links.coolify}" target="_blank" rel="noreferrer">Coolify UI</a>
+          <a href="${data.links.deployWorkflow}" target="_blank" rel="noreferrer">Auto-deploy workflow</a>
           <a href="${data.links.ciWorkflow}" target="_blank" rel="noreferrer">CI workflow</a>
           <a href="${data.links.actions}" target="_blank" rel="noreferrer">All Actions</a>
-          <a href="${data.links.environments}" target="_blank" rel="noreferrer">Environments</a>
-          <a href="${data.links.deployments}" target="_blank" rel="noreferrer">Deployments</a>
           <a href="${data.links.app}" target="_blank" rel="noreferrer">Production app</a>
           <a href="${data.links.grafana}" target="_blank" rel="noreferrer">Grafana</a>
           <a href="${data.links.prometheus}" target="_blank" rel="noreferrer">Prometheus</a>
           <a href="${data.links.alerts}" target="_blank" rel="noreferrer">Alerts</a>
         </div>
-        <p class="muted" style="margin-top:1rem">Trigger a deploy from GitHub → Actions → <b>Deploy Production</b> → Run workflow. Approvals live under Environments → production.</p>
+        <p class="muted" id="redeployMsg" style="margin-top:1rem">Use <b>Redeploy now</b> (UI) or push to <b>main</b> (automatic). Teammates never need server SSH.</p>
+        <script>
+          const btn = document.getElementById('redeployBtn');
+          const msg = document.getElementById('redeployMsg');
+          btn?.addEventListener('click', async () => {
+            btn.disabled = true; msg.textContent = 'Starting redeploy…';
+            try {
+              const r = await fetch('/api/redeploy', { method: 'POST' });
+              const j = await r.json();
+              msg.textContent = r.ok ? ('Accepted: ' + (j.status || 'ok') + ' — watch Coolify / this page') : ('Failed: ' + (j.error || r.status));
+            } catch (e) {
+              msg.textContent = 'Failed: ' + e;
+            }
+            btn.disabled = false;
+          });
+        </script>
       </section>
 
       <section class="card span-12">
@@ -280,12 +296,67 @@ function htmlPage(data) {
 </html>`;
 }
 
+function loadHookSecret() {
+  try {
+    const raw = fs.readFileSync("/vm-storage/projects/eventio-3.0/deploy/hook.env", "utf8");
+    const line = raw.split("\n").find((l) => l.startsWith("DEPLOY_HOOK_SECRET="));
+    if (!line) return null;
+    return line.split("=", 2)[1].trim().replace(/^['"]|['"]$/g, "");
+  } catch {
+    return null;
+  }
+}
+
+function triggerRedeploy() {
+  return new Promise((resolve) => {
+    const secret = loadHookSecret();
+    if (!secret) {
+      resolve({ ok: false, status: 500, body: { error: "deploy hook secret missing" } });
+      return;
+    }
+    const req = http.request(
+      {
+        hostname: "127.0.0.1",
+        port: 3099,
+        path: "/redeploy",
+        method: "POST",
+        headers: { "X-Deploy-Secret": secret, "Content-Type": "application/json" },
+        timeout: 10000,
+      },
+      (r) => {
+        let data = "";
+        r.on("data", (c) => (data += c));
+        r.on("end", () => {
+          let body = {};
+          try {
+            body = JSON.parse(data || "{}");
+          } catch {
+            body = { raw: data };
+          }
+          resolve({ ok: r.statusCode >= 200 && r.statusCode < 300, status: r.statusCode, body });
+        });
+      }
+    );
+    req.on("error", (e) => resolve({ ok: false, status: 502, body: { error: String(e) } }));
+    req.end("{}");
+  });
+}
+
 const server = http.createServer(async (req, res) => {
   try {
     if (req.url === "/api/status" || req.url?.startsWith("/api/status?")) {
       const data = await collectStatus();
       res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-store" });
       res.end(JSON.stringify(data, null, 2));
+      return;
+    }
+    if (req.method === "POST" && (req.url === "/api/redeploy" || req.url?.startsWith("/api/redeploy?"))) {
+      const result = await triggerRedeploy();
+      res.writeHead(result.ok ? 202 : result.status || 500, {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+      });
+      res.end(JSON.stringify(result.body));
       return;
     }
     if (req.url === "/" || req.url?.startsWith("/?")) {

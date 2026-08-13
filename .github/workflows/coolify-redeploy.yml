@@ -1,0 +1,27 @@
+name: Coolify redeploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  redeploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Eventio deploy hook
+        env:
+          DEPLOY_HOOK_URL: ${{ secrets.EVENTIO_DEPLOY_HOOK_URL }}
+          DEPLOY_HOOK_SECRET: ${{ secrets.EVENTIO_DEPLOY_HOOK_SECRET }}
+        run: |
+          set -euo pipefail
+          if [ -z "${DEPLOY_HOOK_URL:-}" ] || [ -z "${DEPLOY_HOOK_SECRET:-}" ]; then
+            echo "Missing EVENTIO_DEPLOY_HOOK_URL / EVENTIO_DEPLOY_HOOK_SECRET repo secrets"
+            exit 1
+          fi
+          curl -fsS -X POST "$DEPLOY_HOOK_URL" \
+            -H "X-Deploy-Secret: $DEPLOY_HOOK_SECRET" \
+            -H "Content-Type: application/json" \
+            -d '{"source":"github-actions","ref":"'"$GITHUB_REF"'","sha":"'"$GITHUB_SHA"'"}'
+          echo
+          echo "Redeploy accepted. Coolify/UI will show new containers shortly."

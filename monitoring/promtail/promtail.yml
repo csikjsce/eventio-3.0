@@ -14,3 +14,17 @@ scrape_configs:
         labels:
           job: eventio
           __path__: /var/log/eventio/*.log
+
+  - job_name: npm-eventio
+    static_configs:
+      - targets: [localhost]
+        labels:
+          job: npm
+          host: eventio.somaiya.edu
+          __path__: /var/log/npm/proxy-host-62_access.log
+    pipeline_stages:
+      - regex:
+          expression: '.* - (?P<status>\d{3}) \d{3} - (?P<method>\S+) .*'
+      - labels:
+          status:
+          method:

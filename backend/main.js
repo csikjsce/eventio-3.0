@@ -181,12 +181,44 @@ const metrics = {
     startedAt: Date.now(),
     httpRequestsTotal: 0,
     httpErrorsTotal: 0,
+    httpClientErrorsTotal: 0, // 4xx
+    httpDurationSumSeconds: 0,
+    httpDurationCount: 0,
+    byStatusClass: { "2xx": 0, "3xx": 0, "4xx": 0, "5xx": 0 },
+    byPathGroup: {},
 };
 
+function pathGroup(urlPath) {
+    if (!urlPath) return "other";
+    if (urlPath.startsWith("/api/v1/health")) return "health";
+    if (urlPath.startsWith("/api/v1/auth")) return "auth";
+    if (urlPath.startsWith("/api/v1/event")) return "event";
+    if (urlPath.startsWith("/api/v1/user")) return "user";
+    if (urlPath.startsWith("/api/v1/council")) return "council";
+    if (urlPath.startsWith("/api/v1/document")) return "document";
+    if (urlPath.startsWith("/api/v1/budget")) return "budget";
+    if (urlPath.startsWith("/api/v1/announcement")) return "announcement";
+    if (urlPath.startsWith("/api/v1/mailer")) return "mailer";
+    if (urlPath === "/metrics") return "metrics";
+    return "other";
+}
+
 app.use((req, res, next) => {
+    const start = process.hrtime.bigint();
     metrics.httpRequestsTotal += 1;
     res.on("finish", () => {
-        if (res.statusCode >= 500) metrics.httpErrorsTotal += 1;
+        const seconds = Number(process.hrtime.bigint() - start) / 1e9;
+        metrics.httpDurationSumSeconds += seconds;
+        metrics.httpDurationCount += 1;
+
+        const code = res.statusCode || 0;
+        const cls = code >= 500 ? "5xx" : code >= 400 ? "4xx" : code >= 300 ? "3xx" : "2xx";
+        metrics.byStatusClass[cls] = (metrics.byStatusClass[cls] || 0) + 1;
+        if (code >= 500) metrics.httpErrorsTotal += 1;
+        if (code >= 400 && code < 500) metrics.httpClientErrorsTotal += 1;
+
+        const group = pathGroup(req.path || req.url || "");
+        metrics.byPathGroup[group] = (metrics.byPathGroup[group] || 0) + 1;
     });
     next();
 });
@@ -199,6 +231,11 @@ app.get(base + "/health", async (req, res) => {
 app.get("/metrics", (req, res) => {
     const mem = process.memoryUsage();
     const uptime = process.uptime();
+    const cpu = process.cpuUsage();
+    const avgLatency =
+        metrics.httpDurationCount > 0
+            ? metrics.httpDurationSumSeconds / metrics.httpDurationCount
+            : 0;
     const lines = [
         "# HELP eventio_up 1 if process is up",
         "# TYPE eventio_up gauge",
@@ -212,13 +249,50 @@ app.get("/metrics", (req, res) => {
         "# HELP eventio_http_errors_total Total HTTP 5xx responses",
         "# TYPE eventio_http_errors_total counter",
         `eventio_http_errors_total ${metrics.httpErrorsTotal}`,
+        "# HELP eventio_http_client_errors_total Total HTTP 4xx responses",
+        "# TYPE eventio_http_client_errors_total counter",
+        `eventio_http_client_errors_total ${metrics.httpClientErrorsTotal}`,
+        "# HELP eventio_http_duration_seconds_sum Cumulative request duration",
+        "# TYPE eventio_http_duration_seconds_sum counter",
+        `eventio_http_duration_seconds_sum ${metrics.httpDurationSumSeconds}`,
+        "# HELP eventio_http_duration_seconds_count Request duration sample count",
+        "# TYPE eventio_http_duration_seconds_count counter",
+        `eventio_http_duration_seconds_count ${metrics.httpDurationCount}`,
+        "# HELP eventio_http_avg_latency_seconds Average request latency since process start",
+        "# TYPE eventio_http_avg_latency_seconds gauge",
+        `eventio_http_avg_latency_seconds ${avgLatency}`,
         "# HELP eventio_nodejs_heap_used_bytes Heap used bytes",
         "# TYPE eventio_nodejs_heap_used_bytes gauge",
         `eventio_nodejs_heap_used_bytes ${mem.heapUsed}`,
+        "# HELP eventio_nodejs_heap_total_bytes Heap total bytes",
+        "# TYPE eventio_nodejs_heap_total_bytes gauge",
+        `eventio_nodejs_heap_total_bytes ${mem.heapTotal}`,
+        "# HELP eventio_nodejs_external_bytes External memory bytes",
+        "# TYPE eventio_nodejs_external_bytes gauge",
+        `eventio_nodejs_external_bytes ${mem.external}`,
         "# HELP eventio_nodejs_rss_bytes RSS bytes",
         "# TYPE eventio_nodejs_rss_bytes gauge",
         `eventio_nodejs_rss_bytes ${mem.rss}`,
+        "# HELP eventio_process_cpu_user_seconds_total User CPU time",
+        "# TYPE eventio_process_cpu_user_seconds_total counter",
+        `eventio_process_cpu_user_seconds_total ${cpu.user / 1e6}`,
+        "# HELP eventio_process_cpu_system_seconds_total System CPU time",
+        "# TYPE eventio_process_cpu_system_seconds_total counter",
+        `eventio_process_cpu_system_seconds_total ${cpu.system / 1e6}`,
     ];
+
+    lines.push("# HELP eventio_http_responses_total Responses by status class");
+    lines.push("# TYPE eventio_http_responses_total counter");
+    for (const [cls, count] of Object.entries(metrics.byStatusClass)) {
+        lines.push(`eventio_http_responses_total{status_class="${cls}"} ${count}`);
+    }
+
+    lines.push("# HELP eventio_http_requests_by_group_total Requests by API group");
+    lines.push("# TYPE eventio_http_requests_by_group_total counter");
+    for (const [group, count] of Object.entries(metrics.byPathGroup)) {
+        lines.push(`eventio_http_requests_by_group_total{group="${group}"} ${count}`);
+    }
+
     res.set("Content-Type", "text/plain; version=0.0.4");
     res.send(lines.join("\n") + "\n");
 });

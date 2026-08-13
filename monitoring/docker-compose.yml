@@ -50,6 +50,7 @@ services:
     volumes:
       - ./promtail/promtail.yml:/etc/promtail/config.yml:ro
       - /tmp/eventio:/var/log/eventio:ro
+      - /home/swdc-kjsse/proxy/data/logs:/var/log/npm:ro
     command: -config.file=/etc/promtail/config.yml
     restart: unless-stopped
 
@@ -72,7 +73,15 @@ services:
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-eventio-change-me}
       GF_USERS_ALLOW_SIGN_UP: "false"
-      GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL:-http://localhost:3005}
+      GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL:-https://grafana.arnabbhowmik.in}
+      GF_SERVER_DOMAIN: grafana.arnabbhowmik.in
+      GF_SERVER_ENFORCE_DOMAIN: "false"
+      GF_SECURITY_COOKIE_SECURE: "true"
+      GF_SECURITY_COOKIE_SAMESITE: lax
+      GF_SECURITY_CSRF_TRUSTED_ORIGINS: grafana.arnabbhowmik.in
+      GF_AUTH_BASIC_PASSWORD_POLICY: "false"
+      GF_AUTH_LOGIN_MAXIMUM_INACTIVE_LIFETIME_DURATION: 7d
+      GF_AUTH_DISABLE_LOGIN_FORM: "false"
     volumes:
       - grafana_data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning:ro

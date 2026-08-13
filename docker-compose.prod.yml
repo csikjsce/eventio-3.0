@@ -1,0 +1,119 @@
+# Eventio production stack — ports match NPM (eventio.somaiya.edu)
+# Usage:
+#   cp backend/.env .env.docker   # then ensure NEXT_PUBLIC_* are set
+#   docker compose -f docker-compose.prod.yml --env-file .env.docker up -d --build
+
+name: eventio
+
+services:
+  api:
+    image: eventio-api:prod
+    build:
+      context: ./backend
+      dockerfile: dockerfile
+    container_name: eventio-api
+    ports:
+      - "3500:8000"
+    env_file:
+      - .env.docker
+    environment:
+      NODE_ENV: production
+      PORT: "8000"
+    volumes:
+      - /tmp/eventio:/tmp/eventio
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8000/api/v1/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 25s
+    networks:
+      - eventio
+
+  app:
+    image: eventio-app:prod
+    build:
+      context: ./frontend/app
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_SERVER_ADDRESS: ${NEXT_PUBLIC_SERVER_ADDRESS:-https://eventio.somaiya.edu}
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-https://eventio.somaiya.edu}
+    container_name: eventio-app
+    ports:
+      - "4173:3000"
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      HOSTNAME: 0.0.0.0
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:3000/login"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - eventio
+
+  council:
+    image: eventio-council:prod
+    build:
+      context: ./frontend/council-app
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_SERVER_ADDRESS: ${NEXT_PUBLIC_SERVER_ADDRESS:-https://eventio.somaiya.edu}
+    container_name: eventio-council
+    ports:
+      - "4174:3000"
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      HOSTNAME: 0.0.0.0
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:3000/council/login"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - eventio
+
+  faculty:
+    image: eventio-faculty:prod
+    build:
+      context: ./frontend/faculty
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_SERVER_ADDRESS: ${NEXT_PUBLIC_SERVER_ADDRESS:-https://eventio.somaiya.edu}
+    container_name: eventio-faculty
+    ports:
+      - "4175:3000"
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      HOSTNAME: 0.0.0.0
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:3000/faculty/login"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - eventio
+
+networks:
+  eventio:
+    name: eventio
+    driver: bridge

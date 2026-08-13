@@ -33,6 +33,10 @@ scrape_configs:
           - https://eventio.somaiya.edu/council/login
           - https://eventio.somaiya.edu/faculty/login
           - https://grafana.arnabbhowmik.in/login
+          - https://prometheus.arnabbhowmik.in/-/healthy
+          - https://alerts.arnabbhowmik.in/-/healthy
+          - https://cicd.arnabbhowmik.in/health
+          - https://npm.arnabbhowmik.in
     relabel_configs:
       - source_labels: [__address__]
         target_label: __param_target

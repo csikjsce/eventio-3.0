@@ -8,14 +8,19 @@ global:
 route:
   receiver: default
   group_by: [alertname, severity]
-  group_wait: 20s
+  group_wait: 10s
   group_interval: 5m
   repeat_interval: 4h
 
 receivers:
   - name: default
     email_configs:
-      - to: "arnab.b@somaiya.edu"
+      - to: >-
+          arnab.b@somaiya.edu,
+          kumaraayush471@gmail.com,
+          shauryakesarwani19@gmail.com,
+          kesarwani.s@somaiya.edu,
+          harshadsaha07@gmail.com
         send_resolved: true
         headers:
           Subject: "[Eventio] {{ .Status | toUpper }} {{ .CommonLabels.alertname }}"

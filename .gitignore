@@ -40,3 +40,10 @@ backend/cert/*
 deploy/config.env
 monitoring/alertmanager/smtp_password
 backend/dumps/
+
+.env.docker
+docker-compose.prod.yml.bak
+
+.env.docker
+deploy/hook.env
+deploy/coolify-service.uuid

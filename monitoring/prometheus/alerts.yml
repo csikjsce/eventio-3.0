@@ -18,3 +18,44 @@ groups:
         annotations:
           summary: "Eventio endpoint slow"
           description: "{{ $labels.instance }} probe duration > 2s"
+
+      - alert: EventioApiDown
+        expr: eventio_up == 0 or absent(eventio_up)
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Eventio API scrape/up missing"
+          description: "API /metrics is not reporting eventio_up=1"
+
+      - alert: EventioHighErrorRate
+        expr: |
+          (
+            rate(eventio_http_errors_total[5m])
+            /
+            clamp_min(rate(eventio_http_requests_total[5m]), 0.001)
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Eventio API 5xx rate elevated"
+          description: "5xx error ratio > 5% over 5m"
+
+      - alert: EventioHighMemory
+        expr: eventio_nodejs_heap_used_bytes > 800000000
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Eventio API heap usage high"
+          description: "Heap used > 800MB for 10m"
+
+      - alert: EventioCertExpiringSoon
+        expr: (probe_ssl_earliest_cert_expiry{job="eventio-synthetics"} - time()) / 86400 < 14
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "TLS cert expires in <14 days"
+          description: "{{ $labels.instance }} cert expires in {{ $value | printf \"%.1f\" }} days"
