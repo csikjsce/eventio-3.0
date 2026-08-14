@@ -160,9 +160,19 @@ export default function ProposalBuilder({ eventId }: { eventId: string }) {
           setEventState(proposalRes.event_state);
           setSelectedFaculty(proposalRes.assigned_faculty_emails ?? []);
           if (proposalRes.proposal.document) {
+            const doc = proposalRes.proposal.document;
             setState(
               mergeCouncilSignatures(
-                { ...proposalRes.proposal.document, eventId },
+                {
+                  ...doc,
+                  eventId,
+                  permission: {
+                    ...doc.permission,
+                    eventName: event?.name ?? doc.permission.eventName,
+                    eventDate: event?.dates?.[0]?.slice(0, 10) ?? doc.permission.eventDate,
+                    venue: event?.venue ?? doc.permission.venue,
+                  },
+                },
                 proposalRes.proposal.councilSignatures ?? [],
               ),
             );
