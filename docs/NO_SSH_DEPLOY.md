@@ -27,6 +27,17 @@ Repo `csikjsce/eventio-3.0` → Settings → Secrets and variables → Actions:
 | `EVENTIO_DEPLOY_HOOK_URL` | `https://eventio-deploy.arnabbhowmik.in/redeploy` |
 | `EVENTIO_DEPLOY_HOOK_SECRET` | from `/vm-storage/projects/eventio-3.0/deploy/hook.env` (`DEPLOY_HOOK_SECRET=`) |
 
+## Where to see “which change is live” (Jenkins-style)
+
+Coolify **Docker Compose services do not show git commits or build jobs**. Use:
+
+| What you want | Where |
+|---------------|--------|
+| Live commit, author, build status, console log, history | https://cicd.arnabbhowmik.in |
+| GitHub green/red on the commit | Actions → **Coolify redeploy** + **Production Deploy** (waits for server smoke) |
+| GitHub Environments | https://github.com/csikjsce/eventio-3.0/deployments |
+| Container logs / restart | https://coolify.arnabbhowmik.in |
+
 ## Day-to-day
 1. Merge/push to `main` → auto redeploy, **or**
 2. Open CI/CD board → **Redeploy now**, **or**

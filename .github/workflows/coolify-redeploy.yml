@@ -5,9 +5,16 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   redeploy:
+    name: Trigger production build
     runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://eventio.somaiya.edu
     steps:
       - name: Trigger Eventio deploy hook
         env:
@@ -24,4 +31,6 @@ jobs:
             -H "Content-Type: application/json" \
             -d '{"source":"github-actions","ref":"'"$GITHUB_REF"'","sha":"'"$GITHUB_SHA"'"}'
           echo
-          echo "Redeploy accepted. Coolify/UI will show new containers shortly."
+          echo "Redeploy accepted."
+          echo "Watch build (commit, status, console): https://cicd.arnabbhowmik.in"
+          echo "GitHub environment: production — the server posts success/failure after smoke checks."
