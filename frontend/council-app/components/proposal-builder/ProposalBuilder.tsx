@@ -32,6 +32,7 @@ import {
   PERMISSION_TEMPLATES,
   resolveFacultyReviewers,
   resolveLetterheadUrl,
+  normalizeDraft,
   type DocumentBuilderState,
   type PermissionTemplateId,
 } from "@/lib/document-builder";
@@ -45,6 +46,12 @@ import {
   submitProposal,
 } from "@/lib/proposal";
 import { uploadFile } from "@/lib/upload";
+
+function errorMessage(error: unknown, fallback: string) {
+  const message = (error as { response?: { data?: { message?: string } } })
+    ?.response?.data?.message;
+  return message || fallback;
+}
 
 function StepRow({ done, label }: { done: boolean; label: string }) {
   return (
@@ -61,9 +68,10 @@ function StepRow({ done, label }: { done: boolean; label: string }) {
 
 export default function ProposalBuilder({ eventId }: { eventId: string }) {
   const router = useRouter();
-  const { events, refreshEvents } = useData();
+  const { events, loading: eventsLoading, refreshEvents } = useData();
   const sheetRef = useRef<HTMLElement>(null);
   const profileLetterheadRef = useRef("");
+  const initializedEventRef = useRef<string | null>(null);
 
   const event = events.find((e) => String(e.id) === eventId);
 
@@ -73,6 +81,8 @@ export default function ProposalBuilder({ eventId }: { eventId: string }) {
   const [advisors, setAdvisors] = useState<FacultyAdvisorRow[]>([]);
   const [selectedFaculty, setSelectedFaculty] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [uploadingHead, setUploadingHead] = useState(false);
@@ -83,7 +93,8 @@ export default function ProposalBuilder({ eventId }: { eventId: string }) {
     setTimeout(() => setToast(""), 3000);
   };
 
-  const canEdit = !eventState || eventState === "DRAFT";
+  const canEdit = eventState === "DRAFT";
+  const busy = saving || submitting || uploadingHead;
   const hasDoc = !!state;
   const allSigned = state ? allCouncilSigned(state) : false;
   const facultyOk = selectedFaculty.length > 0;
@@ -135,12 +146,14 @@ export default function ProposalBuilder({ eventId }: { eventId: string }) {
   );
 
   useEffect(() => {
+    if (eventsLoading || !event || initializedEventRef.current === eventId) return;
     let cancelled = false;
     setLoading(true);
+    setLoadError("");
 
     Promise.all([
       fetchCouncilProfile(),
-      fetchProposal(eventId).catch(() => null),
+      fetchProposal(eventId),
     ])
       .then(([profile, proposalRes]) => {
         if (cancelled) return;
@@ -156,32 +169,28 @@ export default function ProposalBuilder({ eventId }: { eventId: string }) {
         setMembers(councilMembers);
         setAdvisors(profile.profile?.faculty_advisors ?? []);
 
-        if (proposalRes) {
-          setEventState(proposalRes.event_state);
-          setSelectedFaculty(proposalRes.assigned_faculty_emails ?? []);
-          if (proposalRes.proposal.document) {
-            const doc = proposalRes.proposal.document;
-            setState(
-              mergeCouncilSignatures(
-                {
-                  ...doc,
-                  eventId,
-                  permission: {
-                    ...doc.permission,
-                    eventName: event?.name ?? doc.permission.eventName,
-                    eventDate: event?.dates?.[0]?.slice(0, 10) ?? doc.permission.eventDate,
-                    venue: event?.venue ?? doc.permission.venue,
-                  },
-                },
-                proposalRes.proposal.councilSignatures ?? [],
-              ),
-            );
-            return;
-          }
+        setEventState(proposalRes.event_state);
+        const savedReviewers = proposalRes.proposal.document?.assignedFacultyReviewers;
+        const selectedEmails = proposalRes.event_state === "DRAFT" && savedReviewers != null
+          ? savedReviewers.map((reviewer) => reviewer.email)
+          : proposalRes.assigned_faculty_emails;
+        setSelectedFaculty(
+          resolveFacultyReviewers(profile.profile?.faculty_advisors ?? [], selectedEmails)
+            .map((reviewer) => reviewer.email),
+        );
+        if (proposalRes.proposal.document) {
+          const doc = normalizeDraft(proposalRes.proposal.document);
+          setState(
+            mergeCouncilSignatures(
+              { ...doc, eventId },
+              proposalRes.proposal.councilSignatures ?? [],
+            ),
+          );
+          return;
         }
 
         const letterheadUrl = profileLetterheadRef.current;
-        let base: DocumentBuilderState = {
+        const base: DocumentBuilderState = {
           kind: "permission_letter",
           permissionTemplate: "event",
           eventId,
@@ -217,7 +226,14 @@ export default function ProposalBuilder({ eventId }: { eventId: string }) {
         base.permission = applyPermissionTemplate("event", base.permission);
         setState(prefillFromEvent(base, councilMembers));
       })
-      .catch(() => showToast("Could not load proposal builder."))
+      .then(() => {
+        if (!cancelled) initializedEventRef.current = eventId;
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) {
+          setLoadError(errorMessage(error, "Could not load proposal builder. Please try again."));
+        }
+      })
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
@@ -225,38 +241,39 @@ export default function ProposalBuilder({ eventId }: { eventId: string }) {
     return () => {
       cancelled = true;
     };
-  }, [eventId, prefillFromEvent]);
+  }, [eventId, event, eventsLoading, prefillFromEvent, loadAttempt]);
 
   async function persist(next: DocumentBuilderState) {
     const reviewers = resolveFacultyReviewers(advisors, selectedFaculty);
     const withFaculty = applyFacultyReviewersToDocument(next, reviewers);
-    setState(withFaculty);
     await saveProposal(
       eventId,
       withFaculty,
       councilSignaturesFromDocument(withFaculty),
     );
+    setState(withFaculty);
   }
 
   async function handleSave() {
-    if (!state) return;
+    if (!state || !canEdit || busy) return;
     setSaving(true);
     try {
       await persist(state);
       showToast("Proposal saved.");
-    } catch {
-      showToast("Could not save proposal.");
+    } catch (error: unknown) {
+      showToast(errorMessage(error, "Could not save proposal. Please try again."));
     } finally {
       setSaving(false);
     }
   }
 
   async function handleSubmit() {
-    if (!state || !canSubmit) return;
+    if (!state || !canSubmit || busy) return;
     setSubmitting(true);
     try {
       await persist(state);
       await submitProposal(eventId, selectedFaculty);
+      setEventState("APPLIED_FOR_APPROVAL");
       await refreshEvents();
       showToast("Proposal submitted to faculty!");
       router.push(`/event-details/${eventId}`);
@@ -271,18 +288,18 @@ export default function ProposalBuilder({ eventId }: { eventId: string }) {
   }
 
   async function handleSign(index: number, dataUrl: string, saveToMember: boolean) {
-    if (!state) return;
+    if (!state || !canEdit || busy) return;
     const sig = state.signatories[index];
-    const file = dataUrlToFile(dataUrl, `council-sig-${sig.memberId ?? index}.png`);
-    const url = await uploadFile(file, "eventio-council-images");
-    const next: DocumentBuilderState = {
-      ...state,
-      signatories: state.signatories.map((x, i) =>
-        i === index ? { ...x, signatureUrl: url, signedAt: new Date().toISOString() } : x,
-      ),
-    };
     setSaving(true);
     try {
+      const file = dataUrlToFile(dataUrl, `council-sig-${sig.memberId ?? index}.png`);
+      const url = await uploadFile(file, "eventio-council-images");
+      const next: DocumentBuilderState = {
+        ...state,
+        signatories: state.signatories.map((x, i) =>
+          i === index ? { ...x, signatureUrl: url, signedAt: new Date().toISOString() } : x,
+        ),
+      };
       await persist(next);
       // Optionally store this signature on the member for future events.
       if (saveToMember && sig.memberId) {
@@ -296,15 +313,15 @@ export default function ProposalBuilder({ eventId }: { eventId: string }) {
         }
       }
       showToast(`${sig.name} signed.`);
-    } catch {
-      showToast("Could not save signature.");
+    } catch (error: unknown) {
+      showToast(errorMessage(error, "Could not upload or save signature. Please try again."));
     } finally {
       setSaving(false);
     }
   }
 
   async function handleUnsign(index: number) {
-    if (!state) return;
+    if (!state || !canEdit || busy) return;
     const sig = state.signatories[index];
     const next: DocumentBuilderState = {
       ...state,
@@ -316,8 +333,8 @@ export default function ProposalBuilder({ eventId }: { eventId: string }) {
     try {
       await persist(next);
       showToast(`${sig.name}'s signature removed.`);
-    } catch {
-      showToast("Could not remove signature.");
+    } catch (error: unknown) {
+      showToast(errorMessage(error, "Could not remove signature. Please try again."));
     } finally {
       setSaving(false);
     }
@@ -355,7 +372,7 @@ export default function ProposalBuilder({ eventId }: { eventId: string }) {
     });
   }
 
-  if (loading) {
+  if (eventsLoading || (event && loading)) {
     return (
       <div className="flex items-center justify-center min-h-[50vh] gap-2 text-muted-tx font-fira">
         <Loader2 size={20} className="animate-spin" /> Loading proposal builder…
@@ -369,6 +386,26 @@ export default function ProposalBuilder({ eventId }: { eventId: string }) {
         <p className="text-muted-tx font-fira mb-4">Event not found.</p>
         <Link href="/" className="text-red-500 text-sm font-fira hover:underline">
           Back to home
+        </Link>
+      </div>
+    );
+  }
+
+  if (loadError || !state) {
+    return (
+      <div className="px-4 py-12 max-w-lg mx-auto text-center space-y-4">
+        <p role="alert" className="text-tx font-fira">
+          {loadError || "Could not load proposal builder. Please try again."}
+        </p>
+        <button
+          type="button"
+          onClick={() => setLoadAttempt((attempt) => attempt + 1)}
+          className="px-4 py-2 rounded-lg bg-red-500 text-white text-sm font-fira"
+        >
+          Try again
+        </button>
+        <Link href={`/event-details/${eventId}`} className="block text-red-500 text-sm font-fira hover:underline">
+          Back to event details
         </Link>
       </div>
     );
@@ -392,7 +429,7 @@ export default function ProposalBuilder({ eventId }: { eventId: string }) {
     );
   }
 
-  const p = state!.permission;
+  const p = state.permission;
 
   return (
     <div className="px-4 py-6 sm:px-8 sm:py-8 max-w-[1600px] mx-auto">
@@ -435,7 +472,7 @@ export default function ProposalBuilder({ eventId }: { eventId: string }) {
             <button
               type="button"
               onClick={handleSave}
-              disabled={saving || submitting}
+              disabled={busy}
               className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border-c bg-surface text-sm font-fira disabled:opacity-50"
             >
               <Save size={15} /> {saving ? "Saving…" : "Save draft"}
@@ -443,7 +480,7 @@ export default function ProposalBuilder({ eventId }: { eventId: string }) {
             <button
               type="button"
               onClick={handleSubmit}
-              disabled={!canSubmit || saving || submitting}
+              disabled={!canSubmit || busy}
               className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white text-sm font-fira font-medium disabled:opacity-50"
             >
               <Send size={15} /> {submitting ? "Submitting…" : "Submit to faculty"}
@@ -459,7 +496,7 @@ export default function ProposalBuilder({ eventId }: { eventId: string }) {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-[360px_1fr] gap-8 items-start min-w-0">
-        <aside className="document-builder-chrome space-y-5">
+        <fieldset disabled={busy} className="document-builder-chrome space-y-5 min-w-0">
           <div className="bg-surface border border-border-c rounded-2xl p-5 space-y-3">
             <p className={LABEL}>Permission template</p>
             <div className="grid grid-cols-2 gap-2">
@@ -469,7 +506,7 @@ export default function ProposalBuilder({ eventId }: { eventId: string }) {
                   type="button"
                   onClick={() => selectTemplate(tpl.id)}
                   className={`text-left py-2.5 px-3 rounded-lg border transition-all ${
-                    state!.permissionTemplate === tpl.id
+                    state.permissionTemplate === tpl.id
                       ? "bg-red-500/10 border-red-500/30 text-red-500"
                       : "border-border-c text-muted-tx hover:text-tx"
                   }`}
@@ -482,7 +519,7 @@ export default function ProposalBuilder({ eventId }: { eventId: string }) {
 
           <div className="bg-surface border border-border-c rounded-2xl p-5 space-y-3">
             <p className="text-tx text-sm font-fira font-semibold">Letterhead</p>
-            <Letterhead variant="compact" councilLetterheadUrl={state!.letterheadUrl} />
+            <Letterhead variant="compact" councilLetterheadUrl={state.letterheadUrl} />
             <label className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border-c text-xs font-fira cursor-pointer w-fit">
               <Upload size={13} className="text-red-500" />
               {uploadingHead ? "Uploading…" : "Upload logo"}
@@ -494,13 +531,16 @@ export default function ProposalBuilder({ eventId }: { eventId: string }) {
                 onChange={async (e) => {
                   const file = e.target.files?.[0];
                   if (!file) return;
+                  const input = e.currentTarget;
                   setUploadingHead(true);
                   try {
                     const url = await uploadFile(file, "eventio-council-images");
                     setState((s) => (s ? { ...s, letterheadUrl: url } : s));
+                  } catch (error: unknown) {
+                    showToast(errorMessage(error, "Could not upload logo. Please try again."));
                   } finally {
                     setUploadingHead(false);
-                    e.target.value = "";
+                    input.value = "";
                   }
                 }}
               />
@@ -518,7 +558,7 @@ export default function ProposalBuilder({ eventId }: { eventId: string }) {
                   >
                     <input
                       type="checkbox"
-                      checked={state!.signatories.some((s) => s.memberId === member.id)}
+                      checked={state.signatories.some((s) => s.memberId === member.id)}
                       onChange={() => toggleMemberSignatory(member)}
                       className="rounded border-border-c"
                     />
@@ -533,12 +573,12 @@ export default function ProposalBuilder({ eventId }: { eventId: string }) {
             )}
           </div>
 
-          {state!.signatories.some((s) => s.name.trim() && !s.facultyReviewer) && (
+          {state.signatories.some((s) => s.name.trim() && !s.facultyReviewer) && (
             <CouncilSignatorySigning
-              signatories={state!.signatories}
+              signatories={state.signatories}
               onSign={handleSign}
               onUnsign={handleUnsign}
-              disabled={saving || submitting}
+              disabled={busy}
             />
           )}
 
@@ -558,7 +598,7 @@ export default function ProposalBuilder({ eventId }: { eventId: string }) {
             <BuilderField label="Body" value={p.body} onChange={(v) => setState((s) => s ? { ...s, permission: { ...s.permission, body: v } } : s)} multiline rows={6} />
             <BuilderField label="Council name" value={p.councilName} onChange={(v) => setState((s) => s ? { ...s, permission: { ...s.permission, councilName: v } } : s)} />
           </div>
-        </aside>
+        </fieldset>
 
         <div className="document-builder-preview min-w-0 bg-zinc-200/80 dark:bg-zinc-900/50 rounded-2xl p-4 sm:p-8 overflow-x-auto">
           {previewDoc && (
