@@ -49,7 +49,9 @@ So you switch DB just by swapping `DATABASE_URL`.
 Consequences for localhost:
 - The **three** `*_CLIENT_URL` vars in `backend/.env` must point at the three Next ports, or a
   logged-in council/faculty user bounces to the wrong app.
-- Those same three URLs are the **CORS allowlist** (`backend/main.js`), so they must match exactly.
+- `COUNCIL_CLIENT_URL` and `FACULTY_CLIENT_URL` **must include the base path** (`/council`, `/faculty`) —
+  the apps use Next `basePath`, so the post-login redirect `…/login` 404s without it.
+- Those same three URLs feed the **CORS allowlist** (`backend/main.js`), which keeps only the origin (path ignored).
 - Domain-lock to `somaiya.edu` only applies when `NODE_ENV=production`. **Leave `NODE_ENV` unset
   locally** so you can log in with a normal Google account (e.g. a gmail).
 
@@ -100,9 +102,9 @@ SESSION_SECRET="local_dev_session_secret_changeme"
 
 # Must match the Next dev ports below (role-based redirect + CORS allowlist)
 CLIENT_URL="http://localhost:3000"
-COUNCIL_CLIENT_URL="http://localhost:3001"
-FACULTY_CLIENT_URL="http://localhost:3002"
-DEAN_CLIENT_URL="http://localhost:3002"
+COUNCIL_CLIENT_URL="http://localhost:3001/council"
+FACULTY_CLIENT_URL="http://localhost:3002/faculty"
+DEAN_CLIENT_URL="http://localhost:3002/faculty"
 SERVER_URL="http://localhost:8000"
 PORT=8000
 
@@ -166,8 +168,8 @@ cd frontend/faculty     && npm install && npm run dev -- -p 3002
 | App | URL |
 |---|---|
 | Student | http://localhost:3000 |
-| Council | http://localhost:3001 |
-| Faculty | http://localhost:3002 |
+| Council | http://localhost:3001/council |
+| Faculty | http://localhost:3002/faculty |
 | API health | http://localhost:8000/api/v1/health |
 
 ### 4c. Login walkthrough (localhost)
@@ -199,8 +201,8 @@ The deployed `backend/.env` (already on the server) differs from local in these 
 DATABASE_URL='<Azure URL — ideahackathon.postgres.database.azure.com>'
 NODE_ENV=production          # enables somaiya.edu domain lock → only @somaiya.edu accounts
 CLIENT_URL="https://eventio.somaiya.edu"
-COUNCIL_CLIENT_URL="https://eventio-council.swdc.somaiya.edu"
-FACULTY_CLIENT_URL="https://eventio-faculty.swdc.somaiya.edu"
+COUNCIL_CLIENT_URL="https://eventio.somaiya.edu/council"
+FACULTY_CLIENT_URL="https://eventio.somaiya.edu/faculty"
 SERVER_URL="https://eventioapi.swdc.somaiya.edu"
 ```
 

@@ -183,8 +183,8 @@ cd frontend/faculty     && cp .env.example .env.local && npm install && npm run 
 |---|---|---|
 | Backend API | http://localhost:8000 | `SERVER_URL` |
 | Student (`app`) | http://localhost:3000 | `CLIENT_URL` |
-| Council (`council-app`) | http://localhost:3001 | `COUNCIL_CLIENT_URL` |
-| Faculty (`faculty`) | http://localhost:3002 | `FACULTY_CLIENT_URL` (+ `DEAN_CLIENT_URL`) |
+| Council (`council-app`) | http://localhost:3001/council | `COUNCIL_CLIENT_URL` |
+| Faculty (`faculty`) | http://localhost:3002/faculty | `FACULTY_CLIENT_URL` (+ `DEAN_CLIENT_URL`) |
 
 The backend redirects post-login **by role** to these URLs and uses the same three as its CORS
 allowlist — so the ports here must match `backend/.env` exactly. See [Auth Flow](#auth-flow).
@@ -208,8 +208,8 @@ allowlist — so the ports here must match `backend/.env` exactly. See [Auth Flo
 | `SESSION_SECRET` | Express session secret. | Yes |
 | `AT_EXPIRATION` / `RT_EXPIRATION` | Token lifetimes (`5h` / `7d`). | No |
 | `CLIENT_URL` | Student app origin — default post-login redirect + CORS. | Yes |
-| `COUNCIL_CLIENT_URL` | Council app origin — `COUNCIL` redirect + CORS. | Yes |
-| `FACULTY_CLIENT_URL` | Faculty app origin — `FACULTY`/`PRINCIPAL` redirect + CORS. | Yes |
+| `COUNCIL_CLIENT_URL` | Council app URL incl. `/council` base path — `COUNCIL` redirect + CORS. | Yes |
+| `FACULTY_CLIENT_URL` | Faculty app URL incl. `/faculty` base path — `FACULTY`/`PRINCIPAL` redirect + CORS. | Yes |
 | `DEAN_CLIENT_URL` | Legacy fallback for `FACULTY_CLIENT_URL`. | No |
 | `SERVER_URL` | Public backend URL (builds the OAuth callback). | Yes |
 | `EMAIL_USER` / `EMAIL_PASS` | SMTP creds for Nodemailer. | Email features only |
