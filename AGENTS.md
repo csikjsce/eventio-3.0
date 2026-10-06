@@ -17,9 +17,6 @@ reference the deprecated ones** — treat them as if they do not exist.
 | `frontend/app/` | ✅ active | **Student** portal | Next.js 16 App Router |
 | `frontend/council-app/` | ✅ active | **Council** portal | Next.js 16 App Router |
 | `frontend/faculty/` | ✅ active | **Faculty / Principal** portal | Next.js 16 App Router |
-| `frontend/student/` | ❌ **dead** | old student SPA | Vite — ignore |
-| `frontend/council/` | ❌ **dead** | old council SPA | Vite — ignore |
-| `frontend/dean/` | ❌ **dead** | old dean SPA | Vite — ignore |
 
 > The stale idea that this is a Vite project comes from the dead apps. The **active** frontends are
 > **Next.js 16 / React 19** — a version with breaking changes vs older Next.js. Check each app's
