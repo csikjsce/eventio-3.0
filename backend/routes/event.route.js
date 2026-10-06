@@ -46,6 +46,7 @@ const REVIEWED_EVENT_STATES = [
     "COMPLETED",
     "UNLISTED",
 ];
+const COUNCIL_POST_APPROVAL_STATES = new Set([...REVIEWED_EVENT_STATES, "PRIVATE"]);
 const FACULTY_VISIBLE_STATES = [
     "APPLIED_FOR_APPROVAL",
     "APPLIED_FOR_PRINCI_APPROVAL",
@@ -1364,6 +1365,12 @@ router.post(
 
         let field = pickEventUpdateData(req.body);
 
+        // Accept scalar states only; Prisma's { set: ... } syntax must not bypass
+        // the role and transition checks below.
+        if (field.state !== undefined && typeof field.state !== "string") {
+            return res.status(400).json({ error: true, message: "Event state must be a string." });
+        }
+
         if (req.body.logo_image_url !== undefined) {
             field.logo_image__url = req.body.logo_image_url;
         }
@@ -1417,6 +1424,18 @@ router.post(
             if (field.state != null && field.state !== state) {
                 const role = req.user.role;
                 const newState = field.state;
+
+                if (role === "COUNCIL") {
+                    const submittingDraft = state === "DRAFT" && newState === "APPLIED_FOR_APPROVAL";
+                    const managingApprovedEvent = COUNCIL_POST_APPROVAL_STATES.has(state) &&
+                        COUNCIL_POST_APPROVAL_STATES.has(newState);
+                    if (!submittingDraft && !managingApprovedEvent) {
+                        return res.status(403).json({
+                            error: true,
+                            message: "Council cannot change approval status directly. Submit a draft for review or use the proposal withdrawal action while review is pending.",
+                        });
+                    }
+                }
 
                 if (
                     role === "FACULTY" &&

@@ -240,6 +240,62 @@ test('general event update cannot bypass proposal save validation', async t => {
     assert.deepEqual(f.row.proposal_document, before);
 });
 
+test('council cannot reset an approved event to draft to unlock proposal editing', async t => {
+    const f = await fixture(t, { state: 'UNLISTED' });
+    const before = structuredClone(f.row.proposal_document);
+    const reset = await f.request('POST', '', { state: 'DRAFT' }, 'update/1');
+    assert.equal(reset.status, 403);
+    assert.equal((await f.request('PUT', '', {
+        document: { ...draft(), permission: { subject: 'Changed after approval' } },
+    })).status, 400);
+    assert.equal(f.row.state, 'UNLISTED');
+    assert.deepEqual(f.row.proposal_document, before);
+    assert.equal(f.writes, 0);
+});
+
+test('council cannot bypass review by assigning approval or publishing states', async t => {
+    for (const state of ['DRAFT', 'APPLIED_FOR_APPROVAL', 'APPLIED_FOR_PRINCI_APPROVAL']) {
+        const f = await fixture(t, { state });
+        for (const newState of ['UNLISTED', 'UPCOMING', 'REGISTRATION_OPEN', 'APPLIED_FOR_PRINCI_APPROVAL']) {
+            if (state === newState) continue;
+            assert.equal((await f.request('POST', '', { state: newState }, 'update/1')).status, 403);
+        }
+        assert.equal(f.row.state, state);
+        assert.equal(f.writes, 0);
+    }
+});
+
+test('state update operators cannot bypass transition checks', async t => {
+    const f = await fixture(t, { state: 'UNLISTED' });
+    for (const state of [{ set: 'DRAFT' }, null, ['DRAFT']]) {
+        assert.equal((await f.request('POST', '', { state }, 'update/1')).status, 400);
+    }
+    assert.equal(f.row.state, 'UNLISTED');
+    assert.equal(f.writes, 0);
+});
+
+test('council can manage approved events but cannot move them back into proposal editing', async t => {
+    const f = await fixture(t, { state: 'UNLISTED' });
+    const before = structuredClone(f.row.proposal_document);
+    for (const state of ['REGISTRATION_OPEN', 'REGISTRATION_CLOSED', 'ONGOING', 'COMPLETED', 'PRIVATE']) {
+        assert.equal((await f.request('POST', '', { state }, 'update/1')).status, 200);
+        assert.equal(f.row.state, state);
+    }
+    for (const state of ['DRAFT', 'APPLIED_FOR_APPROVAL', 'APPLIED_FOR_PRINCI_APPROVAL']) {
+        assert.equal((await f.request('POST', '', { state }, 'update/1')).status, 403);
+    }
+    assert.equal((await f.request('POST', '/unsubmit', {})).status, 400);
+    assert.equal(f.row.state, 'PRIVATE');
+    assert.deepEqual(f.row.proposal_document, before);
+});
+
+test('pending council withdrawals must use the route that clears reviewer signatures', async t => {
+    const f = await fixture(t, { state: 'APPLIED_FOR_APPROVAL' });
+    assert.equal((await f.request('POST', '', { state: 'DRAFT' }, 'update/1')).status, 403);
+    assert.equal((await f.request('POST', '/unsubmit', {})).status, 200);
+    assert.equal(f.row.state, 'DRAFT');
+});
+
 test('overlapping save and submit requests produce a conflict instead of overwriting', async t => {
     const f = await fixture(t);
     let count = 0, release;
