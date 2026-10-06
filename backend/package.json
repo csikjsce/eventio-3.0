@@ -4,6 +4,9 @@
   "main": "main.js",
   "license": "MIT",
   "private": true,
+  "scripts": {
+    "test:proposal": "node --test tests/proposal.test.js"
+  },
   "dependencies": {
     "@neondatabase/serverless": "^0.9.4",
     "@prisma/adapter-neon": "^5.18.0",

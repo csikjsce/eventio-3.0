@@ -27,7 +27,6 @@ const EVENT_UPDATE_KEYS = new Set([
     "start_in_event_activity",
     "comment",
     "assigned_faculty_emails",
-    "proposal_document",
     "ticket_count",
     "female_requirement",
     "more_details_enabled",

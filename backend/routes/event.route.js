@@ -26,6 +26,10 @@ const {
     embedFacultyReviewersInDocument,
     applyFacultySignatureToDocument,
     removeFacultySignatureFromDocument,  
+    parseProposalEventId,
+    validateProposalDocument,
+    validateCouncilSignatures,
+    clearFacultySignatures,
 } = require("../utils/proposal-document");
 
 let protected = "/p";
@@ -746,6 +750,7 @@ async function loadEventForProposal(eventId, user) {
             comment: true,
             assigned_faculty_emails: true,
             proposal_document: true,
+            updated_at: true,
         },
     });
     if (!event) return { error: { status: 404, message: "Event not found" } };
@@ -773,6 +778,36 @@ async function loadEventForProposal(eventId, user) {
     }
 
     return { error: { status: 403, message: "Forbidden" } };
+}
+
+// Reject partial IDs before parseInt can silently turn e.g. "12abc" into event 12.
+router.use(protected + "/proposal/:id", (req, res, next) => {
+    if (parseProposalEventId(req.params.id) === null) {
+        return res.status(400).json({ error: true, message: "Invalid event ID." });
+    }
+    next();
+});
+
+// Compare the snapshot atomically so overlapping save/review requests cannot
+// overwrite a newer proposal or move an event backwards through approval.
+async function persistProposalEvent(event, data, res) {
+    const result = await prisma.events.updateMany({
+        where: { id: event.id, state: event.state, updated_at: event.updated_at },
+        data: {
+            ...data,
+            // Ensure the version changes even for two writes in the same millisecond.
+            updated_at: new Date(Math.max(Date.now(), event.updated_at.getTime() + 1)),
+        },
+    });
+    if (result.count !== 1) {
+        res.status(409).json({
+            error: true,
+            message: "This event changed while you were editing. Reload the proposal and try again.",
+        });
+        return false;
+    }
+    invalidateEvent(event.id, event.organizer_id);
+    return true;
 }
 
 // GET /event/p/proposal/:id — proposal document package for council / faculty review
@@ -826,30 +861,28 @@ router.put(protected + "/proposal/:id", authCheck, async (req, res) => {
         }
 
         const { document, councilSignatures } = req.body ?? {};
-        if (!document || typeof document !== "object") {
+        const validationError = validateProposalDocument(document) ||
+            validateCouncilSignatures(councilSignatures);
+        if (validationError) {
             return res.status(400).json({
                 error: true,
-                message: "document is required",
+                message: validationError,
             });
         }
 
         const existing = normalizeProposal(event.proposal_document);
-        const proposal = {
+        const proposal = clearFacultySignatures({
             version: 1,
-            document,
+            document: { ...document, eventId: String(eventId) },
             councilSignatures: Array.isArray(councilSignatures)
                 ? councilSignatures
-                : existing.councilSignatures,
-            facultySignatures: existing.facultySignatures,
+                : [],
+            facultySignatures: [],
             submittedAt: null,
             returnHistory: existing.returnHistory ?? [],
-        };
-
-        await prisma.events.update({
-            where: { id: eventId },
-            data: { proposal_document: proposal },
         });
-        invalidateEvent(eventId, req.user.id);
+
+        if (!await persistProposalEvent(event, { proposal_document: proposal }, res)) return;
 
         return res.json({ error: false, proposal: normalizeProposal(proposal) });
     } catch (err) {
@@ -881,12 +914,17 @@ router.post(protected + "/proposal/:id/submit", authCheck, async (req, res) => {
             });
         }
 
-        const proposal = normalizeProposal(event.proposal_document);
+        const proposal = clearFacultySignatures(normalizeProposal(event.proposal_document));
         if (!proposal.document) {
             return res.status(400).json({
                 error: true,
                 message: "Build and save a proposal document before submitting.",
             });
+        }
+
+        const validationError = validateProposalDocument(proposal.document);
+        if (validationError) {
+            return res.status(400).json({ error: true, message: validationError });
         }
 
         if (!allCouncilSignatoriesSigned(proposal)) {
@@ -934,17 +972,13 @@ router.post(protected + "/proposal/:id/submit", authCheck, async (req, res) => {
             submittedAt: new Date().toISOString(),
         };
 
-        await prisma.events.update({
-            where: { id: eventId },
-            data: {
-                state: "APPLIED_FOR_APPROVAL",
-                state_history,
-                comment: null,
-                assigned_faculty_emails: assigned,
-                proposal_document: submittedProposal,
-            },
-        });
-        invalidateEvent(eventId, req.user.id);
+        if (!await persistProposalEvent(event, {
+            state: "APPLIED_FOR_APPROVAL",
+            state_history,
+            comment: null,
+            assigned_faculty_emails: assigned,
+            proposal_document: submittedProposal,
+        }, res)) return;
 
         return res.json({
             error: false,
@@ -986,31 +1020,16 @@ router.post(protected + "/proposal/:id/unsubmit", authCheck, async (req, res) =>
             });
         }
 
-        const proposal = normalizeProposal(event.proposal_document);
-
-        // Back to draft: any faculty/principal signature collected so far is void.
-        let document = proposal.document;
-        for (const sig of proposal.facultySignatures ?? []) {
-            document = removeFacultySignatureFromDocument(document, sig.email);
-        }
+        const proposal = clearFacultySignatures(normalizeProposal(event.proposal_document));
 
         const state_history = [...(event.state_history ?? []), "DRAFT"];
 
-        await prisma.events.update({
-            where: { id: eventId },
-            data: {
-                state: "DRAFT",
-                state_history,
-                comment: null,
-                proposal_document: {
-                    ...proposal,
-                    document,
-                    facultySignatures: [],
-                    submittedAt: null,
-                },
-            },
-        });
-        invalidateEvent(eventId, req.user.id);
+        if (!await persistProposalEvent(event, {
+            state: "DRAFT",
+            state_history,
+            comment: null,
+            proposal_document: proposal,
+        }, res)) return;
 
         return res.json({
             error: false,
@@ -1076,7 +1095,7 @@ router.post(
             }
 
             const alreadySigned = (proposal.facultySignatures ?? []).some(
-                (s) => s.user_id === req.user.id,
+                (s) => s.user_id === req.user.id && getSignaturePngUrl(s),
             );
 
             if (unsign && !alreadySigned) {
@@ -1154,24 +1173,20 @@ router.post(
                 }
             }
 
-            await prisma.events.update({
-                where: { id: eventId },
-                data: {
-                    proposal_document: {
-                        ...proposal,
-                        document: documentWithSig,
-                        facultySignatures,
-                    },
-                    ...(approve
-                        ? {
-                              state: newState,
-                              state_history,
-                              comment,
-                          }
-                        : {}),
+            if (!await persistProposalEvent(event, {
+                proposal_document: {
+                    ...proposal,
+                    document: documentWithSig,
+                    facultySignatures,
                 },
-            });
-            invalidateEvent(eventId, req.user.id);
+                ...(approve
+                    ? {
+                          state: newState,
+                          state_history,
+                          comment,
+                      }
+                    : {}),
+            }, res)) return;
 
             return res.json({
                 error: false,
@@ -1437,9 +1452,9 @@ router.post(
                     field.comment = feedback;
 
                     // Persist return feedback so the timeline keeps it after resubmit
-                    const proposal = normalizeProposal(
+                    const proposal = clearFacultySignatures(normalizeProposal(
                         existingEvent.proposal_document,
-                    );
+                    ));
                     const returnHistory = Array.isArray(proposal.returnHistory)
                         ? [...proposal.returnHistory]
                         : [];
@@ -1488,7 +1503,7 @@ router.post(
                             });
                         }
                         const hasSigned = (proposal.facultySignatures ?? []).some(
-                            (s) => s.user_id === req.user.id,
+                            (s) => s.user_id === req.user.id && getSignaturePngUrl(s),
                         );
                         if (!hasSigned) {
                             return res.status(400).json({
@@ -1530,7 +1545,7 @@ router.post(
                             });
                         }
                         const hasSigned = (proposal.facultySignatures ?? []).some(
-                            (s) => s.user_id === req.user.id,
+                            (s) => s.user_id === req.user.id && getSignaturePngUrl(s),
                         );
                         if (!hasSigned) {
                             return res.status(400).json({
@@ -1569,15 +1584,19 @@ router.post(
                         });
                     }
 
-                    const proposal = normalizeProposal(
+                    const proposal = clearFacultySignatures(normalizeProposal(
                         existingEvent.proposal_document,
-                    );
+                    ));
                     if (!proposal.document) {
                         return res.status(400).json({
                             error: true,
                             message:
                                 "Build and save a proposal document before submitting.",
                         });
+                    }
+                    const validationError = validateProposalDocument(proposal.document);
+                    if (validationError) {
+                        return res.status(400).json({ error: true, message: validationError });
                     }
                     if (!allCouncilSignatoriesSigned(proposal)) {
                         return res.status(400).json({
@@ -1588,6 +1607,12 @@ router.post(
                     }
 
                     field.assigned_faculty_emails = assigned;
+                    const reviewers = await resolveAssignedFacultyReviewers(existingEvent.organizer_id, assigned);
+                    field.proposal_document = {
+                        ...proposal,
+                        document: embedFacultyReviewersInDocument(proposal.document, reviewers),
+                        submittedAt: new Date().toISOString(),
+                    };
                     field.comment = null;
                 }
 
@@ -1603,13 +1628,15 @@ router.post(
                 state_history.push(newState);
                 field.state_history = state_history;
             }
-            await prisma.events.update({
-                where: {
-                    id: parseInt(req.params.id),
-                },
-                data: field,
-            });
-            invalidateEvent(parseInt(req.params.id), req.user.id);
+            if (field.state !== undefined || field.proposal_document !== undefined) {
+                if (!await persistProposalEvent(existingEvent, field, res)) return;
+            } else {
+                await prisma.events.update({
+                    where: { id: existingEvent.id },
+                    data: field,
+                });
+                invalidateEvent(existingEvent.id, existingEvent.organizer_id);
+            }
             res.json({
                 error: false,
                 message: "Event updated successfully",

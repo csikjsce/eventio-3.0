@@ -1,3 +1,86 @@
+function isRecord(value) {
+    return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function nonemptyString(value) {
+    return typeof value === "string" && value.trim().length > 0;
+}
+
+function parseProposalEventId(value) {
+    if (!/^[1-9]\d*$/.test(String(value))) return null;
+    const id = Number(value);
+    return Number.isSafeInteger(id) && id <= 2147483647 ? id : null;
+}
+
+// Draft text may be empty, but its structure must be safe for the document renderer.
+function validateProposalDocument(document) {
+    if (!isRecord(document) || document.kind !== "permission_letter") {
+        return "A permission-letter document is required.";
+    }
+    if (!isRecord(document.permission) || typeof document.permission.subject !== "string" ||
+        Object.values(document.permission).some((value) => typeof value !== "string")) {
+        return "Proposal permission fields must be text.";
+    }
+    if (document.report !== undefined && (!isRecord(document.report) ||
+        Object.values(document.report).some((value) => typeof value !== "string"))) {
+        return "Proposal report fields must be text.";
+    }
+    if (document.permissionTemplate !== undefined &&
+        !["event", "venue", "banner", "pr", "custom"].includes(document.permissionTemplate)) {
+        return "Invalid permission template.";
+    }
+    if (document.letterheadUrl !== undefined && typeof document.letterheadUrl !== "string") {
+        return "Letterhead URL must be text.";
+    }
+    if (!Array.isArray(document.signatories) || document.signatories.some((s) =>
+        !isRecord(s) || typeof s.name !== "string" || typeof s.role !== "string" ||
+        (s.memberId !== undefined && parseProposalEventId(s.memberId) === null) ||
+        (s.facultyReviewer !== undefined && typeof s.facultyReviewer !== "boolean") ||
+        ["email", "signatureUrl", "signedAt"].some((key) => s[key] !== undefined && typeof s[key] !== "string")
+    )) {
+        return "Proposal signatories must be a list of valid signatories.";
+    }
+    if (document.assignedFacultyReviewers !== undefined &&
+        (!Array.isArray(document.assignedFacultyReviewers) || document.assignedFacultyReviewers.some((r) =>
+            !isRecord(r) || !nonemptyString(r.email) || typeof r.name !== "string" ||
+            ["designation", "dept"].some((key) => r[key] !== undefined && typeof r[key] !== "string")
+        ))) {
+        return "Faculty reviewers must be a list of names and email addresses.";
+    }
+    return null;
+}
+
+function validateCouncilSignatures(signatures) {
+    if (signatures === undefined) return null;
+    if (!Array.isArray(signatures) || signatures.some((s) =>
+        !isRecord(s) || !nonemptyString(s.name) || !getSignaturePngUrl(s) ||
+        (s.memberId !== undefined && parseProposalEventId(s.memberId) === null) ||
+        ["role", "email", "signed_at"].some((key) => s[key] !== undefined && typeof s[key] !== "string")
+    )) {
+        return "Council signatures must include a name and signature image URL.";
+    }
+    return null;
+}
+
+function clearFacultySignatures(proposal) {
+    const document = proposal.document;
+    return {
+        ...proposal,
+        facultySignatures: [],
+        submittedAt: null,
+        document: isRecord(document) && Array.isArray(document.signatories)
+            ? {
+                ...document,
+                signatories: document.signatories.map((s) => {
+                    if (!s?.facultyReviewer) return s;
+                    const { signatureUrl, signedAt, ...unsigned } = s;
+                    return unsigned;
+                }),
+            }
+            : document,
+    };
+}
+
 function signatoryKey(sig) {
     if (sig.memberId != null) return `member:${sig.memberId}`;
     if (sig.email) return `email:${String(sig.email).trim().toLowerCase()}`;
@@ -34,12 +117,12 @@ function normalizeProposal(raw) {
 
     return {
         version: 1,
-        document: raw.document ?? null,
+        document: isRecord(raw.document) ? raw.document : null,
         councilSignatures: Array.isArray(raw.councilSignatures)
-            ? raw.councilSignatures
+            ? raw.councilSignatures.filter(isRecord)
             : [],
         facultySignatures: Array.isArray(raw.facultySignatures)
-            ? raw.facultySignatures
+            ? raw.facultySignatures.filter(isRecord)
             : [],
         submittedAt: raw.submittedAt ?? null,
         // Keep reviewer return notes across normalize/save cycles
@@ -61,7 +144,9 @@ function allCouncilSignatoriesSigned(proposal) {
     if (signatories.length === 0) return false;
 
     const signedKeys = new Set(
-        (proposal.councilSignatures ?? []).map((s) =>
+        (Array.isArray(proposal.councilSignatures) ? proposal.councilSignatures : [])
+        .filter((s) => getSignaturePngUrl(s))
+        .map((s) =>
             signatoryKey({
                 memberId: s.memberId,
                 name: s.name,
@@ -72,8 +157,7 @@ function allCouncilSignatoriesSigned(proposal) {
 
     return signatories.every((sig) => {
         if (
-            sig.signatureUrl &&
-            String(sig.signatureUrl).trim()
+            nonemptyString(sig.signatureUrl)
         ) {
             return true;
         }
@@ -122,16 +206,16 @@ function facultyReviewersToSignatories(reviewers) {
 }
 
 function embedFacultyReviewersInDocument(document, reviewers) {
-    if (!document || typeof document !== "object" || !reviewers?.length) {
+    if (!isRecord(document) || !Array.isArray(reviewers)) {
         return document;
     }
 
     const councilSignatories = Array.isArray(document.signatories)
-        ? document.signatories.filter((s) => !s?.facultyReviewer)
+        ? document.signatories.filter((s) => isRecord(s) && !s.facultyReviewer)
         : [];
 
     const existingByEmail = new Map(
-        (document.signatories ?? [])
+        (Array.isArray(document.signatories) ? document.signatories : [])
             .filter((s) => s?.facultyReviewer && s?.email)
             .map((s) => [String(s.email).trim().toLowerCase(), s]),
     );
@@ -177,6 +261,10 @@ function applyFacultySignatureToDocument(document, facultySig) {
 }
 
 module.exports = {
+    parseProposalEventId,
+    validateProposalDocument,
+    validateCouncilSignatures,
+    clearFacultySignatures,
     signatoryKey,
     normalizeProposal,
     councilSignatoriesFromDocument,
