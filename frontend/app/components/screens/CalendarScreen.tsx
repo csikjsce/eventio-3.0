@@ -6,6 +6,7 @@ import { generateDate, months } from "@/lib/calendar";
 import { ArrowLeft2, ArrowRight2, Calendar2 } from "iconsax-react";
 import EventsDataContext from "@/contexts/EventsDataContext";
 import Link from "next/link";
+import PillButton from "@/components/PillButton";
 import type { EventData } from "@/types/eventio";
 
 const DAY_LABELS = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
@@ -132,12 +133,14 @@ export default function CalendarScreen() {
 
       {/* Month navigation */}
       <div className="flex items-center justify-between mb-5">
-        <button
+        <PillButton
           onClick={() => setToday(today.subtract(1, "month"))}
-          className="w-9 h-9 flex items-center justify-center rounded-full active:bg-surface"
+          ariaLabel="Previous month"
+          hoverContent={<ArrowLeft2 size={18} color="#fff" />}
+          className="w-9 h-9 rounded-full active:bg-surface"
         >
           <ArrowLeft2 size={18} color="#8a8a8a" />
-        </button>
+        </PillButton>
 
         <button
           onClick={() => { setToday(currentDate); setSelectDate(currentDate); }}
@@ -146,12 +149,14 @@ export default function CalendarScreen() {
           {months[today.month()]} {today.year()}
         </button>
 
-        <button
+        <PillButton
           onClick={() => setToday(today.add(1, "month"))}
-          className="w-9 h-9 flex items-center justify-center rounded-full active:bg-surface"
+          ariaLabel="Next month"
+          hoverContent={<ArrowRight2 size={18} color="#fff" />}
+          className="w-9 h-9 rounded-full active:bg-surface"
         >
           <ArrowRight2 size={18} color="#8a8a8a" />
-        </button>
+        </PillButton>
       </div>
 
       {/* Day labels — Mon first */}
@@ -171,20 +176,21 @@ export default function CalendarScreen() {
 
           return (
             <div key={idx} className="flex flex-col items-center gap-0.5  py-0.5">
-              <button
+              <PillButton
                 onClick={() => setSelectDate(date)}
-                className={`h-9 w-9 rounded-full grid place-content-center text-sm font-poppins font-medium select-none transition-all ${
+                active={isSelected}
+                className={`h-9 w-9 rounded-full text-sm font-poppins font-medium select-none transition-colors ${
                   isSelected
                     ? "bg-foreground text-background font-bold"
                     : isToday
                       ? "ring-2 ring-primary text-primary"
                       : currentMonth
-                        ? "text-foreground hover:bg-surface"
+                        ? "text-foreground"
                         : "text-mute/40"
                 }`}
               >
                 {date.date()}
-              </button>
+              </PillButton>
               {/* Event dot */}
               {hasEvents && (
                 <div

@@ -13,10 +13,10 @@ export default function CouncilsScreen() {
     async function load() {
       try {
         const data = await fetchCouncils();
-        if (data?.length) {
+        if (Array.isArray(data)) {
           const mapped: Council[] = data.map((c: Council & { CouncilProfile?: Record<string, unknown> }) => ({
             ...c,
-            about: (c.CouncilProfile?.about as string) ?? "",
+            about: (c.CouncilProfile?.about as string) ?? c.about ?? "",
             banner_url: (c.CouncilProfile?.banner_url as string) ?? "",
             tagline: (c.CouncilProfile?.tagline as string) ?? "",
             instagram: (c.CouncilProfile?.instagram as string) ?? undefined,
@@ -36,6 +36,10 @@ export default function CouncilsScreen() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-foreground font-poppins">Councils</h1>
       </div>
+
+      {councils.length === 0 && (
+        <p className="text-sm text-foreground/60 text-center py-12">No councils yet.</p>
+      )}
 
       <div className="grid grid-cols-1 gap-3">
         {councils.map((council) => (
