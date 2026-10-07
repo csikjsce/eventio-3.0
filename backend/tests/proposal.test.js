@@ -58,6 +58,11 @@ async function fixture(t, overrides = {}) {
             },
         },
         councilProfile: { async findUnique() { return { faculty_advisors: [advisor] }; } },
+        councilMember: {
+            async findMany({ where }) {
+                return where.council.user_id === council.id ? [{ id: 3, name: 'Head', email: 'head@example.test' }] : [];
+            },
+        },
         facultyAdvisor: { async findMany({ where }) { return where.email.equals.toLowerCase() === faculty.email ? [advisor] : []; } },
     };
     const cache = new Map();
@@ -294,6 +299,49 @@ test('pending council withdrawals must use the route that clears reviewer signat
     assert.equal((await f.request('POST', '', { state: 'DRAFT' }, 'update/1')).status, 403);
     assert.equal((await f.request('POST', '/unsubmit', {})).status, 200);
     assert.equal(f.row.state, 'DRAFT');
+});
+
+test('council cannot forge a signed faculty slot on a non-faculty signatory', async t => {
+    const f = await fixture(t);
+    const document = draft();
+    document.signatories.push({ name: faculty.name, role: 'Faculty Advisor', signatureUrl: faculty.signature.png_url });
+    assert.equal((await f.request('PUT', '', { document })).status, 200);
+    const forged = f.row.proposal_document.document.signatories[1];
+    assert.equal(forged.name, faculty.name);
+    assert.equal(forged.signatureUrl, undefined);
+    assert.equal((await f.request('POST', '/submit', { assigned_faculty_emails: [faculty.email] })).status, 400);
+    assert.equal(f.row.state, 'DRAFT');
+});
+
+test('signatories pointing at another council member stay unsigned', async t => {
+    const f = await fixture(t);
+    const document = draft();
+    document.signatories[0].memberId = 99;
+    assert.equal((await f.request('PUT', '', { document })).status, 200);
+    assert.equal(f.row.proposal_document.document.signatories[0].signatureUrl, undefined);
+});
+
+test('member signatories take their name from the council member record', async t => {
+    const f = await fixture(t);
+    const document = draft();
+    document.signatories[0].name = 'Dr Faculty';
+    assert.equal((await f.request('PUT', '', { document })).status, 200);
+    const saved = f.row.proposal_document.document.signatories[0];
+    assert.equal(saved.name, 'Head');
+    assert.equal(saved.email, 'head@example.test');
+    assert.ok(saved.signatureUrl);
+    assert.equal((await f.request('POST', '/submit', { assigned_faculty_emails: [faculty.email] })).status, 200);
+});
+
+test('council signature records for unknown members are dropped', async t => {
+    const f = await fixture(t);
+    const councilSignatures = [
+        { memberId: 3, name: 'Head', png_url: 'https://example.test/head.png' },
+        { memberId: 99, name: faculty.name, png_url: faculty.signature.png_url },
+        { name: faculty.name, png_url: faculty.signature.png_url },
+    ];
+    assert.equal((await f.request('PUT', '', { document: draft(), councilSignatures })).status, 200);
+    assert.deepEqual(f.row.proposal_document.councilSignatures.map(s => s.memberId), [3]);
 });
 
 test('overlapping save and submit requests produce a conflict instead of overwriting', async t => {

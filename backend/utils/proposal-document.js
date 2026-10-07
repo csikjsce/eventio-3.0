@@ -81,6 +81,39 @@ function clearFacultySignatures(proposal) {
     };
 }
 
+// Council-side signatures are only trusted on slots tied to this council's own
+// members, with name/email taken from the member record. Otherwise a council
+// could add a "Faculty Advisor" slot carrying a faculty signature image.
+// Faculty reviewer slots are left to clearFacultySignatures.
+function bindCouncilSignatories(document, councilSignatures, members) {
+    const byId = new Map((Array.isArray(members) ? members : []).map((m) => [m.id, m]));
+    const memberFor = (memberId) =>
+        memberId === undefined ? null : byId.get(Number(memberId)) ?? null;
+
+    return {
+        document: {
+            ...document,
+            signatories: document.signatories.map((s) => {
+                if (s.facultyReviewer) return s;
+                const member = memberFor(s.memberId);
+                if (!member) {
+                    const { signatureUrl, signedAt, ...unsigned } = s;
+                    return unsigned;
+                }
+                const bound = { ...s, memberId: member.id, name: member.name };
+                if (member.email) bound.email = member.email;
+                else delete bound.email;
+                return bound;
+            }),
+        },
+        councilSignatures: (Array.isArray(councilSignatures) ? councilSignatures : [])
+            .flatMap((s) => {
+                const member = memberFor(s.memberId);
+                return member ? [{ ...s, memberId: member.id, name: member.name }] : [];
+            }),
+    };
+}
+
 function signatoryKey(sig) {
     if (sig.memberId != null) return `member:${sig.memberId}`;
     if (sig.email) return `email:${String(sig.email).trim().toLowerCase()}`;
@@ -265,6 +298,7 @@ module.exports = {
     validateProposalDocument,
     validateCouncilSignatures,
     clearFacultySignatures,
+    bindCouncilSignatories,
     signatoryKey,
     normalizeProposal,
     councilSignatoriesFromDocument,

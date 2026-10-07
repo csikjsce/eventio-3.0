@@ -30,6 +30,7 @@ const {
     validateProposalDocument,
     validateCouncilSignatures,
     clearFacultySignatures,
+    bindCouncilSignatories,
 } = require("../utils/proposal-document");
 
 let protected = "/p";
@@ -871,13 +872,17 @@ router.put(protected + "/proposal/:id", authCheck, async (req, res) => {
             });
         }
 
+        const members = await prisma.councilMember.findMany({
+            where: { council: { user_id: req.user.id } },
+            select: { id: true, name: true, email: true },
+        });
+        const bound = bindCouncilSignatories(document, councilSignatures, members);
+
         const existing = normalizeProposal(event.proposal_document);
         const proposal = clearFacultySignatures({
             version: 1,
-            document: { ...document, eventId: String(eventId) },
-            councilSignatures: Array.isArray(councilSignatures)
-                ? councilSignatures
-                : [],
+            document: { ...bound.document, eventId: String(eventId) },
+            councilSignatures: bound.councilSignatures,
             facultySignatures: [],
             submittedAt: null,
             returnHistory: existing.returnHistory ?? [],
