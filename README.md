@@ -276,7 +276,7 @@ All routes are prefixed `/api/v1`. Routes containing `/p/` require a `Bearer <ac
 3. Backend: follow the existing route/middleware pattern; log errors with the Bunyan logger.
 4. Frontend: TypeScript strict; Prettier + ESLint (`npm run lint`); Tailwind utilities. These apps
    run **Next.js 16** — check `frontend/<app>/AGENTS.md`; APIs differ from older Next.js.
-5. Do not commit secrets. Open a PR against `main`.
+5. Do not commit secrets ever. Open a PR against `main`.
 
 ---
 
