@@ -23,6 +23,7 @@ jobs:
       app: ${{ steps.filter.outputs.app }}
       council: ${{ steps.filter.outputs.council }}
       faculty: ${{ steps.filter.outputs.faculty }}
+      frontend: ${{ steps.frontend_matrix.outputs.frontend }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -37,6 +38,16 @@ jobs:
               - 'frontend/council-app/**'
             faculty:
               - 'frontend/faculty/**'
+      # `matrix` isn't available in a job-level `if`, so build the frontend
+      # matrix here from only the apps that changed.
+      - name: Build frontend matrix
+        id: frontend_matrix
+        run: |
+          items=()
+          [[ "${{ steps.filter.outputs.app }}" == "true" ]] && items+=('{"name":"student","dir":"frontend/app"}')
+          [[ "${{ steps.filter.outputs.council }}" == "true" ]] && items+=('{"name":"council","dir":"frontend/council-app"}')
+          [[ "${{ steps.filter.outputs.faculty }}" == "true" ]] && items+=('{"name":"faculty","dir":"frontend/faculty"}')
+          echo "frontend=[$(IFS=,; echo "${items[*]}")]" >> "$GITHUB_OUTPUT"
 
   backend:
     name: Backend — lint & validate
@@ -58,30 +69,20 @@ jobs:
         run: npx prisma validate
         env:
           DATABASE_URL: postgresql://ci:ci@localhost:5432/ci?schema=public
+      - name: Proposal tests
+        run: npm run test:proposal
       - name: Security audit
         run: npm audit --audit-level=high || true
 
   frontend:
     name: Build — ${{ matrix.name }}
     needs: changes
-    if: |
-      (matrix.key == 'app' && needs.changes.outputs.app == 'true') ||
-      (matrix.key == 'council' && needs.changes.outputs.council == 'true') ||
-      (matrix.key == 'faculty' && needs.changes.outputs.faculty == 'true')
+    if: needs.changes.outputs.frontend != '[]'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - key: app
-            name: student
-            dir: frontend/app
-          - key: council
-            name: council
-            dir: frontend/council-app
-          - key: faculty
-            name: faculty
-            dir: frontend/faculty
+        include: ${{ fromJSON(needs.changes.outputs.frontend) }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -122,6 +123,7 @@ jobs:
         run: |
           set -euo pipefail
           for result in \
+            "${{ needs.changes.result }}" \
             "${{ needs.backend.result }}" \
             "${{ needs.frontend.result }}" \
             "${{ needs.codeql.result }}"; do
