@@ -1,7 +1,7 @@
 name: eventio
 
 # EC2 backend-only deployment. Keep the env file on the server; do not commit it.
-# Usage: docker compose -f docker-compose.backend.yml --env-file .env up -d --build
+# Usage: docker compose -f docker-compose.backend.yml up -d --build
 services:
   backend:
     image: eventio-backend:latest
@@ -10,7 +10,7 @@ services:
       dockerfile: dockerfile
     container_name: eventio-backend
     env_file:
-      - .env
+      - ./backend/.env
     environment:
       NODE_ENV: production
       PORT: "8000"

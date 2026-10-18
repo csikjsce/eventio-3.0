@@ -29,12 +29,12 @@ sudo apt-get update && sudo apt-get install -y docker.io docker-compose-plugin g
 sudo usermod -aG docker ubuntu
 git clone <repository-url> /opt/eventio
 cd /opt/eventio
-cp backend/.env.example .env   # create/populate test-only values
+cp backend/.env.example backend/.env   # create/populate test-only values
 mkdir -p backend/cert           # add certificates if the API needs them
 docker compose -f docker-compose.backend.yml up -d --build
 ```
 
-For this test deployment, the server-side `.env` must include:
+For this test deployment, the server-side `backend/.env` must include:
 
 ```env
 CLIENT_URL="https://eventio.csi-kjsce.org"
